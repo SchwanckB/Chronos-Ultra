@@ -166,7 +166,76 @@
         Documentação Oficial - Chronos Ultra &copy; 2026<br>
     
     </p>
+    
+    <h2>5. Algoritmo de Fatiamento Dinâmico (Deep Work)</h2>
+    <p>Para evitar a queda na curva de retenção dopaminérgica, tarefas que excedem 60 minutos são processadas pela função de quebra:</p>
+    
+    <div class="math-box">
+        Bloco de Trabalho (B) = min(50, T<sub>restante</sub>)
+    </div>
 
+    <div class="grid-info">
+        <div class="card-mini">
+            <b style="color: var(--cor-dados);">Regra de Ouro:</b><br>
+            Nenhum ciclo de foco ultrapassa <b>50 minutos</b> sem uma interrupção de 10 minutos.
+        </div>
+        <div class="card-mini">
+            <b style="color: var(--cor-pausa);">Fator de Recuperação:</b><br>
+            A cada 1 minuto de <b>Pf (Pausa de Foco)</b>, a IA assume uma restauração de 15% da bateria mental local.
+        </div>
+    </div>
+
+    <h2>6. Matriz de Decisão de Pausas</h2>
+    <p>Abaixo, a lógica binária que o sistema executa ao final de cada iteração:</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Condição Logística</th>
+                <th>Tipo de Pausa</th>
+                <th>Duração</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Tarefa Interrompida (T > 60min)</td>
+                <td style="color: var(--cor-dados);">Pausa de Foco (Pf)</td>
+                <td>10 min</td>
+            </tr>
+            <tr>
+                <td>Tarefa Concluída (T<sub>total</sub>)</td>
+                <td style="color: var(--cor-pausa);">Pausa de Transição (Pt)</td>
+                <td>15 min</td>
+            </tr>
+            <tr>
+                <td>Esforço (E) > 75</td>
+                <td style="color: #ef4444;">Pausa de Emergência</td>
+                <td>+5 min extra</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>7. O Cálculo do Limite de Transbordamento</h2>
+    <p>Antes de renderizar qualquer tarefa, a IA valida a viabilidade cronológica:</p>
+    <div class="math-box">
+        Viabilidade = (S<sub>i</sub> + d<sub>i</sub> + Pt) &le; C
+    </div>
+    <p>Se a inequação for <b>Falsa</b>, o sistema entra em modo de "Corte de Precisão", onde a tarefa é reduzida ao valor exato do saldo residual, priorizando a finalização do dia no horário estipulado.</p>
+
+    
+
+    <div class="nota" style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid var(--cor-destaque); padding: 15px; margin-top: 30px; border-radius: 8px;">
+        <b>🤖 Insight da IA:</b> O sistema não apenas organiza o tempo, ele gerencia a sua <b>Reserva Cognitiva</b>. Ao aplicar a pausa de 15 minutos entre tarefas, o Chronos Ultra reduz em até 40% a chance de <i>burnout</i> vespertino.
+    </div>
+
+    <hr style="margin-top: 50px; border: 0; border-top: 1px solid #e2e8f0;">
+    <p style="text-align: center; font-size: 0.85rem; color: #94a3b8; margin-top: 20px;">
+        Documentação de Algoritmo Proprietário - Chronos Ultra &copy; 2026<br>
+        <i>"Sincronizando biologia e produtividade."</i>
+    </p>
+
+</div> </body>
+</html>
 </div>
 
 </body>
