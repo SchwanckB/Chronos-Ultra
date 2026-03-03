@@ -152,64 +152,95 @@ function formatarHoraTrabalho(minutosTotais) {
 }
 
 function otimizarDia() {
-    if (listaTarefas.length === 0)
-        return alert('Adicione pelo menos uma tarefa para otimizar!');
+    const containerLista = document.getElementById('resultado-otimizacao');
+    if (listaTarefas.length === 0) return alert('Adicione tarefas ao inventário primeiro!');
 
-    const limiteMinutos = parseInt(document.getElementById('limite-horas').value) * 60;
-    
-    const agora = new Date();
-    let horas = agora.getHours();
-    let minutos = agora.getMinutes();
-    
+    const limiteMinutos = (parseInt(document.getElementById('limite-horas').value) || 6) * 60;
+    const turno = document.getElementById('cronotipo-usuario').value;
+
+    let horas, minutos;
+    if (turno === "3") { horas = 8; minutos = 0; }
+    else if (turno === "9") { horas = 13; minutos = 0; }
+    else if (turno === "15") { horas = 19; minutos = 0; }
+    else {
+        const agora = new Date();
+        horas = agora.getHours();
+        minutos = agora.getMinutes();
+    }
+
     let tempoTotalGasto = 0;
-    let htmlGerado = `<div class="lista-tarefas">`;
+    let htmlGerado = `<div style="display: flex; flex-direction: column; gap: 12px;">`;
 
-    // 1. Ordena as tarefas: Peso maior primeiro
     const tarefasOrdenadas = [...listaTarefas].sort((a, b) => b.peso - a.peso);
 
-    tarefasOrdenadas.forEach(t => {
-        let statusMensagem = "";
-        let classeExtra = "";
-        let tempoExecucao = t.tempo;
-        let tempoRestante = limiteMinutos - tempoTotalGasto;
+    tarefasOrdenadas.forEach((t) => {
+        let tempoRestanteNoDia = limiteMinutos - tempoTotalGasto;
+        if (tempoRestanteNoDia <= 0) return;
 
-        if (tempoRestante <= 0) {
-            // Se não sobrar nada mesmo
-            classeExtra = "tarefa-nao-priorizada";
-            statusMensagem = "⚠️ Não priorizada (Tempo esgotado)";
-            tempoExecucao = 0;
-        } 
-        else if (t.tempo > tempoRestante) {
-            // A TAREFA FOI CORTADA (O SEU EXEMPLO)
-            tempoExecucao = tempoRestante;
-            statusMensagem = `✂️ Tempo reduzido para ${tempoExecucao} min (Limite atingido)`;
-            classeExtra = "tarefa-cortada";
-        } 
-        else {
-            // TAREFA COUBE INTEIRA
-            statusMensagem = `Até ${formatarHoraTrabalho((horas * 60 + minutos) + t.tempo)}`;
+        let tempoDaTarefaOriginal = t.tempo;
+        let tempoExecutadoDestaTarefa = 0;
+
+        // --- INÍCIO DA TAREFA ---
+        while (tempoDaTarefaOriginal > 0 && tempoTotalGasto < limiteMinutos) {
+            // Se a tarefa for longa (mais de 60min), fatiamos em blocos de 50min
+            let blocoTrabalho = (tempoDaTarefaOriginal > 60) ? 50 : tempoDaTarefaOriginal;
+            
+            // Verifica se o bloco cabe no tempo restante do dia
+            if (tempoTotalGasto + blocoTrabalho > limiteMinutos) {
+                blocoTrabalho = limiteMinutos - tempoTotalGasto;
+            }
+
+            if (blocoTrabalho <= 0) break;
+
+            let horaInicioStr = formatarHoraTrabalho(horas * 60 + minutos);
+            
+            // Renderiza o bloco de trabalho
+            htmlGerado += `
+                <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; display: flex; align-items: center; gap: 15px;">
+                    <div style="font-weight: bold; color: #a855f7; min-width: 55px;">${horaInicioStr}</div>
+                    <div style="flex: 1;">
+                        <div style="color: #f8fafc; font-weight: 600;">${t.nome} ${tempoExecutadoDestaTarefa > 0 ? '(Continuação)' : ''}</div>
+                        <div style="color: #94a3b8; font-size: 0.85rem;">Bloco de foco intenso: ${blocoTrabalho}min</div>
+                    </div>
+                </div>`;
+
+            // Atualiza tempo
+            tempoTotalGasto += blocoTrabalho;
+            tempoDaTarefaOriginal -= blocoTrabalho;
+            tempoExecutadoDestaTarefa += blocoTrabalho;
+            minutos += blocoTrabalho;
+            while (minutos >= 60) { minutos -= 60; horas++; }
+
+            // --- PAUSA NO MEIO (Se ainda sobrar tempo da mesma tarefa) ---
+            if (tempoDaTarefaOriginal > 0 && tempoTotalGasto + 10 <= limiteMinutos) {
+                let horaPausaMeio = formatarHoraTrabalho(horas * 60 + minutos);
+                htmlGerado += `
+                    <div style="margin-left: 70px; border-left: 3px solid #3b82f6; padding: 8px 15px; background: rgba(59, 130, 246, 0.1); border-radius: 8px;">
+                        <b style="color: #60a5fa; font-size: 0.85rem;">💧 ${horaPausaMeio} Pausa de Foco (10 min)</b><br>
+                        <small style="color: #93c5fd; font-size: 0.75rem;">Respiro estratégico para tarefas longas.</small>
+                    </div>`;
+                
+                tempoTotalGasto += 10;
+                minutos += 10;
+                while (minutos >= 60) { minutos -= 60; horas++; }
+            }
         }
 
-        let horaInicioStr = tempoExecucao > 0 ? formatarHoraTrabalho(horas * 60 + minutos) : "--:--";
+        // --- PAUSA APÓS CONCLUIR CADA TAREFA (15 MINUTOS) ---
+        if (tempoTotalGasto + 15 <= limiteMinutos) {
+            let horaPausaFim = formatarHoraTrabalho(horas * 60 + minutos);
+            htmlGerado += `
+                <div style="margin: 5px 0 15px 70px; padding: 10px 15px; border-left: 4px solid #10b981; background: rgba(16, 185, 129, 0.15); border-radius: 8px;">
+                    <b style="color: #10b981;">☕ ${horaPausaFim} Descanso de Conclusão (15 min)</b><br>
+                    <small style="color: #34d399; font-size: 0.75rem;">Tarefa concluída. Recarregue para a próxima.</small>
+                </div>`;
 
-        htmlGerado += `
-            <div class="item-tarefa ${classeExtra}" style="border: 1px solid var(--cor-borda);">
-                <div style="display: flex; align-items: center; width: 100%;">
-                    <span class="etiqueta-tempo">${horaInicioStr}</span>
-                    <div style="flex: 1;">
-                        <b style="color: var(--cor-texto);">${t.nome}</b><br>
-                        <span style="color: #94a3b8; font-size: 0.85rem;">${statusMensagem}</span>
-                    </div>
-                </div>
-            </div>`;
-
-        if (tempoExecucao > 0) {
-            tempoTotalGasto += tempoExecucao;
-            minutos += tempoExecucao;
+            tempoTotalGasto += 15;
+            minutos += 15;
             while (minutos >= 60) { minutos -= 60; horas++; }
         }
     });
 
-    htmlGerado += `</div><div class="etiqueta-lazer">🏝️ Cronograma Finalizado</div>`;
-    document.getElementById('resultado-otimizacao').innerHTML = htmlGerado;
+    htmlGerado += `</div>`;
+    containerLista.innerHTML = htmlGerado;
 }
