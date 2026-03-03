@@ -1,0 +1,167 @@
+<!doctype html>
+<main>
+  <html lang="pt-br">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Chronos Ultra - Otimizador de Vida</title>
+       <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon">
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+   lin
+  
+      <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+      <div id="tela-boas-vindas" class="tela ativa">
+        <div class="cartao-boas-vindas">
+          <h1>Chronos Ultra</h1>
+          <p style="color: #94a3b8; margin-bottom: 32px">
+            Sincronize sua produtividade com a sua biologia.
+          </p>
+  
+          <input
+            type="text"
+            id="seu-nome"
+            placeholder="Qual o seu primeiro nome?"
+            autocomplete="off"
+          />
+          <input
+            type="number"
+            id="sua-idade"
+            placeholder="Sua idade (para calcular foco)"
+            min="10"
+            max="100"
+          />
+  
+          <button onclick="entrarNoSistema()">Iniciar Otimização</button>
+        </div>
+      </div>
+  
+      <div id="tela-principal" class="tela">
+        <div class="cabecalho-usuario">
+          <div class="saudacao">
+            <h1 id="saudacao-nome">Olá!</h1>
+            <p>Vamos hackear o seu tempo livre hoje.</p>
+          </div>
+          <div class="controles-perfil">
+            <div class="estatisticas-bio" id="caixa-estatisticas-bio">
+              🧬 Foco Contínuo Ideal: -- min
+            </div>
+            <button class="botao-sair" onclick="trocarUsuario()">
+              Trocar Perfil
+            </button>
+          </div>
+        </div>
+  
+        <div class="grade">
+          <div class="cartao">
+            <h2>1. Relógio Biológico</h2>
+            <label for="cronotipo-usuario">Seu cronotipo:</label>
+            <select id="cronotipo-usuario" onchange="renderizarGrafico()">
+              <option value="3">Matutino (Pico às 09:00)</option>
+              <option value="9">Vespertino (Pico às 15:00)</option>
+              <option value="15">Noturno (Pico às 21:00)</option>
+            </select>
+  
+            <label for="limite-horas">Horas de Trabalho Hoje:</label>
+            <input type="number" id="limite-horas" value="6" min="1" max="16" />
+  
+            <canvas id="grafico-energia"></canvas>
+          </div>
+          <div class="cartao">
+            <h3 style="margin-top: 0; color: #94a3b8; font-size: 1rem">
+              Guias de Referência
+            </h3>
+  
+            <div class="envoltorio-tabela">
+              <table class="tabela-ajuda">
+                <thead>
+                  <tr>
+                    <th>Peso (1-10)</th>
+                    <th>O que significa?</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>8 a 10</strong></td>
+                    <td>Urgente / Alta Complexidade</td>
+                  </tr>
+                  <tr>
+                    <td><strong>4 a 7</strong></td>
+                    <td>Importante / Média Complexidade</td>
+                  </tr>
+                  <tr>
+                    <td><strong>1 a 3</strong></td>
+                    <td>Rotina / Baixa Complexidade</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+  
+            <div style="height: 15px"></div>
+  
+            <div class="envoltorio-tabela">
+              <table class="tabela-ajuda">
+                <thead>
+                  <tr>
+                    <th>Minutos</th>
+                    <th>O que significa?</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>45+</strong></td>
+                    <td>Tarefa Complexa</td>
+                  </tr>
+                  <tr>
+                    <td><strong>20-45</strong></td>
+                    <td>Tarefa Básica</td>
+                  </tr>
+                  <tr>
+                    <td><strong>0-20</strong></td>
+                    <td>Micro-Tarefa</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="cartao">
+            <h2>2. Inventário de Tarefas</h2>
+            <input
+              type="text"
+              id="nome-tarefa"
+              placeholder="Nome da tarefa (ex: Estudar Cálculo)"
+            />
+  
+            <div class="grupo-inputs">
+              <input type="number" id="peso-tarefa" placeholder="Peso (1-10)" />
+              <input type="number" id="tempo-tarefa" placeholder="Minutos" />
+            </div>
+  
+            <button onclick="adicionarTarefa()">Adicionar Tarefa</button>
+            <div class="lista-tarefas" id="lista-de-tarefas"></div>
+          </div>
+  
+          <div class="cartao">
+            <h2>3. Agenda Otimizada</h2>
+            <button onclick="otimizarDia()">GERAR HORÁRIOS PERFEITOS</button>
+  
+            <div id="resultado-otimizacao" style="margin-top: 24px">
+              <p style="color: #94a3b8; text-align: center">
+                Adicione tarefas acima e calcule sua agenda biológica.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer>
+        <p>
+          © 2026 • Criado por
+          <strong><a href="https://github.com/SchwanckB">Bernardo Schwanck</a></strong>
+        </p>
+      </footer>
+      <script src="script.js"></script>
+    </body>
+  </html>
+</main>
