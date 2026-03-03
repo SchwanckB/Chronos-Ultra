@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Matemático - Chronos Ultra</title>
+    <style>
+        :root {
+            --cor-primaria: #0f172a;
+            --cor-destaque: #3b82f6;
+            --fundo-pagina: #f1f5f9;
+            --fundo-caixa: #ffffff;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.7;
+            color: var(--cor-primaria);
+            background-color: var(--fundo-pagina);
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--fundo-caixa);
+            padding: 50px 60px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+        h1 { text-align: center; color: var(--cor-primaria); border-bottom: 4px solid var(--cor-destaque); padding-bottom: 15px; margin-bottom: 40px; }
+        h2 { color: var(--cor-destaque); margin-top: 45px; border-left: 5px solid var(--cor-primaria); padding-left: 15px; background: #f8fafc; padding-top: 5px; padding-bottom: 5px; }
+        h3 { color: #334155; margin-top: 30px; }
+        
+        .math-box {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Cambria', 'Times New Roman', serif;
+            font-size: 1.3rem;
+            margin: 20px 0;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            color: #1e293b;
+            letter-spacing: 1px;
+        }
+        ul { list-style-type: square; padding-left: 20px; }
+        li { margin-bottom: 10px; }
+        .variavel { font-weight: bold; color: var(--cor-destaque); font-family: 'Courier New', Courier, monospace; font-size: 1.1em; }
+        
+        .btn-imprimir {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto 30px auto;
+            padding: 15px;
+            background: var(--cor-destaque);
+            color: white;
+            text-align: center;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+            transition: 0.3s;
+        }
+        .btn-imprimir:hover { background: #2563eb; }
+
+        @media print {
+            .btn-imprimir { display: none; }
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; border: none; padding: 0; width: 100%; max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <button class="btn-imprimir" onclick="window.print()">🖨️ Salvar Manual em PDF</button>
+
+    <h1>Dicionário Matemático e Lógico:<br><a href="https://schwanckb.github.io/Chronos-Ultra/" target="_blank">Chronos Ultra</a></h1>
+    <p style="text-align: center; font-size: 1.1rem; color: #64748b;">Mapeamento completo de variáveis, operadores e cálculos do sistema.</p>
+
+    <h2>1. Legenda Completa de Símbolos</h2>
+    <p>O algoritmo utiliza as seguintes grandezas para o cálculo de alocação de tempo:</p>
+    
+    <h3>Variáveis do Sistema</h3>
+    <ul>
+        <li><span class="variavel">H</span>: Limite total inserido pelo usuário (em horas).</li>
+        <li><span class="variavel">C</span>: Capacidade máxima do dia (em minutos).</li>
+        <li><span class="variavel">T</span>: O conjunto de todas as tarefas inseridas.</li>
+        <li><span class="variavel">i</span>: O índice da tarefa atual sendo analisada pelo loop.</li>
+        <li><span class="variavel">w<sub>i</sub></span>: Peso (prioridade) da tarefa atual.</li>
+        <li><span class="variavel">d<sub>i</sub></span>: Duração nominal (tempo desejado) da tarefa atual.</li>
+        <li><span class="variavel">S<sub>i</sub></span>: Somatório do tempo acumulado (gasto) pelas tarefas processadas <i>antes</i> da atual.</li>
+        <li><span class="variavel">R<sub>i</sub></span>: Saldo residual (tempo que sobra no dia) no momento do cálculo.</li>
+        <li><span class="variavel">E<sub>i</sub></span>: Tempo de Execução Real (o valor final após o cálculo de corte).</li>
+        <li><span class="variavel">T<sub>agora</sub></span>: O horário atual do sistema do usuário, convertido em minutos absolutos.</li>
+        <li><span class="variavel">M<sub>inicio</sub></span>: O minuto absoluto em que uma tarefa vai começar.</li>
+    </ul>
+
+    <h3>Operadores Matemáticos Utilizados</h3>
+    <ul>
+        <li><span class="variavel">&sum;</span> <b>(Somatório):</b> Representa a soma de uma sequência de valores.</li>
+        <li><span class="variavel">&ge;</span> <b>(Maior ou igual a):</b> Usado para ordenar as prioridades na fila.</li>
+        <li><span class="variavel">min(x, y)</span> <b>(Mínimo):</b> Retorna o menor valor entre x e y.</li>
+        <li><span class="variavel">max(x, y)</span> <b>(Máximo):</b> Retorna o maior valor entre x e y.</li>
+        <li><span class="variavel">&lfloor; x &rfloor;</span> <b>(Função Piso / Floor):</b> Arredonda um número decimal para baixo, para o inteiro mais próximo.</li>
+        <li><span class="variavel">mod x</span> <b>(Módulo):</b> Retorna o resto de uma divisão. Faz o relógio "girar" e voltar para o zero (ex: 24h vira 00h).</li>
+    </ul>
+
+    <h2>2. Todos os Cálculos (Passo a Passo)</h2>
+    <p>Abaixo está a ordem exata de execução matemática que o motor do Chronos Ultra processa em milissegundos.</p>
+
+    <h3>Fase 1: Inicialização e Conversões</h3>
+    <p>Transformação das horas do usuário e do relógio do computador para uma unidade base (minutos).</p>
+    <div class="math-box">
+        Cálculo da Capacidade Total:<br>
+        <b>C = H &times; 60</b>
+    </div>
+    <div class="math-box">
+        Cálculo do Tempo Atual Absoluto:<br>
+        <b>T<sub>agora</sub> = (Hora_Atual &times; 60) + Minuto_Atual</b>
+    </div>
+
+    <h3>Fase 2: O Motor de Priorização (Ordenação)</h3>
+    <p>O sistema avalia a matriz de tarefas e aplica um algoritmo de ordenação comparativa baseado no peso (w).</p>
+    <div class="math-box">
+        <b>w<sub>1</sub> &ge; w<sub>2</sub> &ge; w<sub>3</sub> ... &ge; w<sub>n</sub></b>
+    </div>
+
+    <h3>Fase 3: O Algoritmo de Corte e Alocação (O Núcleo)</h3>
+    <p>Para cada tarefa iterada, o sistema executa três cálculos em sequência para definir o tempo exato de execução.</p>
+    <div class="math-box">
+        1. Cálculo do Tempo Acumulado (Soma do que já passou):<br>
+        <b>S<sub>i</sub> = &sum; E<sub>j</sub></b> <br>
+        <span style="font-size: 0.9rem; color: #64748b;">(com j variando de 1 até a tarefa anterior i-1)</span>
+    </div>
+    <div class="math-box">
+        2. Cálculo do Saldo Residual (Quanto sobra no balde):<br>
+        <b>R<sub>i</sub> = C - S<sub>i</sub></b>
+    </div>
+    <div class="math-box">
+        3. Cálculo da Execução Real (A função do Corte):<br>
+        <b>E<sub>i</sub> = min( d<sub>i</sub>, max(0, R<sub>i</sub>) )</b>
+    </div>
+    <p><i>Tradução da função de corte:</i> O sistema impede saldos negativos com o <b>max(0, R)</b> e, em seguida, compara o tempo desejado (d) com o que sobrou (R). Ele escolhe obrigatoriamente o menor valor <b>(min)</b>. Se a tarefa pede 70min, mas o saldo é 50min, ele corta a tarefa para 50.</p>
+
+    <h3>Fase 4: O Motor de Relógio (Aritmética Modular)</h3>
+    <p>Com o tempo real (E) definido, o sistema calcula a hora de exibição para evitar horários inexistentes.</p>
+    <div class="math-box">
+        1. Minuto Absoluto de Início:<br>
+        <b>M<sub>inicio, i</sub> = T<sub>agora</sub> + S<sub>i</sub></b>
+    </div>
+    <div class="math-box">
+        2. Cálculo da Hora de Exibição (Formato 24h):<br>
+        <b>Hora = &lfloor; M<sub>inicio, i</sub> / 60 &rfloor; mod 24</b>
+    </div>
+    <div class="math-box">
+        3. Cálculo do Minuto de Exibição:<br>
+        <b>Minuto = M<sub>inicio, i</sub> mod 60</b>
+    </div>
+
+    <hr style="margin-top: 50px; border: 0; border-top: 1px solid #e2e8f0;">
+    <p style="text-align: center; font-size: 0.9rem; color: #94a3b8; margin-top: 20px;">
+        Documentação Oficial - Chronos Ultra &copy; 2026<br>
+    
+    </p>
+
+</div>
+
+</body>
+</html>
