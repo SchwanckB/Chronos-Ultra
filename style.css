@@ -344,47 +344,47 @@ canvas {
 }
 
 .tarefa-cortada {
-    border-left: 4px solid #f59e0b !important; /* Laranja/Amarelo de atenção */
-    background: rgba(245, 158, 11, 0.05) !important;
+  border-left: 4px solid #f59e0b !important; /* Laranja/Amarelo de atenção */
+  background: rgba(245, 158, 11, 0.05) !important;
 }
 
 .tarefa-cortada b {
-    color: #fbbf24 !important;
+  color: #fbbf24 !important;
 }
 
 footer {
-    /* Reseta qualquer largura estranha */
-    width: 100%;
-    max-width: 100%;
-    margin: 0;
-    padding: 15px 0;
-    
-    /* Cores e Estilo */
-    background-color: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(8px);
-    text-align: center;
-    
-    /* Bordas arredondadas só no topo */
-    border-radius: 20px 20px 0 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    
-    /* Garante que ele fique no final sem flutuar */
-    position: relative;
-    clear: both;
+  /* Reseta qualquer largura estranha */
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 15px 0;
+
+  /* Cores e Estilo */
+  background-color: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(8px);
+  text-align: center;
+
+  /* Bordas arredondadas só no topo */
+  border-radius: 20px 20px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+  /* Garante que ele fique no final sem flutuar */
+  position: relative;
+  clear: both;
 }
 
 footer p {
-    margin: 0;
-    color: #94a3b8;
-    font-size: 0.85rem;
-    font-family: sans-serif;
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-family: sans-serif;
 }
 
 /* O SEU NOME COM GRADIENTE */
 footer strong {
-    background: linear-gradient(90deg, #6366f1, #d946ef);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-weight: bold;
+  background: linear-gradient(90deg, #6366f1, #d946ef);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: bold;
 }
