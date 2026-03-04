@@ -270,6 +270,27 @@ button:active {
   position: relative;
 }
 
+.item-tarefa-info {
+  flex: 1;
+}
+
+.botao-excluir {
+  background: transparent;
+  width: auto;
+  border: none;
+  color: var(--cor-alerta);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+  margin-left: 8px;
+}
+
+.botao-excluir:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
 .etiqueta-tempo {
   background: var(--cor-fundo);
   color: var(--cor-secundaria);
@@ -387,4 +408,87 @@ footer strong {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   font-weight: bold;
+}
+
+/* Estilos para elementos dinâmicos gerados pelo JavaScript */
+.resultado-otimizacao-placeholder {
+  color: #94a3b8;
+  text-align: center;
+}
+
+.item-tarefa-detalhes {
+  color: #94a3b8;
+  text-align: center;
+  flex: 1;
+}
+
+.agenda-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bloco-tarefa {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 15px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.horario-tarefa {
+  font-weight: bold;
+  color: #a855f7;
+  min-width: 55px;
+}
+
+.nome-tarefa {
+  color: #f8fafc;
+  font-weight: 600;
+}
+
+.descricao-tarefa {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.pausa-meio {
+  margin-left: 70px;
+  border-left: 3px solid #3b82f6;
+  padding: 8px 15px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+}
+
+.texto-pausa-meio {
+  color: #60a5fa;
+  font-size: 0.85rem;
+}
+
+.descricao-pausa-meio {
+  color: #93c5fd;
+  font-size: 0.75rem;
+}
+
+.pausa-fim {
+  margin: 5px 0 15px 70px;
+  padding: 10px 15px;
+  border-left: 4px solid #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  border-radius: 8px;
+}
+
+.texto-pausa-fim {
+  color: #10b981;
+}
+
+.descricao-pausa-fim {
+  color: #34d399;
+  font-size: 0.75rem;
+}
+
+.detalhes-tarefa {
+  flex: 1;
 }

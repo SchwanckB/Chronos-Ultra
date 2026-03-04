@@ -2,6 +2,32 @@
 let listaTarefas = []
 let graficoInstancia
 let dadosUsuario = { nome: '', idade: 0, focoMaximo: 0 }
+let configuracoes = { cronotipo: '3', limiteHoras: 6 }
+
+// --- PERSISTÊNCIA DE DADOS ---
+function salvarDadosUsuario() {
+  if (!dadosUsuario.nome) return
+  const chave = `chronos-${dadosUsuario.nome.toLowerCase().replace(/\s+/g, '-')}`
+  const dados = {
+    listaTarefas,
+    dadosUsuario,
+    configuracoes
+  }
+  localStorage.setItem(chave, JSON.stringify(dados))
+}
+
+function carregarDadosUsuario(nome) {
+  const chave = `chronos-${nome.toLowerCase().replace(/\s+/g, '-')}`
+  const dadosSalvos = localStorage.getItem(chave)
+  if (dadosSalvos) {
+    const dados = JSON.parse(dadosSalvos)
+    listaTarefas = dados.listaTarefas || []
+    dadosUsuario = dados.dadosUsuario || { nome: '', idade: 0, focoMaximo: 0 }
+    configuracoes = dados.configuracoes || { cronotipo: '3', limiteHoras: 6 }
+    return true
+  }
+  return false
+}
 
 // --- CONTROLE DE FLUXO SPA ---
 function entrarNoSistema() {
@@ -15,6 +41,9 @@ function entrarNoSistema() {
     return alert('Por favor, preencha corretamente seu nome e idade!')
   }
 
+  // Carrega dados se existir
+  carregarDadosUsuario(nome)
+
   // Lógica de cálculo de foco máximo
   let calcFoco = Math.floor(90 - Math.abs(idade - 25) * 1.2)
   dadosUsuario = { nome, idade, focoMaximo: Math.max(25, calcFoco) }
@@ -25,6 +54,13 @@ function entrarNoSistema() {
   document.getElementById('caixa-estatisticas-bio').innerHTML =
     `🧬 Foco Ideal: <b>${dadosUsuario.focoMaximo} min</b>`
 
+  // Define configurações nos campos
+  document.getElementById('cronotipo-usuario').value = configuracoes.cronotipo
+  document.getElementById('limite-horas').value = configuracoes.limiteHoras
+
+  // Atualiza lista de tarefas
+  atualizarListaNaTela()
+
   // Transição de Telas
   document.getElementById('tela-boas-vindas').classList.remove('ativa')
   document.getElementById('tela-principal').classList.add('ativa')
@@ -34,9 +70,13 @@ function entrarNoSistema() {
 }
 
 function trocarUsuario() {
+  // Salva dados atuais antes de trocar
+  salvarDadosUsuario()
+
   // Zera o estado da aplicação
   listaTarefas = []
   dadosUsuario = { nome: '', idade: 0, focoMaximo: 0 }
+  configuracoes = { cronotipo: '3', limiteHoras: 6 }
 
   // Limpa os campos da tela inicial
   document.getElementById('seu-nome').value = ''
@@ -45,7 +85,7 @@ function trocarUsuario() {
   // Limpa as listas da tela principal
   document.getElementById('lista-de-tarefas').innerHTML = ''
   document.getElementById('resultado-otimizacao').innerHTML =
-    '<p style="color: #94a3b8; text-align: center;">Adicione tarefas acima e calcule sua agenda biológica.</p>'
+    '<p class="resultado-otimizacao-placeholder">Adicione tarefas acima e calcule sua agenda biológica.</p>'
   document.getElementById('nome-tarefa').value = ''
   document.getElementById('peso-tarefa').value = ''
   document.getElementById('tempo-tarefa').value = ''
@@ -97,6 +137,12 @@ function renderizarGrafico() {
       plugins: { legend: { display: false }, tooltip: { enabled: false } }
     }
   })
+
+  // Atualiza configurações
+  configuracoes.cronotipo = document.getElementById('cronotipo-usuario').value
+  configuracoes.limiteHoras =
+    parseInt(document.getElementById('limite-horas').value) || 6
+  salvarDadosUsuario()
 }
 
 // --- GESTÃO DE TAREFAS ---
@@ -122,6 +168,15 @@ function adicionarTarefa() {
   document.getElementById('tempo-tarefa').value = ''
 
   atualizarListaNaTela()
+
+  // Salva dados
+  salvarDadosUsuario()
+}
+
+function excluirTarefa(id) {
+  listaTarefas = listaTarefas.filter(t => t.id !== id)
+  atualizarListaNaTela()
+  salvarDadosUsuario()
 }
 
 function atualizarListaNaTela() {
@@ -135,8 +190,9 @@ function atualizarListaNaTela() {
     .map(
       t => `
             <div class="item-tarefa">
-                <strong>${t.nome}</strong>
-                <span style="color: #94a3b8;">Peso: ${t.peso} | ${t.tempo} min</span>
+                <strong class="nome-tarefa">${t.nome}</strong>
+                <span class="item-tarefa-detalhes">Peso: ${t.peso} | ${t.tempo} min</span>
+                <button class="botao-excluir" onclick="excluirTarefa(${t.id})">🗑️</button>
             </div>
         `
     )
@@ -177,7 +233,7 @@ function otimizarDia() {
   }
 
   let tempoTotalGasto = 0
-  let htmlGerado = `<div style="display: flex; flex-direction: column; gap: 12px;">`
+  let htmlGerado = `<div class="agenda-container">`
 
   const tarefasOrdenadas = [...listaTarefas].sort((a, b) => b.peso - a.peso)
 
@@ -205,11 +261,11 @@ function otimizarDia() {
 
       // Renderiza o bloco de trabalho
       htmlGerado += `
-                <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; display: flex; align-items: center; gap: 15px;">
-                    <div style="font-weight: bold; color: #a855f7; min-width: 55px;">${horaInicioStr}</div>
-                    <div style="flex: 1;">
-                        <div style="color: #f8fafc; font-weight: 600;">${t.nome} ${tempoExecutadoDestaTarefa > 0 ? '(Continuação)' : ''}</div>
-                        <div style="color: #94a3b8; font-size: 0.85rem;">Bloco de foco intenso: ${blocoTrabalho}min</div>
+                <div class="bloco-tarefa">
+                    <div class="horario-tarefa">${horaInicioStr}</div>
+                    <div class="detalhes-tarefa">
+                        <div class="nome-tarefa">${t.nome} ${tempoExecutadoDestaTarefa > 0 ? '(Continuação)' : ''}</div>
+                        <div class="descricao-tarefa">Bloco de foco intenso: ${blocoTrabalho}min</div>
                     </div>
                 </div>`
 
@@ -227,9 +283,9 @@ function otimizarDia() {
       if (tempoDaTarefaOriginal > 0 && tempoTotalGasto + 10 <= limiteMinutos) {
         let horaPausaMeio = formatarHoraTrabalho(horas * 60 + minutos)
         htmlGerado += `
-                    <div style="margin-left: 70px; border-left: 3px solid #3b82f6; padding: 8px 15px; background: rgba(59, 130, 246, 0.1); border-radius: 8px;">
-                        <b style="color: #60a5fa; font-size: 0.85rem;">💧 ${horaPausaMeio} Pausa de Foco (10 min)</b><br>
-                        <small style="color: #93c5fd; font-size: 0.75rem;">Respiro estratégico para tarefas longas.</small>
+                    <div class="pausa-meio">
+                        <b class="texto-pausa-meio">💧 ${horaPausaMeio} Pausa de Foco (10 min)</b><br>
+                        <small class="descricao-pausa-meio">Respiro estratégico para tarefas longas.</small>
                     </div>`
 
         tempoTotalGasto += 10
@@ -245,9 +301,9 @@ function otimizarDia() {
     if (tempoTotalGasto + 15 <= limiteMinutos) {
       let horaPausaFim = formatarHoraTrabalho(horas * 60 + minutos)
       htmlGerado += `
-                <div style="margin: 5px 0 15px 70px; padding: 10px 15px; border-left: 4px solid #10b981; background: rgba(16, 185, 129, 0.15); border-radius: 8px;">
-                    <b style="color: #10b981;">☕ ${horaPausaFim} Descanso de Conclusão (15 min)</b><br>
-                    <small style="color: #34d399; font-size: 0.75rem;">Tarefa concluída. Recarregue para a próxima.</small>
+                <div class="pausa-fim">
+                    <b class="texto-pausa-fim">☕ ${horaPausaFim} Descanso de Conclusão (15 min)</b><br>
+                    <small class="descricao-pausa-fim">Tarefa concluída. Recarregue para a próxima.</small>
                 </div>`
 
       tempoTotalGasto += 15
@@ -261,4 +317,102 @@ function otimizarDia() {
 
   htmlGerado += `</div>`
   containerLista.innerHTML = htmlGerado
+
+  // Adiciona botão para enviar ao WhatsApp
+  const botaoWhatsApp = `<button onclick="enviarParaWhatsApp()" style="margin-top: 16px; background: #25d366; color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer;">📱 Enviar para WhatsApp</button>`
+  containerLista.innerHTML += botaoWhatsApp
+
+  // Salva configurações
+  configuracoes.cronotipo = turno
+  configuracoes.limiteHoras = limiteMinutos / 60
+  salvarDadosUsuario()
+}
+
+function enviarParaWhatsApp() {
+  if (listaTarefas.length === 0) return alert('Gere a agenda primeiro!')
+
+  const limiteMinutos =
+    (parseInt(document.getElementById('limite-horas').value) || 6) * 60
+  const turno = document.getElementById('cronotipo-usuario').value
+
+  let horas, minutos
+  if (turno === '3') {
+    horas = 8
+    minutos = 0
+  } else if (turno === '9') {
+    horas = 13
+    minutos = 0
+  } else if (turno === '15') {
+    horas = 19
+    minutos = 0
+  } else {
+    const agora = new Date()
+    horas = agora.getHours()
+    minutos = agora.getMinutes()
+  }
+
+  let tempoTotalGasto = 0
+  let mensagem = `🕒 Minha Agenda Otimizada - ${dadosUsuario.nome}\n\n`
+
+  const tarefasOrdenadas = [...listaTarefas].sort((a, b) => b.peso - a.peso)
+
+  tarefasOrdenadas.forEach(t => {
+    let tempoRestanteNoDia = limiteMinutos - tempoTotalGasto
+    if (tempoRestanteNoDia <= 0) return
+
+    let tempoDaTarefaOriginal = t.tempo
+    let tempoExecutadoDestaTarefa = 0
+
+    while (tempoDaTarefaOriginal > 0 && tempoTotalGasto < limiteMinutos) {
+      let blocoTrabalho =
+        tempoDaTarefaOriginal > 60 ? 50 : tempoDaTarefaOriginal
+      if (tempoTotalGasto + blocoTrabalho > limiteMinutos) {
+        blocoTrabalho = limiteMinutos - tempoTotalGasto
+      }
+      if (blocoTrabalho <= 0) break
+
+      let horaInicioStr = formatarHoraTrabalho(horas * 60 + minutos)
+      mensagem += `${horaInicioStr} - ${t.nome} ${tempoExecutadoDestaTarefa > 0 ? '(Continuação)' : ''} (${blocoTrabalho}min)\n`
+
+      tempoTotalGasto += blocoTrabalho
+      tempoDaTarefaOriginal -= blocoTrabalho
+      tempoExecutadoDestaTarefa += blocoTrabalho
+      minutos += blocoTrabalho
+      while (minutos >= 60) {
+        minutos -= 60
+        horas++
+      }
+
+      if (tempoDaTarefaOriginal > 0 && tempoTotalGasto + 10 <= limiteMinutos) {
+        let horaPausaMeio = formatarHoraTrabalho(horas * 60 + minutos)
+        mensagem += `${horaPausaMeio} - 💧 Pausa de Foco (10min)\n`
+        tempoTotalGasto += 10
+        minutos += 10
+        while (minutos >= 60) {
+          minutos -= 60
+          horas++
+        }
+      }
+    }
+
+    if (tempoTotalGasto + 15 <= limiteMinutos) {
+      let horaPausaFim = formatarHoraTrabalho(horas * 60 + minutos)
+      mensagem += `${horaPausaFim} - ☕ Descanso de Conclusão (15min)\n`
+      tempoTotalGasto += 15
+      minutos += 15
+      while (minutos >= 60) {
+        minutos -= 60
+        horas++
+      }
+    }
+  })
+
+  mensagem += `\n📅 Gerado pelo Chronos-Ultra`
+
+  // Codifica a mensagem para URL
+  const mensagemCodificada = encodeURIComponent(mensagem)
+  const urlWhatsApp = `https://wa.me/?text=${mensagemCodificada}`
+
+  // Abre o WhatsApp
+  window.open(urlWhatsApp, '_blank')
 }
