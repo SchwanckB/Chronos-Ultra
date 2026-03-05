@@ -55,3 +55,31 @@ export function limparConcluidas() {
 export function limparTodas() {
   listaTarefas.length = 0
 }
+
+/**
+ * Retorna uma sugestão de peso/tempo com base em tarefas anteriores cujo
+ * nome contenha o texto informado (case‑insensitive). A média é arredondada
+ * para facilitar a entrada.
+ *
+ * @param {string} nome - texto digitado pelo usuário
+ * @returns {{peso:number, tempo:number}|null}
+ */
+export function obterSugestaoPorNome(nome) {
+  const chave = nome.trim().toLowerCase()
+  if (!chave) return null
+
+  const correspondentes = listaTarefas.filter(t =>
+    t.nome.toLowerCase().includes(chave)
+  )
+  if (correspondentes.length === 0) return null
+
+  const pesoMedio =
+    correspondentes.reduce((s, t) => s + t.peso, 0) / correspondentes.length
+  const tempoMedio =
+    correspondentes.reduce((s, t) => s + t.tempo, 0) / correspondentes.length
+
+  return {
+    peso: Math.round(pesoMedio * 10) / 10,
+    tempo: Math.round(tempoMedio)
+  }
+}

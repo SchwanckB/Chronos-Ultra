@@ -16,6 +16,20 @@ if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('btn-iniciar')
     if (btn) btn.addEventListener('click', entrarNoSistema)
+
+    // formulário auxilia na captura do Enter sem refresh
+    const form = document.getElementById('dados-usuario')
+    if (form) {
+      form.addEventListener('submit', event => {
+        event.preventDefault()
+        entrarNoSistema()
+      })
+    }
+
+    // liga sugestões inteligentes de tarefas
+    if (ui && typeof ui.inicializarSugestoes === 'function') {
+      ui.inicializarSugestoes()
+    }
   })
 }
 export function entrarNoSistema() {

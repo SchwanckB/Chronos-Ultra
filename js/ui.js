@@ -1,10 +1,43 @@
 import { obterEnergia } from './algoritmo.js'
+import * as tarefas from './tarefas.js' // necessário para sugestões automáticas
 
 let graficoInstancia = null
 let graficoLivreInstancia = null
 
 export function atualizarSaudacao(nome) {
   document.getElementById('saudacao-nome').innerText = `Olá, ${nome}!`
+}
+
+/**
+ * Anexa ouvintes aos campos de tarefa para sugerir peso/tempo baseado em
+ * entradas anteriores. Chamado no carregamento da página.
+ */
+export function inicializarSugestoes() {
+  const nomeInput = document.getElementById('nome-tarefa')
+  const pesoInput = document.getElementById('peso-tarefa')
+  const tempoInput = document.getElementById('tempo-tarefa')
+  const info = document.getElementById('sugestao-tarefa')
+  if (!nomeInput || !pesoInput || !tempoInput || !info) return
+
+  // ao tirar o foco mostramos a sugestão, se houver; ao digitar começamos limpo
+  nomeInput.addEventListener('blur', () => {
+    const valor = nomeInput.value.trim()
+    if (!valor) {
+      info.innerText = ''
+      return
+    }
+    const sugestao = tarefas.obterSugestaoPorNome(valor)
+    if (sugestao) {
+      pesoInput.value = sugestao.peso
+      tempoInput.value = sugestao.tempo
+      info.innerText = `Sugestão: peso ${sugestao.peso}, tempo ${sugestao.tempo} min` // eslint-disable-line no-useless-escape
+    } else {
+      info.innerText = ''
+    }
+  })
+  nomeInput.addEventListener('input', () => {
+    if (info) info.innerText = ''
+  })
 }
 
 export function atualizarEstatisticasBio(focoMaximo) {
@@ -161,6 +194,8 @@ export function limparInterface() {
   document.getElementById('nome-tarefa').value = ''
   document.getElementById('peso-tarefa').value = ''
   document.getElementById('tempo-tarefa').value = ''
+  const info = document.getElementById('sugestao-tarefa')
+  if (info) info.innerText = ''
 }
 
 export function transicionarParaTelaPrincipal() {

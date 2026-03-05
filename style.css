@@ -147,6 +147,16 @@ button {
   transition: all 0.2s;
 }
 
+/* texto pequeno exibido abaixo do campo de nome de tarefa quando há sugestão */
+.sugestao-tarefa {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  display: block;
+  min-height: 1.2em;
+  margin-top: -12px;
+  margin-bottom: 8px;
+}
+
 label {
   display: block;
   margin-bottom: 8px;
