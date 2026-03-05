@@ -99,6 +99,16 @@ main {
   -webkit-text-fill-color: transparent;
 }
 
+/* logo acima do título na tela de boas-vindas */
+.logo-central {
+  width: 100%;
+  max-width: 90px;
+  height: auto;
+  margin: 0 auto 16px;
+  display: block;
+  object-fit: contain;
+}
+
 /* --------------------------------------------------------------------------
    4. Layout em grade (cards de cronotipo, inventário e agenda)
    -------------------------------------------------------------------------- */
