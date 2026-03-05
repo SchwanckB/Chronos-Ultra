@@ -103,11 +103,17 @@ main {
 /* logo acima do título na tela de boas-vindas */
 .logo-central {
   width: 100%;
-  max-width: 90px;
+  max-width: 120px;           /* ampliado ligeiramente para melhor visibilidade */
   height: auto;
   margin: 0 auto 16px;
   display: block;
   object-fit: contain;
+}
+
+@media (max-width: 600px) {
+  .logo-central {
+    max-width: 90px;         /* mantém menor em telas pequenas */
+  }
 }
 
 /* --------------------------------------------------------------------------
