@@ -3,25 +3,38 @@ import * as tarefas from './tarefas.js'
 import * as ui from './ui.js'
 import * as alg from './algoritmo.js'
 
+console.log('app.js carregado')
+
 // estado da aplicação
 let dadosUsuario = { nome: '', idade: 0, focoMaximo: 0 }
 let configuracoes = { cronotipo: '3', limiteHoras: 6 }
 
 // --- funções exportadas como API de interação com HTML ---
+
+// ligado no carregamento da página para garantir que o botão exista
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('btn-iniciar')
+    if (btn) btn.addEventListener('click', entrarNoSistema)
+  })
+}
 export function entrarNoSistema() {
+  console.log('entra: iniciar otimização chamada')
   const inputNome = document.getElementById('seu-nome')
   const inputIdade = document.getElementById('sua-idade')
 
   const nome = inputNome.value.trim()
   const idade = parseInt(inputIdade.value)
+  console.log('dados fornecidos:', { nome, idade, raw: inputIdade.value })
 
   if (!nome || !idade || isNaN(idade)) {
+    console.log('falha na validação de entrada', { nome, idade })
     return alert('Por favor, preencha corretamente seu nome e idade!')
   }
 
   const dadosSalvos = storage.carregarDadosUsuario(nome)
   if (dadosSalvos) {
-    tarefas.listaTarefas = dadosSalvos.listaTarefas || []
+    tarefas.definirLista(dadosSalvos.listaTarefas || [])
     dadosUsuario = dadosSalvos.dadosUsuario || dadosUsuario
     configuracoes = dadosSalvos.configuracoes || configuracoes
   }
@@ -42,14 +55,23 @@ export function entrarNoSistema() {
   })
   ui.transicionarParaTelaPrincipal()
 
-  setTimeout(() => ui.renderizarGrafico(parseInt(configuracoes.cronotipo)), 50)
+  setTimeout(() => atualizarGraficos(), 50)
 }
 
 export function renderizarGrafico() {
+  atualizarGraficos()
+}
+
+// recalcula energias e tempo livre
+export function atualizarGraficos() {
   const compensacao = parseInt(
     document.getElementById('cronotipo-usuario').value
   )
   ui.renderizarGrafico(compensacao)
+  const limiteMinutos =
+    (parseInt(document.getElementById('limite-horas').value) || 6) * 60
+  const usado = tarefas.filtrarAtivas().reduce((sum, t) => sum + t.tempo, 0)
+  ui.renderizarGraficoLivre(usado, limiteMinutos)
 }
 
 // expõe funções para HTML
@@ -71,13 +93,14 @@ export function trocarUsuario() {
     dadosUsuario,
     configuracoes
   )
-  tarefas.listaTarefas = []
+  tarefas.limparTodas()
   dadosUsuario = { nome: '', idade: 0, focoMaximo: 0 }
   configuracoes = { cronotipo: '3', limiteHoras: 6 }
   document.getElementById('seu-nome').value = ''
   document.getElementById('sua-idade').value = ''
   ui.limparInterface()
   ui.transicionarParaTelaInicial()
+  atualizarGraficos()
 }
 
 export function adicionarTarefa() {
@@ -110,6 +133,7 @@ export function adicionarTarefa() {
     dadosUsuario,
     configuracoes
   )
+  atualizarGraficos()
 }
 
 export function excluirTarefa(id) {
@@ -125,6 +149,7 @@ export function excluirTarefa(id) {
     dadosUsuario,
     configuracoes
   )
+  atualizarGraficos()
 }
 
 export function toggleConcluidaTarefa(id) {
@@ -140,6 +165,7 @@ export function toggleConcluidaTarefa(id) {
     dadosUsuario,
     configuracoes
   )
+  atualizarGraficos()
 }
 
 export function editarTarefa(id) {
@@ -169,6 +195,7 @@ export function editarTarefa(id) {
     dadosUsuario,
     configuracoes
   )
+  atualizarGraficos()
 }
 
 export function limparConcluidas() {
@@ -184,6 +211,7 @@ export function limparConcluidas() {
     dadosUsuario,
     configuracoes
   )
+  atualizarGraficos()
 }
 
 export function limparTodas() {
@@ -200,6 +228,7 @@ export function limparTodas() {
     dadosUsuario,
     configuracoes
   )
+  atualizarGraficos()
 }
 
 export function otimizarDia() {
@@ -236,6 +265,7 @@ export function otimizarDia() {
     dadosUsuario,
     configuracoes
   )
+  atualizarGraficos()
 }
 
 export function enviarParaWhatsApp() {
@@ -255,10 +285,3 @@ export function enviarParaWhatsApp() {
   const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(mensagem)}`
   window.open(urlWhatsApp, '_blank')
 }
-
-// expõe funções para HTML
-window.entrarNoSistema = entrarNoSistema
-window.trocarUsuario = trocarUsuario
-window.adicionarTarefa = adicionarTarefa
-window.otimizarDia = otimizarDia
-window.enviarParaWhatsApp = enviarParaWhatsApp

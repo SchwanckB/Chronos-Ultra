@@ -1,6 +1,7 @@
 import { obterEnergia } from './algoritmo.js'
 
 let graficoInstancia = null
+let graficoLivreInstancia = null
 
 export function atualizarSaudacao(nome) {
   document.getElementById('saudacao-nome').innerText = `Olá, ${nome}!`
@@ -108,6 +109,38 @@ export function renderizarGrafico(compensacao) {
         }
       },
       plugins: { legend: { display: false }, tooltip: { enabled: false } }
+    }
+  })
+}
+
+export function renderizarGraficoLivre(utilizado, limite) {
+  const ctx = document.getElementById('grafico-livre').getContext('2d')
+  if (graficoLivreInstancia) graficoLivreInstancia.destroy()
+  const livre = Math.max(0, limite - utilizado)
+  graficoLivreInstancia = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Ocupado', 'Livre'],
+      datasets: [
+        {
+          data: [utilizado, livre],
+          backgroundColor: ['#f87171', '#34d399'],
+          hoverBackgroundColor: ['#f87171', '#34d399'],
+          borderWidth: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '70%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#94a3b8', boxWidth: 12 }
+        },
+        tooltip: { enabled: true }
+      }
     }
   })
 }

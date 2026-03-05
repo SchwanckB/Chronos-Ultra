@@ -26,6 +26,16 @@ body {
   box-sizing: border-box;
 }
 
+main {
+  width: 100%;
+  max-width: 900px;
+  padding-top: 20px;
+}
+
+#tela-principal {
+  padding-top: 24px;
+}
+
 /* --------------------------------------------------------------------------
    2. Sistema de telas (SPA)
    -------------------------------------------------------------------------- */
@@ -375,7 +385,7 @@ button:active {
 
 .botoes-tarefa {
   display: flex;
-  gap: 4px;
+  gap: 8px; /* aumentar espaçamento entre botões */
 }
 
 .botao-editar,
