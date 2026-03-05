@@ -11,32 +11,69 @@ export function atualizarEstatisticasBio(focoMaximo) {
     `🧬 Foco Ideal: <b>${focoMaximo} min</b>`
 }
 
-export function atualizarListaNaTela(listaTarefas, excluirCallback) {
+export function atualizarListaNaTela(listaTarefas, callbacks) {
+  // callbacks: { excluir, editar, toggleConcluida }
   const divLista = document.getElementById('lista-de-tarefas')
   if (listaTarefas.length === 0) {
     divLista.innerHTML = ''
+    atualizarResumoInventario(listaTarefas)
     return
   }
+  // ao longo deste método também atualizamos o resumo
 
   divLista.innerHTML = listaTarefas
-    .map(
-      t => `
-            <div class="item-tarefa">
+    .map(t => {
+      const classes = ['item-tarefa']
+      if (t.concluida) classes.push('tarefa-concluida')
+      return `
+            <div class="${classes.join(' ')}">
                 <strong class="nome-tarefa">${t.nome}</strong>
                 <span class="item-tarefa-detalhes">Peso: ${t.peso} | ${t.tempo} min</span>
-                <button class="botao-excluir" data-id="${t.id}">🗑️</button>
+                <div class="botoes-tarefa">
+                    <button class="botao-concluir" data-id="${t.id}">${
+                      t.concluida ? '↺' : '✅'
+                    }</button>
+                    <button class="botao-editar" data-id="${t.id}">✏️</button>
+                    <button class="botao-excluir" data-id="${t.id}">🗑️</button>
+                </div>
             </div>
         `
-    )
+    })
     .join('')
 
-  // anexar listeners do botão de excluir
+  // anexar listeners dos botões
   divLista.querySelectorAll('.botao-excluir').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = parseInt(btn.getAttribute('data-id'))
-      excluirCallback(id)
+      callbacks.excluir(id)
     })
   })
+  divLista.querySelectorAll('.botao-editar').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.getAttribute('data-id'))
+      callbacks.editar(id)
+    })
+  })
+  divLista.querySelectorAll('.botao-concluir').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.getAttribute('data-id'))
+      callbacks.toggleConcluida(id)
+    })
+  })
+
+  // atualiza resumo sempre que a lista muda
+  atualizarResumoInventario(listaTarefas)
+}
+
+// mostra resumo de quantidade, minutos e concluídas
+export function atualizarResumoInventario(lista) {
+  const resumo = document.getElementById('resumo-inventario')
+  if (!resumo) return
+  const totalMinutos = lista.reduce((sum, t) => sum + t.tempo, 0)
+  const concluidas = lista.filter(t => t.concluida).length
+  resumo.innerText = `Total: ${lista.length} tarefa(s), ${totalMinutos} min${
+    concluidas ? ` (${concluidas} concluída${concluidas > 1 ? 's' : ''})` : ''
+  }`
 }
 
 export function renderizarGrafico(compensacao) {
@@ -82,6 +119,10 @@ export function mostrarResultado(html) {
 
 export function limparInterface() {
   document.getElementById('lista-de-tarefas').innerHTML = ''
+  const resumoInv = document.getElementById('resumo-inventario')
+  if (resumoInv) resumoInv.innerText = ''
+  const resumoAgenda = document.getElementById('resumo-agenda')
+  if (resumoAgenda) resumoAgenda.innerText = ''
   document.getElementById('resultado-otimizacao').innerHTML =
     '<p class="resultado-otimizacao-placeholder">Adicione tarefas acima e calcule sua agenda biológica.</p>'
   document.getElementById('nome-tarefa').value = ''

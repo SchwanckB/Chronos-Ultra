@@ -145,12 +145,26 @@
             </div>
 
             <button onclick="adicionarTarefa()">Adicionar Tarefa</button>
+            <div id="resumo-inventario" class="resumo-inventario"></div>
+            <div style="display: flex; gap: 8px">
+              <button onclick="limparConcluidas()" class="botao-pequeno">
+                Limpar concluídas
+              </button>
+              <button onclick="limparTodas()" class="botao-pequeno alerta">
+                Apagar tudo
+              </button>
+            </div>
             <div class="lista-tarefas" id="lista-de-tarefas"></div>
           </div>
 
           <div class="cartao">
             <h2>3. Agenda Otimizada</h2>
             <button onclick="otimizarDia()">GERAR HORÁRIOS PERFEITOS</button>
+            <div
+              id="resumo-agenda"
+              class="resumo-agenda"
+              style="margin-top: 16px; color: #94a3b8; font-size: 0.9rem"
+            ></div>
 
             <div id="resultado-otimizacao" style="margin-top: 24px">
               <p style="color: #94a3b8; text-align: center">

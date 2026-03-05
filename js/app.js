@@ -35,7 +35,11 @@ export function entrarNoSistema() {
   document.getElementById('cronotipo-usuario').value = configuracoes.cronotipo
   document.getElementById('limite-horas').value = configuracoes.limiteHoras
 
-  ui.atualizarListaNaTela(tarefas.listaTarefas, excluirTarefa)
+  ui.atualizarListaNaTela(tarefas.listaTarefas, {
+    excluir: excluirTarefa,
+    editar: editarTarefa,
+    toggleConcluida: toggleConcluidaTarefa
+  })
   ui.transicionarParaTelaPrincipal()
 
   setTimeout(() => ui.renderizarGrafico(parseInt(configuracoes.cronotipo)), 50)
@@ -52,6 +56,10 @@ export function renderizarGrafico() {
 window.entrarNoSistema = entrarNoSistema
 window.trocarUsuario = trocarUsuario
 window.adicionarTarefa = adicionarTarefa
+window.editarTarefa = editarTarefa
+window.toggleConcluidaTarefa = toggleConcluidaTarefa
+window.limparConcluidas = limparConcluidas
+window.limparTodas = limparTodas
 window.otimizarDia = otimizarDia
 window.enviarParaWhatsApp = enviarParaWhatsApp
 window.renderizarGrafico = renderizarGrafico
@@ -91,7 +99,11 @@ export function adicionarTarefa() {
   document.getElementById('peso-tarefa').value = ''
   document.getElementById('tempo-tarefa').value = ''
 
-  ui.atualizarListaNaTela(tarefas.listaTarefas, excluirTarefa)
+  ui.atualizarListaNaTela(tarefas.listaTarefas, {
+    excluir: excluirTarefa,
+    editar: editarTarefa,
+    toggleConcluida: toggleConcluidaTarefa
+  })
   storage.salvarDadosUsuario(
     dadosUsuario.nome,
     tarefas.listaTarefas,
@@ -102,7 +114,86 @@ export function adicionarTarefa() {
 
 export function excluirTarefa(id) {
   tarefas.excluir(id)
-  ui.atualizarListaNaTela(tarefas.listaTarefas, excluirTarefa)
+  ui.atualizarListaNaTela(tarefas.listaTarefas, {
+    excluir: excluirTarefa,
+    editar: editarTarefa,
+    toggleConcluida: toggleConcluidaTarefa
+  })
+  storage.salvarDadosUsuario(
+    dadosUsuario.nome,
+    tarefas.listaTarefas,
+    dadosUsuario,
+    configuracoes
+  )
+}
+
+export function toggleConcluidaTarefa(id) {
+  tarefas.toggleConcluida(id)
+  ui.atualizarListaNaTela(tarefas.listaTarefas, {
+    excluir: excluirTarefa,
+    editar: editarTarefa,
+    toggleConcluida: toggleConcluidaTarefa
+  })
+  storage.salvarDadosUsuario(
+    dadosUsuario.nome,
+    tarefas.listaTarefas,
+    dadosUsuario,
+    configuracoes
+  )
+}
+
+export function editarTarefa(id) {
+  const t = tarefas.listaTarefas.find(x => x.id === id)
+  if (!t) return
+  const novoNome = prompt('Nome da tarefa', t.nome)
+  if (novoNome === null) return
+  const novoPeso = prompt('Peso (1-10)', t.peso)
+  if (novoPeso === null) return
+  const novoTempo = prompt('Tempo em minutos', t.tempo)
+  if (novoTempo === null) return
+
+  tarefas.editar(id, {
+    nome: novoNome.trim() || t.nome,
+    peso: parseFloat(novoPeso) || t.peso,
+    tempo: parseFloat(novoTempo) || t.tempo
+  })
+
+  ui.atualizarListaNaTela(tarefas.listaTarefas, {
+    excluir: excluirTarefa,
+    editar: editarTarefa,
+    toggleConcluida: toggleConcluidaTarefa
+  })
+  storage.salvarDadosUsuario(
+    dadosUsuario.nome,
+    tarefas.listaTarefas,
+    dadosUsuario,
+    configuracoes
+  )
+}
+
+export function limparConcluidas() {
+  tarefas.limparConcluidas()
+  ui.atualizarListaNaTela(tarefas.listaTarefas, {
+    excluir: excluirTarefa,
+    editar: editarTarefa,
+    toggleConcluida: toggleConcluidaTarefa
+  })
+  storage.salvarDadosUsuario(
+    dadosUsuario.nome,
+    tarefas.listaTarefas,
+    dadosUsuario,
+    configuracoes
+  )
+}
+
+export function limparTodas() {
+  if (!confirm('Deseja realmente apagar todas as tarefas?')) return
+  tarefas.limparTodas()
+  ui.atualizarListaNaTela(tarefas.listaTarefas, {
+    excluir: excluirTarefa,
+    editar: editarTarefa,
+    toggleConcluida: toggleConcluidaTarefa
+  })
   storage.salvarDadosUsuario(
     dadosUsuario.nome,
     tarefas.listaTarefas,
@@ -120,12 +211,22 @@ export function otimizarDia() {
     (parseInt(document.getElementById('limite-horas').value) || 6) * 60
   const turno = document.getElementById('cronotipo-usuario').value
 
-  const tarefasOrdenadas = tarefas.ordenarPorPeso()
-  const html = alg.gerarAgendaHTML(tarefasOrdenadas, limiteMinutos, turno)
+  // só considera tarefas ativas (não concluídas)
+  const tarefasOrdenadas = tarefas
+    .filtrarAtivas()
+    .sort((a, b) => b.peso - a.peso)
+  const resultado = alg.gerarAgendaHTML(tarefasOrdenadas, limiteMinutos, turno)
   ui.mostrarResultado(
-    html +
+    resultado.html +
       `<button onclick="enviarParaWhatsApp()" style="margin-top: 16px; background: #25d366; color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer;">📱 Enviar para WhatsApp</button>`
   )
+  const statsBox = document.getElementById('resumo-agenda')
+  if (statsBox) {
+    const livre = resultado.stats.limite - resultado.stats.utilizado
+    statsBox.innerText = `Usado: ${resultado.stats.utilizado} min; Livre: ${
+      livre >= 0 ? livre : 0
+    } min; Não agendadas: ${resultado.stats.naoAgendadas}`
+  }
 
   configuracoes.cronotipo = turno
   configuracoes.limiteHoras = limiteMinutos / 60
@@ -138,14 +239,15 @@ export function otimizarDia() {
 }
 
 export function enviarParaWhatsApp() {
-  if (tarefas.listaTarefas.length === 0) return alert('Gere a agenda primeiro!')
+  if (tarefas.filtrarAtivas().length === 0)
+    return alert('Gere a agenda primeiro!')
   const limiteMinutos =
     (parseInt(document.getElementById('limite-horas').value) || 6) * 60
   const turno = document.getElementById('cronotipo-usuario').value
   const nome = dadosUsuario.nome
 
   const mensagem = alg.gerarMensagemWhatsApp(
-    tarefas.ordenarPorPeso(),
+    tarefas.filtrarAtivas().sort((a, b) => b.peso - a.peso),
     limiteMinutos,
     turno,
     nome

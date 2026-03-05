@@ -26,7 +26,9 @@ body {
   box-sizing: border-box;
 }
 
-/* --- SISTEMA DE TELAS SPA --- */
+/* --------------------------------------------------------------------------
+   2. Sistema de telas (SPA)
+   -------------------------------------------------------------------------- */
 .tela {
   display: none;
   width: 100%;
@@ -61,7 +63,9 @@ body {
   }
 }
 
-/* --- ESTILOS GERAIS --- */
+/* --------------------------------------------------------------------------
+   3. Estilos gerais e cartões
+   -------------------------------------------------------------------------- */
 .cartao-boas-vindas {
   background: var(--cor-cartao);
   padding: 40px;
@@ -85,7 +89,9 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
-/* Layout em Grade Harmônica */
+/* --------------------------------------------------------------------------
+   4. Layout em grade (cards de cronotipo, inventário e agenda)
+   -------------------------------------------------------------------------- */
 .grade {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -112,7 +118,9 @@ h2 {
   margin-bottom: 16px;
 }
 
-/* Controles de Formulário */
+/* --------------------------------------------------------------------------
+   5. Controles de formulário (inputs, selects, botões)
+   -------------------------------------------------------------------------- */
 input,
 select,
 button {
@@ -173,7 +181,9 @@ button:active {
   transform: translateY(1px);
 }
 
-/* Cabeçalho do App */
+/* --------------------------------------------------------------------------
+   6. Cabeçalho do aplicativo (saudação, perfil)
+   -------------------------------------------------------------------------- */
 .cabecalho-usuario {
   display: flex;
   justify-content: space-between;
@@ -222,7 +232,35 @@ button:active {
   background: rgba(239, 68, 68, 0.1);
 }
 
-/* Tabela de Ajuda (Pesos) */
+/* resumo dentro do inventário de tarefas */
+.resumo-inventario {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  margin: 8px 0;
+}
+
+.resumo-agenda {
+  text-align: center;
+}
+
+/* botões menores usados em grupos secundários */
+.botao-pequeno {
+  flex: 1;
+  padding: 8px;
+  font-size: 0.85rem;
+  border-radius: 8px;
+}
+.botao-pequeno.alerta {
+  background: transparent;
+  color: var(--cor-alerta);
+  border: 1px solid var(--cor-alerta);
+}
+.botao-pequeno.alerta:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+/* --------------------------------------------------------------------------
+   7. Tabelas de ajuda/guia dentro do card de referência
+   -------------------------------------------------------------------------- */
 .tabela-ajuda {
   width: 100%;
   border-collapse: collapse;
@@ -249,7 +287,9 @@ button:active {
   border-bottom: none;
 }
 
-/* Lista de Tarefas */
+/* --------------------------------------------------------------------------
+   8. Lista de tarefas - inventário
+   -------------------------------------------------------------------------- */
 .lista-tarefas {
   max-height: 250px;
   overflow-y: auto;
@@ -315,7 +355,6 @@ button:active {
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
-
 .etiqueta-lazer {
   background: linear-gradient(135deg, #059669, var(--cor-sucesso));
   padding: 16px;
@@ -328,13 +367,43 @@ button:active {
   box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
 }
 
+/* estilos extras para tarefas concluídas e ações */
+.tarefa-concluida {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.botoes-tarefa {
+  display: flex;
+  gap: 4px;
+}
+
+.botao-editar,
+.botao-concluir {
+  background: transparent;
+  width: auto;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.botao-editar:hover,
+.botao-concluir:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 canvas {
   margin-top: 16px;
   width: 100% !important;
   max-height: 220px;
 }
 
-/* Ajustes Mobile Finos */
+/* --------------------------------------------------------------------------
+   9. Media queries / ajustes responsivos
+   -------------------------------------------------------------------------- */
 @media (max-width: 600px) {
   .cabecalho-usuario {
     flex-direction: column;
@@ -436,6 +505,12 @@ footer strong {
   display: flex;
   align-items: center;
   gap: 15px;
+}
+.bloco-tarefa.baixo-energia {
+  border-left: 4px solid #ef4444;
+}
+.bloco-tarefa.alto-energia {
+  border-left: 4px solid #10b981;
 }
 
 .horario-tarefa {
