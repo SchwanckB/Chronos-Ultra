@@ -7,7 +7,51 @@ console.log('app.js carregado')
 
 // estado da aplicação
 let dadosUsuario = { nome: '', idade: 0, focoMaximo: 0 }
-let configuracoes = { cronotipo: '3', limiteHoras: 6 }
+let configuracoes = {
+  limiteHoras: 6,
+  inicioDisponivel: '08:00',
+  fimDisponivel: '18:00'
+}
+
+function calcularCompensacaoPorIdade(idade) {
+  const idadeLimpa = Math.min(Math.max(idade, 10), 70)
+  return 3 + Math.round(((idadeLimpa - 10) / 60) * 12)
+}
+
+function parseHorario(horario) {
+  if (!horario) return null
+  const partes = horario.split(':').map(Number)
+  if (partes.length !== 2 || partes.some(Number.isNaN)) return null
+  return partes[0] * 60 + partes[1]
+}
+
+function obterDisponibilidade() {
+  const inicio = document.getElementById('inicio-disponivel')?.value
+  const fim = document.getElementById('fim-disponivel')?.value
+  const inicioMinutos = parseHorario(inicio)
+  const fimMinutos = parseHorario(fim)
+  if (
+    inicioMinutos === null ||
+    fimMinutos === null ||
+    fimMinutos <= inicioMinutos
+  )
+    return null
+  return {
+    inicio,
+    fim,
+    inicioMinutos,
+    fimMinutos,
+    disponivel: fimMinutos - inicioMinutos
+  }
+}
+
+function calcularLimiteDeTempo() {
+  const limiteHoras = parseInt(document.getElementById('limite-horas').value)
+  const limiteMinutos = (isNaN(limiteHoras) ? 6 : limiteHoras) * 60
+  const disponibilidade = obterDisponibilidade()
+  if (!disponibilidade) return limiteMinutos
+  return Math.min(limiteMinutos, disponibilidade.disponivel)
+}
 
 // --- funções exportadas como API de interação com HTML ---
 
@@ -59,8 +103,11 @@ export function entrarNoSistema() {
   ui.atualizarSaudacao(dadosUsuario.nome)
   ui.atualizarEstatisticasBio(dadosUsuario.focoMaximo)
 
-  document.getElementById('cronotipo-usuario').value = configuracoes.cronotipo
   document.getElementById('limite-horas').value = configuracoes.limiteHoras
+  const inicioCampo = document.getElementById('inicio-disponivel')
+  const fimCampo = document.getElementById('fim-disponivel')
+  if (inicioCampo) inicioCampo.value = configuracoes.inicioDisponivel || '08:00'
+  if (fimCampo) fimCampo.value = configuracoes.fimDisponivel || '18:00'
 
   ui.atualizarListaNaTela(tarefas.listaTarefas, {
     excluir: excluirTarefa,
@@ -78,12 +125,9 @@ export function renderizarGrafico() {
 
 // recalcula energias e tempo livre
 export function atualizarGraficos() {
-  const compensacao = parseInt(
-    document.getElementById('cronotipo-usuario').value
-  )
+  const compensacao = calcularCompensacaoPorIdade(dadosUsuario.idade || 25)
   ui.renderizarGrafico(compensacao)
-  const limiteMinutos =
-    (parseInt(document.getElementById('limite-horas').value) || 6) * 60
+  const limiteMinutos = calcularLimiteDeTempo()
   const usado = tarefas.filtrarAtivas().reduce((sum, t) => sum + t.tempo, 0)
   ui.renderizarGraficoLivre(usado, limiteMinutos)
 }
@@ -109,7 +153,11 @@ export function trocarUsuario() {
   )
   tarefas.limparTodas()
   dadosUsuario = { nome: '', idade: 0, focoMaximo: 0 }
-  configuracoes = { cronotipo: '3', limiteHoras: 6 }
+  configuracoes = {
+    limiteHoras: 6,
+    inicioDisponivel: '08:00',
+    fimDisponivel: '18:00'
+  }
   document.getElementById('seu-nome').value = ''
   document.getElementById('sua-idade').value = ''
   ui.limparInterface()
@@ -250,18 +298,29 @@ export function otimizarDia() {
   if (tarefas.listaTarefas.length === 0)
     return alert('Adicione tarefas ao inventário primeiro!')
 
-  const limiteMinutos =
-    (parseInt(document.getElementById('limite-horas').value) || 6) * 60
-  const turno = document.getElementById('cronotipo-usuario').value
+  const disponibilidade = obterDisponibilidade()
+  if (!disponibilidade)
+    return alert(
+      'Informe um período disponível válido: início e fim de trabalho.'
+    )
 
-  // só considera tarefas ativas (não concluídas)
+  const limiteHoras =
+    parseInt(document.getElementById('limite-horas').value) || 6
+  const limiteMinutos = Math.min(limiteHoras * 60, disponibilidade.disponivel)
+
   const tarefasOrdenadas = tarefas
     .filtrarAtivas()
     .sort((a, b) => b.peso - a.peso)
-  const resultado = alg.gerarAgendaHTML(tarefasOrdenadas, limiteMinutos, turno)
+  const compensacao = calcularCompensacaoPorIdade(dadosUsuario.idade || 25)
+  const resultado = alg.gerarAgendaHTML(
+    tarefasOrdenadas,
+    limiteMinutos,
+    disponibilidade.inicioMinutos,
+    compensacao
+  )
   ui.mostrarResultado(
     resultado.html +
-      `<button onclick="enviarParaWhatsApp()" style="margin-top: 16px; background: #25d366; color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer;">📱 Enviar para WhatsApp</button>`
+      '<button class="botao-whatsapp" onclick="enviarParaWhatsApp()">📱 Enviar para WhatsApp</button>'
   )
   const statsBox = document.getElementById('resumo-agenda')
   if (statsBox) {
@@ -271,8 +330,9 @@ export function otimizarDia() {
     } min; Não agendadas: ${resultado.stats.naoAgendadas}`
   }
 
-  configuracoes.cronotipo = turno
-  configuracoes.limiteHoras = limiteMinutos / 60
+  configuracoes.limiteHoras = limiteHoras
+  configuracoes.inicioDisponivel = disponibilidade.inicio
+  configuracoes.fimDisponivel = disponibilidade.fim
   storage.salvarDadosUsuario(
     dadosUsuario.nome,
     tarefas.listaTarefas,
@@ -285,15 +345,22 @@ export function otimizarDia() {
 export function enviarParaWhatsApp() {
   if (tarefas.filtrarAtivas().length === 0)
     return alert('Gere a agenda primeiro!')
-  const limiteMinutos =
-    (parseInt(document.getElementById('limite-horas').value) || 6) * 60
-  const turno = document.getElementById('cronotipo-usuario').value
+
+  const disponibilidade = obterDisponibilidade()
+  if (!disponibilidade)
+    return alert('Informe um período disponível válido antes de enviar.')
+
+  const limiteHoras =
+    parseInt(document.getElementById('limite-horas').value) || 6
+  const limiteMinutos = Math.min(limiteHoras * 60, disponibilidade.disponivel)
   const nome = dadosUsuario.nome
+  const compensacao = calcularCompensacaoPorIdade(dadosUsuario.idade || 25)
 
   const mensagem = alg.gerarMensagemWhatsApp(
     tarefas.filtrarAtivas().sort((a, b) => b.peso - a.peso),
     limiteMinutos,
-    turno,
+    disponibilidade.inicioMinutos,
+    compensacao,
     nome
   )
   const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(mensagem)}`

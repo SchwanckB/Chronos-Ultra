@@ -9,47 +9,31 @@ export function formatarHoraTrabalho(minutosTotais) {
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
 }
 
-export function gerarAgendaHTML(tarefasOrdenadas, limiteMinutos, turno) {
-  // define horário inicial com base no cronotipo ou hora atual
-  let horas, minutos
-  if (turno === '3') {
-    horas = 8
-    minutos = 0
-  } else if (turno === '9') {
-    horas = 13
-    minutos = 0
-  } else if (turno === '15') {
-    horas = 19
-    minutos = 0
-  } else {
-    const agora = new Date()
-    horas = agora.getHours()
-    minutos = agora.getMinutes()
-  }
-
+export function gerarAgendaHTML(
+  tarefasOrdenadas,
+  limiteMinutos,
+  inicioMinutos,
+  compensacao
+) {
   let tempoTotalGasto = 0
   let htmlGerado = `<div class="agenda-container">`
 
   // cópia para manipular tempos restantes
   let fila = tarefasOrdenadas.map(t => ({ ...t }))
+  let horaAtual = inicioMinutos
 
   while (tempoTotalGasto < limiteMinutos && fila.length > 0) {
-    // calcula energia atual (0–100) para dar preferência a horários bons
-    const energy = obterEnergia(horas + minutos / 60, parseInt(turno))
-
-    // escolhe a tarefa com maior "score" = peso/tempo * energia
-    fila.sort((a, b) => b.peso / b.tempo - a.peso / a.tempo) // energy é constante aqui
+    // escolhe a tarefa com maior "score" = peso/tempo
+    fila.sort((a, b) => b.peso / b.tempo - a.peso / a.tempo)
     const t = fila[0]
     if (!t) break
 
-    // quantos minutos ainda posso dedicar a esta tarefa
     let tempoRestanteNoDia = limiteMinutos - tempoTotalGasto
     if (tempoRestanteNoDia <= 0) break
 
     let tempoDaTarefaOriginal = t.tempo
     let tempoExecutadoDestaTarefa = 0
 
-    // bloco de trabalho dividido em fatias de no máximo 50min
     while (tempoDaTarefaOriginal > 0 && tempoTotalGasto < limiteMinutos) {
       let blocoTrabalho =
         tempoDaTarefaOriginal > 60 ? 50 : tempoDaTarefaOriginal
@@ -58,8 +42,8 @@ export function gerarAgendaHTML(tarefasOrdenadas, limiteMinutos, turno) {
       }
       if (blocoTrabalho <= 0) break
 
-      let horaInicioStr = formatarHoraTrabalho(horas * 60 + minutos)
-      const energyBlock = obterEnergia(horas + minutos / 60, parseInt(turno))
+      let horaInicioStr = formatarHoraTrabalho(horaAtual)
+      const energyBlock = obterEnergia(horaAtual / 60, compensacao)
       let energyClass = ''
       if (energyBlock < 40) energyClass = ' baixo-energia'
       else if (energyBlock > 70) energyClass = ' alto-energia'
@@ -80,14 +64,10 @@ export function gerarAgendaHTML(tarefasOrdenadas, limiteMinutos, turno) {
       tempoTotalGasto += blocoTrabalho
       tempoDaTarefaOriginal -= blocoTrabalho
       tempoExecutadoDestaTarefa += blocoTrabalho
-      minutos += blocoTrabalho
-      while (minutos >= 60) {
-        minutos -= 60
-        horas++
-      }
+      horaAtual += blocoTrabalho
 
       if (tempoDaTarefaOriginal > 0 && tempoTotalGasto + 10 <= limiteMinutos) {
-        let horaPausaMeio = formatarHoraTrabalho(horas * 60 + minutos)
+        let horaPausaMeio = formatarHoraTrabalho(horaAtual)
         htmlGerado += `
                     <div class="pausa-meio">
                         <b class="texto-pausa-meio">💧 ${
@@ -97,11 +77,7 @@ export function gerarAgendaHTML(tarefasOrdenadas, limiteMinutos, turno) {
                     </div>`
 
         tempoTotalGasto += 10
-        minutos += 10
-        while (minutos >= 60) {
-          minutos -= 60
-          horas++
-        }
+        horaAtual += 10
       }
     }
 
@@ -113,7 +89,7 @@ export function gerarAgendaHTML(tarefasOrdenadas, limiteMinutos, turno) {
 
     // pausa de conclusão quando houver margem
     if (tempoTotalGasto + 15 <= limiteMinutos) {
-      let horaPausaFim = formatarHoraTrabalho(horas * 60 + minutos)
+      let horaPausaFim = formatarHoraTrabalho(horaAtual)
       htmlGerado += `
                 <div class="pausa-fim">
                     <b class="texto-pausa-fim">☕ ${
@@ -123,11 +99,7 @@ export function gerarAgendaHTML(tarefasOrdenadas, limiteMinutos, turno) {
                 </div>`
 
       tempoTotalGasto += 15
-      minutos += 15
-      while (minutos >= 60) {
-        minutos -= 60
-        horas++
-      }
+      horaAtual += 15
     }
   }
 
@@ -163,32 +135,17 @@ export function gerarAgendaHTML(tarefasOrdenadas, limiteMinutos, turno) {
 export function gerarMensagemWhatsApp(
   tarefasOrdenadas,
   limiteMinutos,
-  turno,
+  inicioMinutos,
+  compensacao,
   nome
 ) {
-  let horas, minutos
-  if (turno === '3') {
-    horas = 8
-    minutos = 0
-  } else if (turno === '9') {
-    horas = 13
-    minutos = 0
-  } else if (turno === '15') {
-    horas = 19
-    minutos = 0
-  } else {
-    const agora = new Date()
-    horas = agora.getHours()
-    minutos = agora.getMinutes()
-  }
-
   let tempoTotalGasto = 0
   let mensagem = `🕒 Minha Agenda Otimizada - ${nome}\n\n`
 
   let fila = tarefasOrdenadas.map(t => ({ ...t }))
+  let horaAtual = inicioMinutos
 
   while (tempoTotalGasto < limiteMinutos && fila.length > 0) {
-    const energy = obterEnergia(horas + minutos / 60, parseInt(turno))
     fila.sort((a, b) => b.peso / b.tempo - a.peso / a.tempo)
     const t = fila[0]
     if (!t) break
@@ -207,7 +164,7 @@ export function gerarMensagemWhatsApp(
       }
       if (blocoTrabalho <= 0) break
 
-      let horaInicioStr = formatarHoraTrabalho(horas * 60 + minutos)
+      let horaInicioStr = formatarHoraTrabalho(horaAtual)
       mensagem += `${horaInicioStr} - ${t.nome} ${
         tempoExecutadoDestaTarefa > 0 ? '(Continuação)' : ''
       } (${blocoTrabalho}min)\n`
@@ -215,21 +172,13 @@ export function gerarMensagemWhatsApp(
       tempoTotalGasto += blocoTrabalho
       tempoDaTarefaOriginal -= blocoTrabalho
       tempoExecutadoDestaTarefa += blocoTrabalho
-      minutos += blocoTrabalho
-      while (minutos >= 60) {
-        minutos -= 60
-        horas++
-      }
+      horaAtual += blocoTrabalho
 
       if (tempoDaTarefaOriginal > 0 && tempoTotalGasto + 10 <= limiteMinutos) {
-        let horaPausaMeio = formatarHoraTrabalho(horas * 60 + minutos)
+        let horaPausaMeio = formatarHoraTrabalho(horaAtual)
         mensagem += `${horaPausaMeio} - 💧 Pausa de Foco (10min)\n`
         tempoTotalGasto += 10
-        minutos += 10
-        while (minutos >= 60) {
-          minutos -= 60
-          horas++
-        }
+        horaAtual += 10
       }
     }
 
@@ -237,14 +186,10 @@ export function gerarMensagemWhatsApp(
     if (t.tempo <= 0) fila.shift()
 
     if (tempoTotalGasto + 15 <= limiteMinutos) {
-      let horaPausaFim = formatarHoraTrabalho(horas * 60 + minutos)
+      let horaPausaFim = formatarHoraTrabalho(horaAtual)
       mensagem += `${horaPausaFim} - ☕ Descanso de Conclusão (15min)\n`
       tempoTotalGasto += 15
-      minutos += 15
-      while (minutos >= 60) {
-        minutos -= 60
-        horas++
-      }
+      horaAtual += 15
     }
   }
 

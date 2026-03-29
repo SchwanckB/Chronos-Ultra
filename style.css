@@ -103,7 +103,7 @@ main {
 /* logo acima do título na tela de boas-vindas */
 .logo-central {
   width: 100%;
-  max-width: 120px;           /* ampliado ligeiramente para melhor visibilidade */
+  max-width: 120px; /* ampliado ligeiramente para melhor visibilidade */
   height: auto;
   margin: 0 auto 16px;
   display: block;
@@ -112,7 +112,7 @@ main {
 
 @media (max-width: 600px) {
   .logo-central {
-    max-width: 90px;         /* mantém menor em telas pequenas */
+    max-width: 90px; /* mantém menor em telas pequenas */
   }
 }
 
@@ -194,6 +194,68 @@ select:focus {
 }
 .grupo-inputs input {
   margin-bottom: 0;
+}
+
+.campo-disponibilidade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.descricao-boas-vindas,
+.descricao-cartao {
+  color: #94a3b8;
+  margin-bottom: 16px;
+}
+
+.grafico-livre {
+  margin-top: 16px;
+  max-height: 160px;
+}
+
+.titulo-secundario {
+  margin-top: 0;
+  color: #94a3b8;
+  font-size: 1rem;
+}
+
+.espacador-pequeno {
+  height: 15px;
+}
+
+.grupo-botoes-pequenos {
+  display: flex;
+  gap: 8px;
+}
+
+.resumo-agenda {
+  margin-top: 16px;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.resultado-otimizacao {
+  margin-top: 24px;
+}
+
+.placeholder-resultado {
+  color: #94a3b8;
+  text-align: center;
+}
+
+.botao-whatsapp {
+  margin-top: 16px;
+  background: #25d366;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.botao-whatsapp:hover {
+  filter: brightness(1.05);
 }
 
 button {
