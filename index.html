@@ -18,6 +18,10 @@
             src="img/logocentral.png"
             alt="Logo Chronos Ultra"
             class="logo-central"
+            onerror="
+              this.onerror = null
+              this.src = 'img/logo.png'
+            "
           />
           <h1>Chronos Ultra</h1>
           <p class="descricao-boas-vindas">
@@ -80,6 +84,21 @@
                 value="18:00"
                 onchange="renderizarGrafico()"
               />
+            </div>
+
+            <label class="label-checkbox">
+              <input type="checkbox" id="tem-interrupcoes" />
+              Tenho interrupções no período
+            </label>
+            <div id="interrupcoes-detalhes" class="interrupcoes-detalhes">
+              <div id="lista-interrupcoes" class="lista-interrupcoes"></div>
+              <button
+                type="button"
+                class="botao-pequeno"
+                id="btn-adicionar-interrupcao"
+              >
+                Adicionar interrupção
+              </button>
             </div>
 
             <label for="limite-horas">Horas de Trabalho Hoje:</label>

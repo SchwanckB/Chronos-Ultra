@@ -10,7 +10,8 @@ let dadosUsuario = { nome: '', idade: 0, focoMaximo: 0 }
 let configuracoes = {
   limiteHoras: 6,
   inicioDisponivel: '08:00',
-  fimDisponivel: '18:00'
+  fimDisponivel: '18:00',
+  interrupcoes: []
 }
 
 function calcularCompensacaoPorIdade(idade) {
@@ -25,6 +26,149 @@ function parseHorario(horario) {
   return partes[0] * 60 + partes[1]
 }
 
+function criarItemInterrupcaoDOM(interrupcao = {}) {
+  const container = document.createElement('div')
+  container.className = 'item-interrupcao'
+  const tipo = interrupcao.tipo || 'Almoço'
+  const tipos = ['Almoço', 'Reunião', 'Descanso', 'Outra']
+  const selectHtml = tipos
+    .map(
+      tipoAtual =>
+        `<option value="${tipoAtual}"${
+          tipoAtual === tipo ? ' selected' : ''
+        }>${tipoAtual}</option>`
+    )
+    .join('')
+
+  container.innerHTML = `
+    <div class="item-interrupcao-conteudo">
+      <label>Nome da interrupção</label>
+      <input class="interrupcao-nome" type="text" value="${
+        interrupcao.nome || ''
+      }" placeholder="Ex: Almoço" onchange="renderizarGrafico()" />
+
+      <label>Início</label>
+      <input class="interrupcao-inicio" type="time" value="${
+        interrupcao.inicio || '12:00'
+      }" onchange="renderizarGrafico()" />
+
+      <label>Fim</label>
+      <input class="interrupcao-fim" type="time" value="${
+        interrupcao.fim || '13:00'
+      }" onchange="renderizarGrafico()" />
+
+      <label>Tipo</label>
+      <select class="interrupcao-tipo" onchange="renderizarGrafico()">
+        ${selectHtml}
+      </select>
+    </div>
+    <button type="button" class="botao-remover-interrupcao">
+      Remover
+    </button>
+  `
+  return container
+}
+
+function carregarInterrupcoesNaTela(interrupcoes = []) {
+  const checkbox = document.getElementById('tem-interrupcoes')
+  const detalhes = document.getElementById('interrupcoes-detalhes')
+  const lista = document.getElementById('lista-interrupcoes')
+  if (!checkbox || !detalhes || !lista) return
+
+  checkbox.checked = interrupcoes.length > 0
+  detalhes.classList.toggle('ativa', checkbox.checked)
+  lista.innerHTML = ''
+
+  if (checkbox.checked) {
+    if (interrupcoes.length === 0) {
+      adicionarInterrupcaoNaTela()
+    } else {
+      interrupcoes.forEach(item => adicionarInterrupcaoNaTela(item))
+    }
+  }
+}
+
+function adicionarInterrupcaoNaTela(interrupcao = {}) {
+  const lista = document.getElementById('lista-interrupcoes')
+  if (!lista) return
+  lista.appendChild(criarItemInterrupcaoDOM(interrupcao))
+}
+
+function toggleInterrupcoesVisibilidade() {
+  const checkbox = document.getElementById('tem-interrupcoes')
+  const detalhes = document.getElementById('interrupcoes-detalhes')
+  if (!checkbox || !detalhes) return
+
+  detalhes.classList.toggle('ativa', checkbox.checked)
+  if (checkbox.checked && !document.querySelector('.item-interrupcao')) {
+    adicionarInterrupcaoNaTela()
+  }
+}
+
+function obterInterrupcoesDoDOM() {
+  const checkbox = document.getElementById('tem-interrupcoes')
+  if (!checkbox || !checkbox.checked) return []
+  const itens = Array.from(document.querySelectorAll('.item-interrupcao'))
+  return itens
+    .map(item => {
+      const nome = item.querySelector('.interrupcao-nome')?.value.trim() || ''
+      const inicio = item.querySelector('.interrupcao-inicio')?.value
+      const fim = item.querySelector('.interrupcao-fim')?.value
+      const tipo = item.querySelector('.interrupcao-tipo')?.value || 'Outra'
+      const inicioMinutos = parseHorario(inicio)
+      const fimMinutos = parseHorario(fim)
+      if (
+        inicioMinutos === null ||
+        fimMinutos === null ||
+        fimMinutos <= inicioMinutos
+      )
+        return null
+      return {
+        nome,
+        tipo,
+        inicio,
+        fim,
+        inicioMinutos,
+        fimMinutos
+      }
+    })
+    .filter(Boolean)
+}
+
+function normalizarInterrupcoes(interrupcoes, inicioMinutos, fimMinutos) {
+  const ordenadas = (interrupcoes || [])
+    .map(item => ({
+      inicioMinutos: Math.max(inicioMinutos, item.inicioMinutos),
+      fimMinutos: Math.min(fimMinutos, item.fimMinutos),
+      descricao: item.tipo
+        ? `${item.tipo}: ${item.nome || ''}`.trim()
+        : item.nome
+    }))
+    .filter(item => item.fimMinutos > item.inicioMinutos)
+    .sort((a, b) => a.inicioMinutos - b.inicioMinutos)
+
+  const resultado = []
+  let atual = null
+
+  ordenadas.forEach(item => {
+    if (!atual) {
+      atual = { ...item }
+      return
+    }
+    if (item.inicioMinutos <= atual.fimMinutos) {
+      atual.fimMinutos = Math.max(atual.fimMinutos, item.fimMinutos)
+      atual.descricao = atual.descricao
+        ? `${atual.descricao} / ${item.descricao}`
+        : item.descricao
+    } else {
+      resultado.push(atual)
+      atual = { ...item }
+    }
+  })
+  if (atual) resultado.push(atual)
+  return resultado
+}
+
 function obterDisponibilidade() {
   const inicio = document.getElementById('inicio-disponivel')?.value
   const fim = document.getElementById('fim-disponivel')?.value
@@ -36,12 +180,27 @@ function obterDisponibilidade() {
     fimMinutos <= inicioMinutos
   )
     return null
+
+  const interrupcoes = obterInterrupcoesDoDOM()
+  const interrupcoesNormalizadas = normalizarInterrupcoes(
+    interrupcoes,
+    inicioMinutos,
+    fimMinutos
+  )
+  const bloqueado = interrupcoesNormalizadas.reduce(
+    (sum, item) => sum + (item.fimMinutos - item.inicioMinutos),
+    0
+  )
+  const disponivel = Math.max(0, fimMinutos - inicioMinutos - bloqueado)
+
   return {
     inicio,
     fim,
     inicioMinutos,
     fimMinutos,
-    disponivel: fimMinutos - inicioMinutos
+    disponivel,
+    interrupcoes,
+    interrupcoesNormalizadas
   }
 }
 
@@ -73,6 +232,34 @@ if (typeof document !== 'undefined') {
     // liga sugestões inteligentes de tarefas
     if (ui && typeof ui.inicializarSugestoes === 'function') {
       ui.inicializarSugestoes()
+    }
+
+    const temInterrupcoes = document.getElementById('tem-interrupcoes')
+    if (temInterrupcoes) {
+      temInterrupcoes.addEventListener('change', () => {
+        toggleInterrupcoesVisibilidade()
+        renderizarGrafico()
+      })
+    }
+
+    const btnAddInterrupcao = document.getElementById(
+      'btn-adicionar-interrupcao'
+    )
+    if (btnAddInterrupcao) {
+      btnAddInterrupcao.addEventListener('click', () => {
+        adicionarInterrupcaoNaTela()
+        renderizarGrafico()
+      })
+    }
+
+    const listaInterrupcoes = document.getElementById('lista-interrupcoes')
+    if (listaInterrupcoes) {
+      listaInterrupcoes.addEventListener('click', event => {
+        if (event.target.matches('.botao-remover-interrupcao')) {
+          event.target.closest('.item-interrupcao')?.remove()
+          renderizarGrafico()
+        }
+      })
     }
   })
 }
@@ -108,6 +295,7 @@ export function entrarNoSistema() {
   const fimCampo = document.getElementById('fim-disponivel')
   if (inicioCampo) inicioCampo.value = configuracoes.inicioDisponivel || '08:00'
   if (fimCampo) fimCampo.value = configuracoes.fimDisponivel || '18:00'
+  carregarInterrupcoesNaTela(configuracoes.interrupcoes || [])
 
   ui.atualizarListaNaTela(tarefas.listaTarefas, {
     excluir: excluirTarefa,
@@ -156,7 +344,8 @@ export function trocarUsuario() {
   configuracoes = {
     limiteHoras: 6,
     inicioDisponivel: '08:00',
-    fimDisponivel: '18:00'
+    fimDisponivel: '18:00',
+    interrupcoes: []
   }
   document.getElementById('seu-nome').value = ''
   document.getElementById('sua-idade').value = ''
@@ -315,7 +504,7 @@ export function otimizarDia() {
   const resultado = alg.gerarAgendaHTML(
     tarefasOrdenadas,
     limiteMinutos,
-    disponibilidade.inicioMinutos,
+    disponibilidade,
     compensacao
   )
   ui.mostrarResultado(
@@ -333,6 +522,7 @@ export function otimizarDia() {
   configuracoes.limiteHoras = limiteHoras
   configuracoes.inicioDisponivel = disponibilidade.inicio
   configuracoes.fimDisponivel = disponibilidade.fim
+  configuracoes.interrupcoes = obterInterrupcoesDoDOM()
   storage.salvarDadosUsuario(
     dadosUsuario.nome,
     tarefas.listaTarefas,
@@ -359,7 +549,7 @@ export function enviarParaWhatsApp() {
   const mensagem = alg.gerarMensagemWhatsApp(
     tarefas.filtrarAtivas().sort((a, b) => b.peso - a.peso),
     limiteMinutos,
-    disponibilidade.inicioMinutos,
+    disponibilidade,
     compensacao,
     nome
   )
