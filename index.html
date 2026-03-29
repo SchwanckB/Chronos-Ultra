@@ -28,21 +28,23 @@
             Sincronize sua produtividade com a sua biologia.
           </p>
 
-          <input
-            type="text"
-            id="seu-nome"
-            placeholder="Qual o seu primeiro nome?"
-            autocomplete="off"
-          />
-          <input
-            type="number"
-            id="sua-idade"
-            placeholder="Sua idade (para calcular foco)"
-            min="10"
-            max="100"
-          />
+          <form id="dados-usuario">
+            <input
+              type="text"
+              id="seu-nome"
+              placeholder="Qual o seu primeiro nome?"
+              autocomplete="on"
+            />
+            <input
+              type="number"
+              id="sua-idade"
+              placeholder="Sua idade (para calcular foco)"
+              min="10"
+              max="100"
+            />
 
-          <button id="btn-iniciar">Iniciar Otimização</button>
+            <button id="btn-iniciar" type="submit">Iniciar Otimização</button>
+          </form>
         </div>
       </div>
 
@@ -64,7 +66,7 @@
 
         <div class="grade">
           <div class="cartao">
-            <h2>1. Foco Ideal</h2>
+            <h2>1. Janela de Trabalho</h2>
             <p class="descricao-cartao">
               Sua janela de trabalho será calculada automaticamente pelo foco
               ideal da sua idade.
@@ -111,7 +113,6 @@
               onchange="renderizarGrafico()"
             />
 
-            <canvas id="grafico-energia"></canvas>
             <canvas id="grafico-livre" class="grafico-livre"></canvas>
           </div>
           <div class="cartao">
@@ -170,30 +171,36 @@
             </div>
             <div class="inventario-no-guia">
               <h2>2. Inventário de Tarefas</h2>
-            <input
-              type="text"
-              id="nome-tarefa"
-              placeholder="Nome da tarefa (ex: Estudar Cálculo)"
-            />
-            <!-- campo para mostrar sugestão automática baseada em histórico -->
-            <small id="sugestao-tarefa" class="sugestao-tarefa"></small>
+              <form id="form-inventario-tarefas">
+                <input
+                  type="text"
+                  id="nome-tarefa"
+                  placeholder="Nome da tarefa (ex: Estudar Cálculo)"
+                />
+                <!-- campo para mostrar sugestão automática baseada em histórico -->
+                <small id="sugestao-tarefa" class="sugestao-tarefa"></small>
 
-            <div class="grupo-inputs">
-              <input type="number" id="peso-tarefa" placeholder="Peso (1-10)" />
-              <input type="number" id="tempo-tarefa" placeholder="Minutos" />
-            </div>
+                <div class="grupo-inputs">
+                  <input
+                    type="number"
+                    id="peso-tarefa"
+                    placeholder="Peso (1-10)"
+                  />
+                  <input type="number" id="tempo-tarefa" placeholder="Minutos" />
+                </div>
 
-            <button onclick="adicionarTarefa()">Adicionar Tarefa</button>
-            <div id="resumo-inventario" class="resumo-inventario"></div>
-            <div class="grupo-botoes-pequenos">
-              <button onclick="limparConcluidas()" class="botao-pequeno">
-                Limpar concluídas
-              </button>
-              <button onclick="limparTodas()" class="botao-pequeno alerta">
-                Apagar tudo
-              </button>
-            </div>
-            <div class="lista-tarefas" id="lista-de-tarefas"></div>
+                <button type="submit">Adicionar Tarefa</button>
+              </form>
+              <div id="resumo-inventario" class="resumo-inventario"></div>
+              <div class="grupo-botoes-pequenos">
+                <button onclick="limparConcluidas()" class="botao-pequeno">
+                  Limpar concluídas
+                </button>
+                <button onclick="limparTodas()" class="botao-pequeno alerta">
+                  Apagar tudo
+                </button>
+              </div>
+              <div class="lista-tarefas" id="lista-de-tarefas"></div>
             </div>
           </div>
 

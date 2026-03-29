@@ -229,6 +229,55 @@ if (typeof document !== 'undefined') {
       })
     }
 
+    const formInventario = document.getElementById('form-inventario-tarefas')
+    if (formInventario) {
+      formInventario.addEventListener('submit', event => {
+        event.preventDefault()
+        adicionarTarefa()
+      })
+    }
+
+    const inputNomeUsuario = document.getElementById('seu-nome')
+    const inputIdadeUsuario = document.getElementById('sua-idade')
+    if (inputNomeUsuario && inputIdadeUsuario) {
+      inputNomeUsuario.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          inputIdadeUsuario.focus()
+        }
+      })
+      inputIdadeUsuario.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          entrarNoSistema()
+        }
+      })
+    }
+
+    const inputNomeTarefa = document.getElementById('nome-tarefa')
+    const inputPesoTarefa = document.getElementById('peso-tarefa')
+    const inputTempoTarefa = document.getElementById('tempo-tarefa')
+    if (inputNomeTarefa && inputPesoTarefa && inputTempoTarefa) {
+      inputNomeTarefa.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          inputPesoTarefa.focus()
+        }
+      })
+      inputPesoTarefa.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          inputTempoTarefa.focus()
+        }
+      })
+      inputTempoTarefa.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          adicionarTarefa()
+        }
+      })
+    }
+
     // liga sugestões inteligentes de tarefas
     if (ui && typeof ui.inicializarSugestoes === 'function') {
       ui.inicializarSugestoes()

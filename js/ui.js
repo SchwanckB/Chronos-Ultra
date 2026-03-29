@@ -111,8 +111,10 @@ export function atualizarResumoInventario(lista) {
 }
 
 export function renderizarGrafico(compensacao) {
+  const canvas = document.getElementById('grafico-energia')
+  if (!canvas) return
   const horasDia = Array.from({ length: 24 }, (_, i) => i)
-  const contexto = document.getElementById('grafico-energia').getContext('2d')
+  const contexto = canvas.getContext('2d')
 
   if (graficoInstancia) graficoInstancia.destroy()
 
