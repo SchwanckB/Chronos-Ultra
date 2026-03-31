@@ -93,25 +93,34 @@
               Tenho interrupções no período
             </label>
             <div id="interrupcoes-detalhes" class="interrupcoes-detalhes">
+              <form id="form-interrupcoes">
+                <input
+                  type="text"
+                  id="nome-interrupcao"
+                  placeholder="Nome da interrupção (Ex: Almoço)"
+                />
+                <div class="grupo-inputs">
+                  <input
+                    type="time"
+                    id="inicio-interrupcao"
+                    value="12:00"
+                  />
+                  <input
+                    type="time"
+                    id="fim-interrupcao"
+                    value="13:00"
+                  />
+                </div>
+                <select id="tipo-interrupcao">
+                  <option value="Almoço">Almoço</option>
+                  <option value="Reunião">Reunião</option>
+                  <option value="Descanso">Descanso</option>
+                  <option value="Outra">Outra</option>
+                </select>
+                <button type="submit">Adicionar interrupção</button>
+              </form>
               <div id="lista-interrupcoes" class="lista-interrupcoes"></div>
-              <button
-                type="button"
-                class="botao-pequeno"
-                id="btn-adicionar-interrupcao"
-              >
-                Adicionar interrupção
-              </button>
             </div>
-
-            <label for="limite-horas">Horas de Trabalho Hoje:</label>
-            <input
-              type="number"
-              id="limite-horas"
-              value="6"
-              min="1"
-              max="16"
-              onchange="renderizarGrafico()"
-            />
 
             <canvas id="grafico-livre" class="grafico-livre"></canvas>
           </div>

@@ -27,44 +27,27 @@ function parseHorario(horario) {
 }
 
 function criarItemInterrupcaoDOM(interrupcao = {}) {
+  const nome = interrupcao.nome || 'Interrupção'
+  const inicio = interrupcao.inicio || '12:00'
+  const fim = interrupcao.fim || '13:00'
+  const tipo = interrupcao.tipo || 'Almoço'
+
   const container = document.createElement('div')
   container.className = 'item-interrupcao'
-  const tipo = interrupcao.tipo || 'Almoço'
-  const tipos = ['Almoço', 'Reunião', 'Descanso', 'Outra']
-  const selectHtml = tipos
-    .map(
-      tipoAtual =>
-        `<option value="${tipoAtual}"${
-          tipoAtual === tipo ? ' selected' : ''
-        }>${tipoAtual}</option>`
-    )
-    .join('')
 
   container.innerHTML = `
-    <div class="item-interrupcao-conteudo">
-      <label>Nome da interrupção</label>
-      <input class="interrupcao-nome" type="text" value="${
-        interrupcao.nome || ''
-      }" placeholder="Ex: Almoço" onchange="renderizarGrafico()" />
-
-      <label>Início</label>
-      <input class="interrupcao-inicio" type="time" value="${
-        interrupcao.inicio || '12:00'
-      }" onchange="renderizarGrafico()" />
-
-      <label>Fim</label>
-      <input class="interrupcao-fim" type="time" value="${
-        interrupcao.fim || '13:00'
-      }" onchange="renderizarGrafico()" />
-
-      <label>Tipo</label>
-      <select class="interrupcao-tipo" onchange="renderizarGrafico()">
-        ${selectHtml}
-      </select>
+    <div class="item-interrupcao-info">
+      <strong>${tipo}</strong>
+      <span>${nome}</span>
+      <small>${inicio} - ${fim}</small>
     </div>
     <button type="button" class="botao-remover-interrupcao">
       Remover
     </button>
+    <input type="hidden" class="interrupcao-nome" value="${nome}" />
+    <input type="hidden" class="interrupcao-inicio" value="${inicio}" />
+    <input type="hidden" class="interrupcao-fim" value="${fim}" />
+    <input type="hidden" class="interrupcao-tipo" value="${tipo}" />
   `
   return container
 }
@@ -80,11 +63,7 @@ function carregarInterrupcoesNaTela(interrupcoes = []) {
   lista.innerHTML = ''
 
   if (checkbox.checked) {
-    if (interrupcoes.length === 0) {
-      adicionarInterrupcaoNaTela()
-    } else {
-      interrupcoes.forEach(item => adicionarInterrupcaoNaTela(item))
-    }
+    interrupcoes.forEach(item => adicionarInterrupcaoNaTela(item))
   }
 }
 
@@ -92,6 +71,33 @@ function adicionarInterrupcaoNaTela(interrupcao = {}) {
   const lista = document.getElementById('lista-interrupcoes')
   if (!lista) return
   lista.appendChild(criarItemInterrupcaoDOM(interrupcao))
+}
+
+function adicionarInterrupcaoDoFormulario(event) {
+  event.preventDefault()
+  const nome = document.getElementById('nome-interrupcao')?.value.trim() || ''
+  const inicio = document.getElementById('inicio-interrupcao')?.value
+  const fim = document.getElementById('fim-interrupcao')?.value
+  const tipo = document.getElementById('tipo-interrupcao')?.value || 'Outra'
+
+  if (!inicio || !fim) {
+    return alert('Informe horário de início e fim para a interrupção.')
+  }
+  const inicioMinutos = parseHorario(inicio)
+  const fimMinutos = parseHorario(fim)
+  if (inicioMinutos === null || fimMinutos === null || fimMinutos <= inicioMinutos) {
+    return alert('Informe um intervalo válido para a interrupção.')
+  }
+
+  adicionarInterrupcaoNaTela({ nome, inicio, fim, tipo })
+  renderizarGrafico()
+
+  const inputNome = document.getElementById('nome-interrupcao')
+  const inputInicio = document.getElementById('inicio-interrupcao')
+  const inputFim = document.getElementById('fim-interrupcao')
+  if (inputNome) inputNome.value = ''
+  if (inputInicio) inputInicio.value = '12:00'
+  if (inputFim) inputFim.value = '13:00'
 }
 
 function toggleInterrupcoesVisibilidade() {
@@ -205,7 +211,10 @@ function obterDisponibilidade() {
 }
 
 function calcularLimiteDeTempo() {
-  const limiteHoras = parseInt(document.getElementById('limite-horas').value)
+  const limiteInput = document.getElementById('limite-horas')
+  const limiteHoras = limiteInput
+    ? parseInt(limiteInput.value)
+    : configuracoes.limiteHoras || 6
   const limiteMinutos = (isNaN(limiteHoras) ? 6 : limiteHoras) * 60
   const disponibilidade = obterDisponibilidade()
   if (!disponibilidade) return limiteMinutos
@@ -235,6 +244,11 @@ if (typeof document !== 'undefined') {
         event.preventDefault()
         adicionarTarefa()
       })
+    }
+
+    const formInterrupcoes = document.getElementById('form-interrupcoes')
+    if (formInterrupcoes) {
+      formInterrupcoes.addEventListener('submit', adicionarInterrupcaoDoFormulario)
     }
 
     const inputNomeUsuario = document.getElementById('seu-nome')
@@ -339,7 +353,8 @@ export function entrarNoSistema() {
   ui.atualizarSaudacao(dadosUsuario.nome)
   ui.atualizarEstatisticasBio(dadosUsuario.focoMaximo)
 
-  document.getElementById('limite-horas').value = configuracoes.limiteHoras
+  const limiteHorasCampo = document.getElementById('limite-horas')
+  if (limiteHorasCampo) limiteHorasCampo.value = configuracoes.limiteHoras
   const inicioCampo = document.getElementById('inicio-disponivel')
   const fimCampo = document.getElementById('fim-disponivel')
   if (inicioCampo) inicioCampo.value = configuracoes.inicioDisponivel || '08:00'
