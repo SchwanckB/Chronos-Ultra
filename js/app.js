@@ -85,7 +85,11 @@ function adicionarInterrupcaoDoFormulario(event) {
   }
   const inicioMinutos = parseHorario(inicio)
   const fimMinutos = parseHorario(fim)
-  if (inicioMinutos === null || fimMinutos === null || fimMinutos <= inicioMinutos) {
+  if (
+    inicioMinutos === null ||
+    fimMinutos === null ||
+    fimMinutos <= inicioMinutos
+  ) {
     return alert('Informe um intervalo válido para a interrupção.')
   }
 
@@ -248,7 +252,10 @@ if (typeof document !== 'undefined') {
 
     const formInterrupcoes = document.getElementById('form-interrupcoes')
     if (formInterrupcoes) {
-      formInterrupcoes.addEventListener('submit', adicionarInterrupcaoDoFormulario)
+      formInterrupcoes.addEventListener(
+        'submit',
+        adicionarInterrupcaoDoFormulario
+      )
     }
 
     const inputNomeUsuario = document.getElementById('seu-nome')
