@@ -51,16 +51,21 @@
       <div id="tela-principal" class="tela">
         <div class="cabecalho-usuario">
           <div class="saudacao">
-            <h1 id="saudacao-nome">Olá!</h1>
-            <p>Vamos hackear o seu tempo livre hoje.</p>
-          </div>
-          <div class="controles-perfil">
             <div class="estatisticas-bio" id="caixa-estatisticas-bio">
               🧬 Foco Contínuo Ideal: -- min
             </div>
-            <button class="botao-pequeno" onclick="abrirCalendario()">
+            <h1 id="saudacao-nome">Olá!</h1>
+            <p>Vamos hackear o seu tempo livre hoje.</p>
+          </div>
+          <div class="cabecalho-meio">
+            <button
+              class="botao-pequeno botao-calendario"
+              onclick="abrirCalendario()"
+            >
               Ver Calendário
             </button>
+          </div>
+          <div class="controles-perfil">
             <button class="botao-sair" onclick="trocarUsuario()">
               Trocar Perfil
             </button>
@@ -254,9 +259,27 @@
         <div class="calendario-estrutura">
           <aside class="menu-calendario">
             <div class="menu-calendario-titulo">Exibir</div>
-            <button class="botao-lateral ativa" data-visao="mes" onclick="mudarVisaoCalendario('mes')">Mês</button>
-            <button class="botao-lateral" data-visao="dia" onclick="mudarVisaoCalendario('dia')">Dia</button>
-            <button class="botao-lateral" data-visao="hora" onclick="mudarVisaoCalendario('hora')">Hora</button>
+            <button
+              class="botao-lateral ativa"
+              data-visao="mes"
+              onclick="mudarVisaoCalendario('mes')"
+            >
+              Mês
+            </button>
+            <button
+              class="botao-lateral"
+              data-visao="dia"
+              onclick="mudarVisaoCalendario('dia')"
+            >
+              Dia
+            </button>
+            <button
+              class="botao-lateral"
+              data-visao="hora"
+              onclick="mudarVisaoCalendario('hora')"
+            >
+              Hora
+            </button>
 
             <div class="menu-calendario-navegacao">
               <button class="botao-pequeno" onclick="mudarMes(-1)">←</button>

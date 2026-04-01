@@ -228,7 +228,11 @@ function calcularLimiteDeTempo() {
 let agendaAtual = { eventos: [], stats: {} }
 let visaoCalendario = 'mes'
 let dataSelecionada = new Date()
-let mesCalendario = new Date(dataSelecionada.getFullYear(), dataSelecionada.getMonth(), 1)
+let mesCalendario = new Date(
+  dataSelecionada.getFullYear(),
+  dataSelecionada.getMonth(),
+  1
+)
 
 function calcularPascoa(ano) {
   const a = ano % 19
@@ -280,16 +284,16 @@ function obterFeriadosNacionais(ano) {
 }
 
 function formatarDataCompleta(data) {
-  return `${data.getDate().toString().padStart(2, '0')}/${(
-    data.getMonth() + 1
-  )
+  return `${data.getDate().toString().padStart(2, '0')}/${(data.getMonth() + 1)
     .toString()
     .padStart(2, '0')}/${data.getFullYear()}`
 }
 
 function getLimiteHoras() {
   const limiteInput = document.getElementById('limite-horas')
-  const limite = limiteInput ? parseInt(limiteInput.value) : configuracoes.limiteHoras
+  const limite = limiteInput
+    ? parseInt(limiteInput.value)
+    : configuracoes.limiteHoras
   return Number.isNaN(limite) ? configuracoes.limiteHoras || 6 : limite
 }
 
@@ -317,6 +321,16 @@ function atualizarAgendaAtual() {
 function obterFeriadoDoDia(data) {
   return obterFeriadosNacionais(data.getFullYear()).find(
     f => f.mes === data.getMonth() && f.dia === data.getDate()
+  )
+}
+
+function eMesmoDia(dataA, dataB) {
+  return (
+    dataA &&
+    dataB &&
+    dataA.getFullYear() === dataB.getFullYear() &&
+    dataA.getMonth() === dataB.getMonth() &&
+    dataA.getDate() === dataB.getDate()
   )
 }
 
@@ -373,9 +387,11 @@ function renderizarVisaoMes() {
   const primeiroDia = new Date(ano, mes, 1)
   let primeiroIndice = (primeiroDia.getDay() + 6) % 7
   const diasDoMes = new Date(ano, mes + 1, 0).getDate()
-  const feriadosMes = obterFeriadosNacionais(ano).filter(
-    f => f.mes === mes
-  )
+  const feriadosMes = obterFeriadosNacionais(ano).filter(f => f.mes === mes)
+  const hoje = new Date()
+  const diaAtualSelecionado = eMesmoDia(dataSelecionada, hoje)
+  const temTarefasHoje =
+    diaAtualSelecionado && agendaAtual.eventos.some(e => e.tipo === 'tarefa')
   const temTarefas = agendaAtual.eventos.some(e => e.tipo === 'tarefa')
 
   let html = '<div class="calendario-mes">'
@@ -390,19 +406,22 @@ function renderizarVisaoMes() {
 
   for (let dia = 1; dia <= diasDoMes; dia += 1) {
     const dataDia = new Date(ano, mes, dia)
-    const ehSelecionado =
-      dataSelecionada.getFullYear() === dataDia.getFullYear() &&
-      dataSelecionada.getMonth() === dataDia.getMonth() &&
-      dataSelecionada.getDate() === dataDia.getDate()
+    const ehSelecionado = eMesmoDia(dataSelecionada, dataDia)
+    const ehHoje = eMesmoDia(dataDia, new Date())
     const feriado = feriadosMes.find(f => f.dia === dia)
+    const label = feriado
+      ? `<span class="feriado-label">${feriado.nome}</span>`
+      : ehHoje && temTarefasHoje
+        ? `<span class="feriado-label">Tarefas</span>`
+        : ''
 
     html += `
       <div class="dia-celula ${ehSelecionado ? 'ativo' : ''} ${
-      feriado ? 'feriado' : ''
-    }" onclick="selecionarDiaCalendario(${dia})">
+        feriado ? 'feriado' : ''
+      } ${ehHoje ? 'hoje' : ''}" onclick="selecionarDiaCalendario(${dia})">
         <span class="numero">${dia}</span>
-        ${feriado ? `<span class="feriado-label">${feriado.nome}</span>` : ''}
-        ${ehSelecionado && temTarefas ? '<span class="marcador"></span>' : ''}
+        ${label}
+        ${ehSelecionado && temTarefasHoje ? '<span class="marcador"></span>' : ''}
       </div>`
   }
 
@@ -429,18 +448,22 @@ function renderizarVisaoMes() {
 }
 
 function renderizarVisaoDia() {
-  const eventos = agendaAtual.eventos.filter(e => e.tipo !== 'nao-agendada')
+  const hoje = new Date()
+  const mostrarEventos = eMesmoDia(dataSelecionada, hoje)
   const feriado = obterFeriadoDoDia(dataSelecionada)
+  const eventos = mostrarEventos
+    ? agendaAtual.eventos.filter(e => e.tipo !== 'nao-agendada')
+    : []
 
   if (eventos.length === 0)
     return `
       <div class="calendario-resumo">
         <strong>Agenda do Dia — ${formatarDataCompleta(dataSelecionada)}</strong>
         <p>${
-            feriado
-              ? `Feriado: ${feriado.nome}. Nenhuma tarefa agendada.`
-              : 'Nenhuma tarefa agendada para este dia.'
-          }</p>
+          feriado
+            ? `Feriado: ${feriado.nome}. Nenhuma tarefa agendada.`
+            : 'Nenhuma tarefa agendada para este dia.'
+        }</p>
       </div>`
 
   const linhas = eventos
@@ -454,8 +477,8 @@ function renderizarVisaoDia() {
         evento.tipo === 'tarefa'
           ? evento.nome
           : evento.tipo === 'interrupcao'
-          ? evento.descricao
-          : evento.descricao
+            ? evento.descricao
+            : evento.descricao
       const descricao =
         evento.tipo === 'tarefa'
           ? `${evento.duracao} min`
@@ -473,21 +496,32 @@ function renderizarVisaoDia() {
     <div class="calendario-resumo">
       <strong>Agenda do Dia — ${formatarDataCompleta(dataSelecionada)}</strong>
       <p>${
-          feriado
-            ? `Feriado: ${feriado.nome}. Veja os horários, se houver tarefas.`
-            : 'Veja os horários gerados para este dia.'
-        }</p>
+        feriado
+          ? `Feriado: ${feriado.nome}. Veja os horários, se houver tarefas.`
+          : 'Veja os horários gerados para este dia.'
+      }</p>
     </div>
     ${linhas}`
 }
 
 function renderizarVisaoHora() {
+  const hoje = new Date()
+  const mostrarEventos = eMesmoDia(dataSelecionada, hoje)
   const disponibilidade = obterDisponibilidade()
   const inicioMinutos = disponibilidade?.inicioMinutos || 6 * 60
   const fimMinutos = disponibilidade?.fimMinutos || 22 * 60
-  const eventos = agendaAtual.eventos
-    .filter(e => e.tipo !== 'nao-agendada')
-    .sort((a, b) => a.inicioMinutos - b.inicioMinutos)
+  const eventos = mostrarEventos
+    ? agendaAtual.eventos
+        .filter(e => e.tipo !== 'nao-agendada')
+        .sort((a, b) => a.inicioMinutos - b.inicioMinutos)
+    : []
+
+  if (eventos.length === 0)
+    return `
+      <div class="calendario-resumo">
+        <strong>Visão por Hora — ${formatarDataCompleta(dataSelecionada)}</strong>
+        <p>Sem tarefas agendadas para este dia.</p>
+      </div>`
 
   const horas = []
   for (let h = inicioMinutos; h < fimMinutos; h += 60) {
@@ -503,9 +537,7 @@ function renderizarVisaoHora() {
         ? blocos
             .map(e => {
               const titulo =
-                e.tipo === 'tarefa'
-                  ? e.nome
-                  : e.descricao || 'Intervalo'
+                e.tipo === 'tarefa' ? e.nome : e.descricao || 'Intervalo'
               return `
                 <div class="evento-calendario">
                   <div class="evento-horario">${alg.formatarHoraTrabalho(
