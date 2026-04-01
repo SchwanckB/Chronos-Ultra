@@ -58,6 +58,9 @@
             <div class="estatisticas-bio" id="caixa-estatisticas-bio">
               🧬 Foco Contínuo Ideal: -- min
             </div>
+            <button class="botao-pequeno" onclick="abrirCalendario()">
+              Ver Calendário
+            </button>
             <button class="botao-sair" onclick="trocarUsuario()">
               Trocar Perfil
             </button>
@@ -84,6 +87,15 @@
                 type="time"
                 id="fim-disponivel"
                 value="18:00"
+                onchange="renderizarGrafico()"
+              />
+              <label for="limite-horas">Limite de horas diárias:</label>
+              <input
+                type="number"
+                id="limite-horas"
+                value="6"
+                min="1"
+                max="24"
                 onchange="renderizarGrafico()"
               />
             </div>
@@ -223,6 +235,42 @@
               </p>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div id="tela-calendario" class="tela">
+        <div class="cabecalho-usuario">
+          <div class="saudacao">
+            <h1>Calendário</h1>
+            <p>Visão mensal funcional com feriados e horários gerados.</p>
+          </div>
+          <div class="controles-perfil">
+            <button class="botao-pequeno" onclick="voltarParaApp()">
+              Voltar ao App
+            </button>
+          </div>
+        </div>
+
+        <div class="calendario-estrutura">
+          <aside class="menu-calendario">
+            <div class="menu-calendario-titulo">Exibir</div>
+            <button class="botao-lateral ativa" data-visao="mes" onclick="mudarVisaoCalendario('mes')">Mês</button>
+            <button class="botao-lateral" data-visao="dia" onclick="mudarVisaoCalendario('dia')">Dia</button>
+            <button class="botao-lateral" data-visao="hora" onclick="mudarVisaoCalendario('hora')">Hora</button>
+
+            <div class="menu-calendario-navegacao">
+              <button class="botao-pequeno" onclick="mudarMes(-1)">←</button>
+              <span id="mes-ano-rotulo">Março 2026</span>
+              <button class="botao-pequeno" onclick="mudarMes(1)">→</button>
+            </div>
+
+            <div class="menu-calendario-titulo">Feriados</div>
+            <div class="lista-feriados" id="lista-feriados"></div>
+          </aside>
+
+          <section class="conteudo-calendario">
+            <div id="calendario-conteudo" class="calendario-conteudo"></div>
+          </section>
         </div>
       </div>
       <footer>

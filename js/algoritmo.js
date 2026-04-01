@@ -203,6 +203,120 @@ export function gerarAgendaHTML(
   }
 }
 
+export function gerarAgendaDados(
+  tarefasOrdenadas,
+  limiteMinutos,
+  disponibilidade,
+  compensacao
+) {
+  const eventos = []
+  let tempoTotalGasto = 0
+  const timeline = montarTimeline(
+    disponibilidade.inicioMinutos,
+    disponibilidade.fimMinutos,
+    disponibilidade.interrupcoesNormalizadas
+  )
+  const fila = tarefasOrdenadas.map(t => ({ ...t }))
+  let horaAtual = disponibilidade.inicioMinutos
+
+  for (const bloco of timeline) {
+    if (tempoTotalGasto >= limiteMinutos) break
+
+    if (bloco.tipo === 'interrupcao') {
+      eventos.push({
+        tipo: 'interrupcao',
+        descricao: bloco.descricao || 'Interrupção',
+        inicioMinutos: bloco.inicioMinutos,
+        fimMinutos: bloco.fimMinutos
+      })
+      horaAtual = bloco.fimMinutos
+      continue
+    }
+
+    horaAtual = Math.max(horaAtual, bloco.inicioMinutos)
+
+    while (
+      horaAtual < bloco.fimMinutos &&
+      tempoTotalGasto < limiteMinutos &&
+      fila.length > 0
+    ) {
+      fila.sort((a, b) => b.peso / b.tempo - a.peso / a.tempo)
+      const tarefa = fila[0]
+      if (!tarefa) break
+
+      let tempoRestante = tarefa.tempo
+      while (
+        tempoRestante > 0 &&
+        tempoTotalGasto < limiteMinutos &&
+        horaAtual < bloco.fimMinutos
+      ) {
+        let blocoTrabalho = tempoRestante > 60 ? 50 : tempoRestante
+        const restanteBloco = bloco.fimMinutos - horaAtual
+        if (blocoTrabalho > restanteBloco) blocoTrabalho = restanteBloco
+        if (tempoTotalGasto + blocoTrabalho > limiteMinutos) {
+          blocoTrabalho = limiteMinutos - tempoTotalGasto
+        }
+        if (blocoTrabalho <= 0) break
+
+        eventos.push({
+          tipo: 'tarefa',
+          nome: tarefa.nome,
+          duracao: blocoTrabalho,
+          inicioMinutos: horaAtual,
+          fimMinutos: horaAtual + blocoTrabalho,
+          peso: tarefa.peso
+        })
+
+        tempoTotalGasto += blocoTrabalho
+        tempoRestante -= blocoTrabalho
+        horaAtual += blocoTrabalho
+
+        if (
+          tempoRestante > 0 &&
+          tempoTotalGasto + 10 <= limiteMinutos &&
+          horaAtual < bloco.fimMinutos
+        ) {
+          eventos.push({
+            tipo: 'interrupcao',
+            descricao: 'Pausa de foco',
+            inicioMinutos: horaAtual,
+            fimMinutos: horaAtual + 10
+          })
+          tempoTotalGasto += 10
+          horaAtual += 10
+        }
+      }
+
+      tarefa.tempo = tempoRestante
+      if (tarefa.tempo <= 0) fila.shift()
+
+      if (
+        tempoTotalGasto + 15 <= limiteMinutos &&
+        horaAtual < bloco.fimMinutos &&
+        (tarefa.tempo <= 0 || fila.length > 0)
+      ) {
+        eventos.push({
+          tipo: 'interrupcao',
+          descricao: 'Descanso de conclusão',
+          inicioMinutos: horaAtual,
+          fimMinutos: horaAtual + 15
+        })
+        tempoTotalGasto += 15
+        horaAtual += 15
+      }
+    }
+  }
+
+  return {
+    eventos,
+    stats: {
+      utilizado: tempoTotalGasto,
+      limite: limiteMinutos,
+      naoAgendadas: fila.filter(t => t.tempo > 0).length
+    }
+  }
+}
+
 export function gerarMensagemWhatsApp(
   tarefasOrdenadas,
   limiteMinutos,
