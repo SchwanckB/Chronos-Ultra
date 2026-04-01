@@ -59,14 +59,14 @@
           </div>
           <div class="cabecalho-meio">
             <button
+              id="btn-ver-calendario"
               class="botao-pequeno botao-calendario"
-              onclick="abrirCalendario()"
             >
               Ver Calendário
             </button>
           </div>
           <div class="controles-perfil">
-            <button class="botao-sair" onclick="trocarUsuario()">
+            <button id="btn-trocar-perfil" class="botao-sair">
               Trocar Perfil
             </button>
           </div>
@@ -81,19 +81,9 @@
             </p>
             <div class="campo-disponibilidade">
               <label for="inicio-disponivel">Início disponível:</label>
-              <input
-                type="time"
-                id="inicio-disponivel"
-                value="08:00"
-                onchange="renderizarGrafico()"
-              />
+              <input type="time" id="inicio-disponivel" value="08:00" />
               <label for="fim-disponivel">Fim disponível:</label>
-              <input
-                type="time"
-                id="fim-disponivel"
-                value="18:00"
-                onchange="renderizarGrafico()"
-              />
+              <input type="time" id="fim-disponivel" value="18:00" />
               <label for="limite-horas">Limite de horas diárias:</label>
               <input
                 type="number"
@@ -101,7 +91,6 @@
                 value="6"
                 min="1"
                 max="24"
-                onchange="renderizarGrafico()"
               />
             </div>
 
@@ -218,10 +207,10 @@
               </form>
               <div id="resumo-inventario" class="resumo-inventario"></div>
               <div class="grupo-botoes-pequenos">
-                <button onclick="limparConcluidas()" class="botao-pequeno">
+                <button id="btn-limpar-concluidas" class="botao-pequeno">
                   Limpar concluídas
                 </button>
-                <button onclick="limparTodas()" class="botao-pequeno alerta">
+                <button id="btn-limpar-todas" class="botao-pequeno alerta">
                   Apagar tudo
                 </button>
               </div>
@@ -231,7 +220,7 @@
 
           <div class="cartao">
             <h2>3. Agenda Otimizada</h2>
-            <button onclick="otimizarDia()">GERAR HORÁRIOS PERFEITOS</button>
+            <button id="btn-otimizar-dia">GERAR HORÁRIOS PERFEITOS</button>
             <div id="resumo-agenda" class="resumo-agenda"></div>
 
             <div id="resultado-otimizacao" class="resultado-otimizacao">
@@ -250,7 +239,7 @@
             <p>Visão mensal funcional com feriados e horários gerados.</p>
           </div>
           <div class="controles-perfil">
-            <button class="botao-pequeno" onclick="voltarParaApp()">
+            <button id="btn-voltar-app" class="botao-pequeno">
               Voltar ao App
             </button>
           </div>
@@ -260,31 +249,23 @@
           <aside class="menu-calendario">
             <div class="menu-calendario-titulo">Exibir</div>
             <button
+              id="btn-visao-mes"
               class="botao-lateral ativa"
               data-visao="mes"
-              onclick="mudarVisaoCalendario('mes')"
             >
               Mês
             </button>
-            <button
-              class="botao-lateral"
-              data-visao="dia"
-              onclick="mudarVisaoCalendario('dia')"
-            >
+            <button id="btn-visao-dia" class="botao-lateral" data-visao="dia">
               Dia
             </button>
-            <button
-              class="botao-lateral"
-              data-visao="hora"
-              onclick="mudarVisaoCalendario('hora')"
-            >
+            <button id="btn-visao-hora" class="botao-lateral" data-visao="hora">
               Hora
             </button>
 
             <div class="menu-calendario-navegacao">
-              <button class="botao-pequeno" onclick="mudarMes(-1)">←</button>
+              <button id="btn-mes-anterior" class="botao-pequeno">←</button>
               <span id="mes-ano-rotulo">Março 2026</span>
-              <button class="botao-pequeno" onclick="mudarMes(1)">→</button>
+              <button id="btn-mes-proximo" class="botao-pequeno">→</button>
             </div>
 
             <div class="menu-calendario-titulo">Feriados</div>

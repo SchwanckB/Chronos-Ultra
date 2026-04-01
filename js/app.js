@@ -719,6 +719,51 @@ if (typeof document !== 'undefined') {
         }
       })
     }
+
+    const btnVerCalendario = document.getElementById('btn-ver-calendario')
+    if (btnVerCalendario)
+      btnVerCalendario.addEventListener('click', abrirCalendario)
+
+    const btnTrocarPerfil = document.getElementById('btn-trocar-perfil')
+    if (btnTrocarPerfil)
+      btnTrocarPerfil.addEventListener('click', trocarUsuario)
+
+    const btnVoltarApp = document.getElementById('btn-voltar-app')
+    if (btnVoltarApp) btnVoltarApp.addEventListener('click', voltarParaApp)
+
+    const btnLimparConcluidas = document.getElementById('btn-limpar-concluidas')
+    if (btnLimparConcluidas)
+      btnLimparConcluidas.addEventListener('click', limparConcluidas)
+
+    const btnLimparTodas = document.getElementById('btn-limpar-todas')
+    if (btnLimparTodas) btnLimparTodas.addEventListener('click', limparTodas)
+
+    const btnOtimizarDia = document.getElementById('btn-otimizar-dia')
+    if (btnOtimizarDia) btnOtimizarDia.addEventListener('click', otimizarDia)
+
+    const campoInicio = document.getElementById('inicio-disponivel')
+    const campoFim = document.getElementById('fim-disponivel')
+    const campoLimiteHoras = document.getElementById('limite-horas')
+
+    if (campoInicio) campoInicio.addEventListener('change', renderizarGrafico)
+    if (campoFim) campoFim.addEventListener('change', renderizarGrafico)
+    if (campoLimiteHoras)
+      campoLimiteHoras.addEventListener('change', renderizarGrafico)
+
+    const botaoVisoes = document.querySelectorAll('.botao-lateral')
+    botaoVisoes.forEach(botao => {
+      botao.addEventListener('click', () => {
+        const visao = botao.dataset.visao
+        if (visao) mudarVisaoCalendario(visao)
+      })
+    })
+
+    const btnMesAnterior = document.getElementById('btn-mes-anterior')
+    const btnMesProximo = document.getElementById('btn-mes-proximo')
+    if (btnMesAnterior)
+      btnMesAnterior.addEventListener('click', () => mudarMes(-1))
+    if (btnMesProximo)
+      btnMesProximo.addEventListener('click', () => mudarMes(1))
   })
 }
 export function entrarNoSistema() {
