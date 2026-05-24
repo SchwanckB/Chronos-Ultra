@@ -9,6 +9,41 @@ export function formatarHoraTrabalho(minutosTotais) {
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
 }
 
+// 🔹 SOLUÇÃO 1: Priorização inteligente com energia biológica
+function calcularScoreTarefa(tarefa, horaAtual, compensacao) {
+  // Score base: peso / tempo (quanto mais peso, maior prioridade; quanto menos tempo, maior urgência)
+  const scoreBase = tarefa.peso / tarefa.tempo
+  
+  // Fator de energia: tarefas pesadas devem ir em horários de alta energia
+  const energia = obterEnergia(horaAtual / 60, compensacao)
+  const energiaMax = 100
+  const fatorEnergia = (energia / energiaMax)
+  
+  // Score final: combina importância com otimização de energia
+  // Tarefas peso-altos em energia-alta são super-priorizadas
+  const scoreComEnergia = scoreBase * (0.7 + 0.3 * fatorEnergia)
+  
+  return scoreComEnergia
+}
+
+// 🔹 SOLUÇÃO 2 & 3: Calcular pausa adaptativa baseada em fadiga acumulada
+function calcularPausaAdaptativa(tempoTrabalhoContinuo) {
+  // Pausas proporcionais ao tempo contínuo de trabalho (estratégicas)
+  if (tempoTrabalhoContinuo >= 240) {
+    return { duracao: 30, tipo: 'Descanso Profundo' } // 4h+ → pausa longa
+  }
+  if (tempoTrabalhoContinuo >= 120) {
+    return { duracao: 20, tipo: 'Descanso Recuperador' } // 2h+ → pausa média
+  }
+  if (tempoTrabalhoContinuo >= 60) {
+    return { duracao: 15, tipo: 'Descanso Estratégico' } // 1h+ → pausa moderada
+  }
+  if (tempoTrabalhoContinuo >= 50) {
+    return { duracao: 10, tipo: 'Pausa de Foco' } // 50min+ → pausa curta
+  }
+  return null // Sem pausa necessária
+}
+
 function montarTimeline(inicioMinutos, fimMinutos, interrupcoesNormalizadas) {
   const timeline = []
   let cursor = inicioMinutos
@@ -66,8 +101,10 @@ export function gerarAgendaHTML(
     disponibilidade.interrupcoesNormalizadas
   )
 
-  let fila = tarefasOrdenadas.map(t => ({ ...t }))
+  let fila = tarefasOrdenadas.map(t => ({ ...t, tarefaAtual: null }))
   let horaAtual = disponibilidade.inicioMinutos
+  let tempoTrabalhoContinuo = 0 // 🔹 SOLUÇÃO 3: Rastrear fadiga acumulada
+  let tarefaAtualId = null // 🔹 SOLUÇÃO 4: Evitar fragmentação
 
   for (const bloco of timeline) {
     if (tempoTotalGasto >= limiteMinutos) break
@@ -75,6 +112,8 @@ export function gerarAgendaHTML(
     if (bloco.tipo === 'interrupcao') {
       htmlGerado += gerarBlocoInterrupcaoHTML(bloco)
       horaAtual = bloco.fimMinutos
+      tempoTrabalhoContinuo = 0 // Reset contador de fadiga em interrupções
+      tarefaAtualId = null // Reset tarefa atual
       continue
     }
 
@@ -85,21 +124,55 @@ export function gerarAgendaHTML(
       tempoTotalGasto < limiteMinutos &&
       fila.length > 0
     ) {
-      fila.sort((a, b) => b.peso / b.tempo - a.peso / a.tempo)
+      // 🔹 SOLUÇÃO 1: Usar score inteligente com energia para priorizar
+      fila.sort((a, b) => {
+        const scoreA = calcularScoreTarefa(a, horaAtual, compensacao)
+        const scoreB = calcularScoreTarefa(b, horaAtual, compensacao)
+        return scoreB - scoreA
+      })
+
       const t = fila[0]
       if (!t) break
 
-      let tempoDaTarefaOriginal = t.tempo
+      // 🔹 SOLUÇÃO 4: Não fragmentar tarefas - se há tarefa em andamento, continua
+      if (tarefaAtualId && tarefaAtualId !== t.id) {
+        // Encontrar a tarefa em andamento e continuar com ela
+        const tarefaEmAndamento = fila.find(tar => tar.id === tarefaAtualId)
+        if (tarefaEmAndamento && tarefaEmAndamento.tempo > 0) {
+          fila.sort((a, b) => (a.id === tarefaAtualId ? -1 : b.id === tarefaAtualId ? 1 : 0))
+        }
+      }
+
+      const tarefaProcessada = fila[0]
+      if (!tarefaProcessada) break
+
+      // Atualizar ID de tarefa atual
+      tarefaAtualId = tarefaProcessada.id
+
+      let tempoDaTarefaOriginal = tarefaProcessada.tempo
       let tempoExecutadoDestaTarefa = 0
-      const tempoNoBloco = bloco.fimMinutos - horaAtual
 
       while (
         tempoDaTarefaOriginal > 0 &&
         tempoTotalGasto < limiteMinutos &&
         horaAtual < bloco.fimMinutos
       ) {
-        let blocoTrabalho =
-          tempoDaTarefaOriginal > 60 ? 50 : tempoDaTarefaOriginal
+        // 🔹 SOLUÇÃO 3: Verificar se precisa de pausa adaptativa
+        const pausaNecessaria = calcularPausaAdaptativa(tempoTrabalhoContinuo)
+        if (pausaNecessaria && tempoTotalGasto + pausaNecessaria.duracao <= limiteMinutos) {
+          const horaPausa = formatarHoraTrabalho(horaAtual)
+          htmlGerado += `
+                    <div class="pausa-fim">
+                        <b class="texto-pausa-fim">💪 ${horaPausa} ${pausaNecessaria.tipo} (${pausaNecessaria.duracao} min)</b><br>
+                        <small class="descricao-pausa-fim">Recuperação proporcionada ao esforço realizado.</small>
+                    </div>`
+          tempoTotalGasto += pausaNecessaria.duracao
+          horaAtual += pausaNecessaria.duracao
+          tempoTrabalhoContinuo = 0 // Reset contador após pausa
+          if (horaAtual >= bloco.fimMinutos) break
+        }
+
+        let blocoTrabalho = tempoDaTarefaOriginal > 60 ? 50 : tempoDaTarefaOriginal
         const restanteBloco = bloco.fimMinutos - horaAtual
         if (blocoTrabalho > restanteBloco) blocoTrabalho = restanteBloco
         if (tempoTotalGasto + blocoTrabalho > limiteMinutos) {
@@ -117,12 +190,10 @@ export function gerarAgendaHTML(
                 <div class="bloco-tarefa${energyClass}">
                     <div class="horario-tarefa">${horaInicioStr}</div>
                     <div class="detalhes-tarefa">
-                        <div class="nome-tarefa">${t.nome} ${
+                        <div class="nome-tarefa">${tarefaProcessada.nome} ${
                           tempoExecutadoDestaTarefa > 0 ? '(Continuação)' : ''
                         }</div>
-                        <div class="descricao-tarefa">Bloco de foco intenso: ${
-                          blocoTrabalho
-                        }min</div>
+                        <div class="descricao-tarefa">Bloco de foco intenso: ${blocoTrabalho}min</div>
                     </div>
                 </div>`
 
@@ -130,47 +201,31 @@ export function gerarAgendaHTML(
         tempoDaTarefaOriginal -= blocoTrabalho
         tempoExecutadoDestaTarefa += blocoTrabalho
         horaAtual += blocoTrabalho
-
-        if (
-          tempoDaTarefaOriginal > 0 &&
-          tempoTotalGasto + 10 <= limiteMinutos &&
-          horaAtual < bloco.fimMinutos
-        ) {
-          const horaPausaMeio = formatarHoraTrabalho(horaAtual)
-          htmlGerado += `
-                    <div class="pausa-meio">
-                        <b class="texto-pausa-meio">💧 ${
-                          horaPausaMeio
-                        } Pausa de Foco (10 min)</b><br>
-                        <small class="descricao-pausa-meio">Respiro estratégico para tarefas longas.</small>
-                    </div>`
-
-          tempoTotalGasto += 10
-          horaAtual += 10
-        }
+        tempoTrabalhoContinuo += blocoTrabalho // Acumular fadiga
       }
 
-      t.tempo = tempoDaTarefaOriginal
-      if (t.tempo <= 0) {
+      tarefaProcessada.tempo = tempoDaTarefaOriginal
+      if (tarefaProcessada.tempo <= 0) {
         fila.shift()
+        tarefaAtualId = null // Tarefa terminada, liberar ID
       }
 
       if (
         tempoTotalGasto + 15 <= limiteMinutos &&
         horaAtual < bloco.fimMinutos &&
-        (t.tempo <= 0 || fila.length > 0)
+        (tarefaProcessada.tempo <= 0 || fila.length > 0)
       ) {
         const horaPausaFim = formatarHoraTrabalho(horaAtual)
         htmlGerado += `
                 <div class="pausa-fim">
-                    <b class="texto-pausa-fim">☕ ${
-                      horaPausaFim
-                    } Descanso de Conclusão (15 min)</b><br>
+                    <b class="texto-pausa-fim">☕ ${horaPausaFim} Descanso de Conclusão (15 min)</b><br>
                     <small class="descricao-pausa-fim">Tarefa concluída. Recarregue para a próxima.</small>
                 </div>`
 
         tempoTotalGasto += 15
         horaAtual += 15
+        tempoTrabalhoContinuo = 0 // Reset em pausa de conclusão
+        tarefaAtualId = null
       }
     }
   }
@@ -218,6 +273,8 @@ export function gerarAgendaDados(
   )
   const fila = tarefasOrdenadas.map(t => ({ ...t }))
   let horaAtual = disponibilidade.inicioMinutos
+  let tempoTrabalhoContinuo = 0 // 🔹 SOLUÇÃO 3: Rastrear fadiga
+  let tarefaAtualId = null // 🔹 SOLUÇÃO 4: Evitar fragmentação
 
   for (const bloco of timeline) {
     if (tempoTotalGasto >= limiteMinutos) break
@@ -230,6 +287,8 @@ export function gerarAgendaDados(
         fimMinutos: bloco.fimMinutos
       })
       horaAtual = bloco.fimMinutos
+      tempoTrabalhoContinuo = 0 // Reset em interrupções
+      tarefaAtualId = null
       continue
     }
 
@@ -240,9 +299,26 @@ export function gerarAgendaDados(
       tempoTotalGasto < limiteMinutos &&
       fila.length > 0
     ) {
-      fila.sort((a, b) => b.peso / b.tempo - a.peso / a.tempo)
-      const tarefa = fila[0]
+      // 🔹 SOLUÇÃO 1: Usar score inteligente com energia
+      fila.sort((a, b) => {
+        const scoreA = calcularScoreTarefa(a, horaAtual, compensacao)
+        const scoreB = calcularScoreTarefa(b, horaAtual, compensacao)
+        return scoreB - scoreA
+      })
+
+      let tarefa = fila[0]
       if (!tarefa) break
+
+      // 🔹 SOLUÇÃO 4: Não fragmentar - continuar com tarefa em andamento
+      if (tarefaAtualId && tarefaAtualId !== tarefa.id) {
+        const tarefaEmAndamento = fila.find(t => t.id === tarefaAtualId)
+        if (tarefaEmAndamento && tarefaEmAndamento.tempo > 0) {
+          fila.sort((a, b) => (a.id === tarefaAtualId ? -1 : b.id === tarefaAtualId ? 1 : 0))
+          tarefa = fila[0]
+        }
+      }
+
+      tarefaAtualId = tarefa.id
 
       let tempoRestante = tarefa.tempo
       while (
@@ -250,6 +326,21 @@ export function gerarAgendaDados(
         tempoTotalGasto < limiteMinutos &&
         horaAtual < bloco.fimMinutos
       ) {
+        // 🔹 SOLUÇÃO 3: Verificar pausa adaptativa
+        const pausaNecessaria = calcularPausaAdaptativa(tempoTrabalhoContinuo)
+        if (pausaNecessaria && tempoTotalGasto + pausaNecessaria.duracao <= limiteMinutos) {
+          eventos.push({
+            tipo: 'interrupcao',
+            descricao: pausaNecessaria.tipo,
+            inicioMinutos: horaAtual,
+            fimMinutos: horaAtual + pausaNecessaria.duracao
+          })
+          tempoTotalGasto += pausaNecessaria.duracao
+          horaAtual += pausaNecessaria.duracao
+          tempoTrabalhoContinuo = 0
+          if (horaAtual >= bloco.fimMinutos) break
+        }
+
         let blocoTrabalho = tempoRestante > 60 ? 50 : tempoRestante
         const restanteBloco = bloco.fimMinutos - horaAtual
         if (blocoTrabalho > restanteBloco) blocoTrabalho = restanteBloco
@@ -270,25 +361,14 @@ export function gerarAgendaDados(
         tempoTotalGasto += blocoTrabalho
         tempoRestante -= blocoTrabalho
         horaAtual += blocoTrabalho
-
-        if (
-          tempoRestante > 0 &&
-          tempoTotalGasto + 10 <= limiteMinutos &&
-          horaAtual < bloco.fimMinutos
-        ) {
-          eventos.push({
-            tipo: 'interrupcao',
-            descricao: 'Pausa de foco',
-            inicioMinutos: horaAtual,
-            fimMinutos: horaAtual + 10
-          })
-          tempoTotalGasto += 10
-          horaAtual += 10
-        }
+        tempoTrabalhoContinuo += blocoTrabalho
       }
 
       tarefa.tempo = tempoRestante
-      if (tarefa.tempo <= 0) fila.shift()
+      if (tarefa.tempo <= 0) {
+        fila.shift()
+        tarefaAtualId = null
+      }
 
       if (
         tempoTotalGasto + 15 <= limiteMinutos &&
@@ -303,6 +383,8 @@ export function gerarAgendaDados(
         })
         tempoTotalGasto += 15
         horaAtual += 15
+        tempoTrabalhoContinuo = 0
+        tarefaAtualId = null
       }
     }
   }
@@ -335,6 +417,8 @@ export function gerarMensagemWhatsApp(
 
   let fila = tarefasOrdenadas.map(t => ({ ...t }))
   let horaAtual = disponibilidade.inicioMinutos
+  let tempoTrabalhoContinuo = 0 // 🔹 SOLUÇÃO 3
+  let tarefaAtualId = null // 🔹 SOLUÇÃO 4
 
   for (const bloco of timeline) {
     if (tempoTotalGasto >= limiteMinutos) break
@@ -346,6 +430,8 @@ export function gerarMensagemWhatsApp(
         bloco.descricao || 'Interrupção'
       }\n`
       horaAtual = bloco.fimMinutos
+      tempoTrabalhoContinuo = 0
+      tarefaAtualId = null
       continue
     }
 
@@ -356,9 +442,26 @@ export function gerarMensagemWhatsApp(
       tempoTotalGasto < limiteMinutos &&
       fila.length > 0
     ) {
-      fila.sort((a, b) => b.peso / b.tempo - a.peso / a.tempo)
-      const t = fila[0]
+      // 🔹 SOLUÇÃO 1: Score inteligente com energia
+      fila.sort((a, b) => {
+        const scoreA = calcularScoreTarefa(a, horaAtual, compensacao)
+        const scoreB = calcularScoreTarefa(b, horaAtual, compensacao)
+        return scoreB - scoreA
+      })
+
+      let t = fila[0]
       if (!t) break
+
+      // 🔹 SOLUÇÃO 4: Não fragmentar
+      if (tarefaAtualId && tarefaAtualId !== t.id) {
+        const tarefaEmAndamento = fila.find(tar => tar.id === tarefaAtualId)
+        if (tarefaEmAndamento && tarefaEmAndamento.tempo > 0) {
+          fila.sort((a, b) => (a.id === tarefaAtualId ? -1 : b.id === tarefaAtualId ? 1 : 0))
+          t = fila[0]
+        }
+      }
+
+      tarefaAtualId = t.id
 
       let tempoDaTarefaOriginal = t.tempo
       let tempoExecutadoDestaTarefa = 0
@@ -368,6 +471,17 @@ export function gerarMensagemWhatsApp(
         tempoTotalGasto < limiteMinutos &&
         horaAtual < bloco.fimMinutos
       ) {
+        // 🔹 SOLUÇÃO 3: Pausa adaptativa
+        const pausaNecessaria = calcularPausaAdaptativa(tempoTrabalhoContinuo)
+        if (pausaNecessaria && tempoTotalGasto + pausaNecessaria.duracao <= limiteMinutos) {
+          const horaPausa = formatarHoraTrabalho(horaAtual)
+          mensagem += `${horaPausa} - 💪 ${pausaNecessaria.tipo} (${pausaNecessaria.duracao}min)\n`
+          tempoTotalGasto += pausaNecessaria.duracao
+          horaAtual += pausaNecessaria.duracao
+          tempoTrabalhoContinuo = 0
+          if (horaAtual >= bloco.fimMinutos) break
+        }
+
         let blocoTrabalho =
           tempoDaTarefaOriginal > 60 ? 50 : tempoDaTarefaOriginal
         const restanteBloco = bloco.fimMinutos - horaAtual
@@ -386,21 +500,14 @@ export function gerarMensagemWhatsApp(
         tempoDaTarefaOriginal -= blocoTrabalho
         tempoExecutadoDestaTarefa += blocoTrabalho
         horaAtual += blocoTrabalho
-
-        if (
-          tempoDaTarefaOriginal > 0 &&
-          tempoTotalGasto + 10 <= limiteMinutos &&
-          horaAtual < bloco.fimMinutos
-        ) {
-          let horaPausaMeio = formatarHoraTrabalho(horaAtual)
-          mensagem += `${horaPausaMeio} - 💧 Pausa de Foco (10min)\n`
-          tempoTotalGasto += 10
-          horaAtual += 10
-        }
+        tempoTrabalhoContinuo += blocoTrabalho
       }
 
       t.tempo = tempoDaTarefaOriginal
-      if (t.tempo <= 0) fila.shift()
+      if (t.tempo <= 0) {
+        fila.shift()
+        tarefaAtualId = null
+      }
 
       if (
         tempoTotalGasto + 15 <= limiteMinutos &&
@@ -411,6 +518,8 @@ export function gerarMensagemWhatsApp(
         mensagem += `${horaPausaFim} - ☕ Descanso de Conclusão (15min)\n`
         tempoTotalGasto += 15
         horaAtual += 15
+        tempoTrabalhoContinuo = 0
+        tarefaAtualId = null
       }
     }
   }
