@@ -1,0 +1,48 @@
+{
+  "name": "Chronos Ultra — Otimizador de Rotina",
+  "short_name": "Chronos Ultra",
+  "description": "Organiza sua rotina pela sua curva de energia: prioriza tarefas, distribui pausas inteligentes e preserva o seu tempo livre.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b1120",
+  "theme_color": "#0b1120",
+  "categories": ["productivity", "lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "img/icone-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "img/icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "img/icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Gerar agenda de hoje",
+      "short_name": "Gerar agenda",
+      "url": "./index.html?acao=gerar",
+      "icons": [{ "src": "img/icone-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Abrir calendário",
+      "short_name": "Calendário",
+      "url": "./index.html?acao=calendario",
+      "icons": [{ "src": "img/icone-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

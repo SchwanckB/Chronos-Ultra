@@ -14,12 +14,16 @@ import * as alg from './algoritmo.js'
 import * as calendario from './calendario.js'
 import * as graficos from './graficos.js'
 import * as foco from './foco.js'
+import * as agora from './agora.js'
+import * as anim from './animacoes.js'
 import {
   notificar,
   confirmar,
   abrirFormulario,
+  abrirPainel,
   copiarTexto,
-  baixarArquivo
+  baixarArquivo,
+  escaparHTML
 } from './componentes.js'
 
 const $ = seletor => document.querySelector(seletor)
@@ -32,6 +36,8 @@ const CONFIG_PADRAO = {
   interrupcoes: []
 }
 
+const FILTROS_PADRAO = { busca: '', status: 'todas', categoria: 'todas', ordem: 'manual' }
+
 const estado = {
   perfil: { nome: '', idade: 0, cronotipo: 'intermediario' },
   bio: alg.montarPerfilBiologico({ idade: 25, cronotipo: 'intermediario' }),
@@ -40,8 +46,19 @@ const estado = {
   historico: [],
   agendaAtual: null,
   dataAgenda: calendario.chaveData(new Date()),
+  filtros: { ...FILTROS_PADRAO },
   tema: 'escuro',
   autenticado: false
+}
+
+/** Único ponto de redesenho da lista, para os filtros valerem em toda ação. */
+function renderizarLista() {
+  ui.renderizarListaTarefas(tarefas.listaTarefas, estado.filtros)
+}
+
+/** Agenda de hoje, se houver — alimenta o painel "Agora". */
+function agendaDeHoje() {
+  return estado.agendas[calendario.chaveData(new Date())] || null
 }
 
 /* =========================================================================
@@ -146,8 +163,10 @@ function atualizarPainel({ regerar = false } = {}) {
       minutosLivres: janela?.disponivel || 0
     }
   )
+  graficos.renderizarSemana(estado.agendas)
   ui.renderizarIndicadores(agenda)
   ui.definirEstadoAcoesAgenda(Boolean(agenda?.eventos?.length))
+  agora.atualizar()
 }
 
 function atualizarAvisoJanela(janela) {
@@ -212,12 +231,14 @@ function entrarNoSistema(evento) {
 
   ui.atualizarCabecalho(estado.perfil, estado.bio)
   aplicarConfiguracaoNaTela()
-  ui.renderizarListaTarefas(tarefas.listaTarefas)
+  renderizarLista()
   ui.renderizarAgenda(null)
   definirDataAgenda(calendario.chaveData(new Date()))
-  ui.mostrarTela('tela-painel')
+  anim.transicionar(() => ui.mostrarTela('tela-painel'))
   atualizarPainel()
+  anim.revelar('.cartao')
   salvar({ imediato: true })
+  aplicarAcaoDaURL()
 
   const recuperada = estado.agendas[estado.dataAgenda]
   if (recuperada) {
@@ -249,11 +270,12 @@ async function trocarPerfil() {
   estado.agendas = {}
   estado.agendaAtual = null
   estado.autenticado = false
+  estado.filtros = { ...FILTROS_PADRAO }
 
   ui.limparPainel()
   if ($('#seu-nome')) $('#seu-nome').value = ''
   if ($('#sua-idade')) $('#sua-idade').value = ''
-  ui.mostrarTela('tela-boas-vindas')
+  anim.transicionar(() => ui.mostrarTela('tela-boas-vindas'))
   $('#seu-nome')?.focus()
 }
 
@@ -300,7 +322,8 @@ function adicionarTarefa(evento) {
   ui.mostrarSugestao(null)
   $('#nome-tarefa')?.focus()
 
-  ui.renderizarListaTarefas(tarefas.listaTarefas)
+  renderizarLista()
+  anim.pulsar(document.querySelector(`.tarefa[data-id="${CSS.escape(criada.id)}"]`))
   atualizarPainel({ regerar: true })
   salvar()
 }
@@ -336,17 +359,22 @@ async function editarTarefa(id) {
   if (!dados) return
 
   tarefas.editar(id, { ...dados, prazo: dados.prazo || null })
-  ui.renderizarListaTarefas(tarefas.listaTarefas)
+  renderizarLista()
   atualizarPainel({ regerar: true })
   salvar()
   notificar('Tarefa atualizada.', { tipo: 'sucesso' })
 }
 
 function excluirTarefa(id) {
+  const cartao = document.querySelector(`.tarefa[data-id="${CSS.escape(id)}"]`)
+  anim.removerComAnimacao(cartao, () => concluirExclusao(id))
+}
+
+function concluirExclusao(id) {
   const removida = tarefas.excluir(id)
   if (!removida) return
 
-  ui.renderizarListaTarefas(tarefas.listaTarefas)
+  renderizarLista()
   atualizarPainel({ regerar: true })
   salvar()
 
@@ -356,7 +384,7 @@ function excluirTarefa(id) {
       rotulo: 'Desfazer',
       aoClicar: () => {
         tarefas.reinserir(removida.tarefa, removida.indice)
-        ui.renderizarListaTarefas(tarefas.listaTarefas)
+        renderizarLista()
         atualizarPainel({ regerar: true })
         salvar()
       }
@@ -367,7 +395,7 @@ function excluirTarefa(id) {
 function alternarConcluida(id) {
   const tarefa = tarefas.toggleConcluida(id)
   if (!tarefa) return
-  ui.renderizarListaTarefas(tarefas.listaTarefas)
+  renderizarLista()
   atualizarPainel({ regerar: true })
   salvar()
   if (tarefa.concluida) notificar(`"${tarefa.nome}" concluída. 🎉`, { tipo: 'sucesso', duracao: 2600 })
@@ -387,7 +415,7 @@ async function limparConcluidas() {
   if (!ok) return
 
   const removidas = tarefas.limparConcluidas()
-  ui.renderizarListaTarefas(tarefas.listaTarefas)
+  renderizarLista()
   atualizarPainel({ regerar: true })
   salvar()
   notificar(`${removidas.length} tarefa(s) concluída(s) removida(s).`, {
@@ -396,7 +424,7 @@ async function limparConcluidas() {
       rotulo: 'Desfazer',
       aoClicar: () => {
         removidas.forEach(t => tarefas.reinserir(t))
-        ui.renderizarListaTarefas(tarefas.listaTarefas)
+        renderizarLista()
         atualizarPainel({ regerar: true })
         salvar()
       }
@@ -419,7 +447,7 @@ async function limparTodas() {
 
   const removidas = tarefas.limparTodas()
   estado.agendaAtual = null
-  ui.renderizarListaTarefas(tarefas.listaTarefas)
+  renderizarLista()
   ui.renderizarAgenda(null)
   atualizarPainel()
   salvar()
@@ -430,7 +458,7 @@ async function limparTodas() {
       rotulo: 'Desfazer',
       aoClicar: () => {
         tarefas.definirLista(removidas)
-        ui.renderizarListaTarefas(tarefas.listaTarefas)
+        renderizarLista()
         atualizarPainel()
         salvar()
       }
@@ -537,6 +565,8 @@ function gerarAgenda({ silencioso = false } = {}) {
   ui.definirEstadoAcoesAgenda(true)
   graficos.renderizarEnergia(estado.bio, janela, agenda.eventos)
   graficos.renderizarDistribuicao(agenda.stats)
+  graficos.renderizarSemana(estado.agendas)
+  agora.atualizar()
   salvar()
 
   if (!silencioso) {
@@ -577,31 +607,176 @@ function exportarICS() {
   })
 }
 
+/** Copia a agenda visível para outra data, sem precisar recadastrar nada. */
+async function duplicarAgenda() {
+  if (!estado.agendaAtual) return
+
+  const amanha = new Date(dataReferencia())
+  amanha.setDate(amanha.getDate() + 1)
+
+  const dados = await abrirFormulario({
+    titulo: 'Duplicar agenda',
+    descricao: `O planejamento de ${estado.dataAgenda.split('-').reverse().join('/')} será copiado para a data escolhida.`,
+    rotuloConfirmar: 'Duplicar',
+    campos: [{ id: 'data', rotulo: 'Data de destino', tipo: 'date', valor: calendario.chaveData(amanha) }],
+    validar: valores => (valores.data ? null : 'Escolha uma data de destino.')
+  })
+  if (!dados) return
+
+  if (estado.agendas[dados.data]) {
+    const ok = await confirmar({
+      titulo: 'Substituir agenda existente?',
+      mensagem: 'Já existe um planejamento salvo nessa data.',
+      rotuloConfirmar: 'Substituir',
+      perigo: true
+    })
+    if (!ok) return
+  }
+
+  estado.agendas[dados.data] = {
+    eventos: estado.agendaAtual.eventos,
+    stats: estado.agendaAtual.stats,
+    geradoEm: new Date().toISOString(),
+    duplicadaDe: estado.dataAgenda
+  }
+  salvar({ imediato: true })
+  graficos.renderizarSemana(estado.agendas)
+  notificar(`Agenda copiada para ${dados.data.split('-').reverse().join('/')}.`, { tipo: 'sucesso' })
+}
+
+/* =========================================================================
+   Backup
+   ========================================================================= */
+
+function exportarDados() {
+  const pacote = {
+    aplicativo: 'chronos-ultra',
+    versao: 3,
+    exportadoEm: new Date().toISOString(),
+    perfil: { ...estado.perfil, focoMaximo: estado.bio.focoMaximo },
+    configuracoes: estado.configuracoes,
+    tarefas: tarefas.listaTarefas,
+    agendas: estado.agendas,
+    historico: estado.historico
+  }
+  baixarArquivo(
+    `chronos-backup-${calendario.chaveData(new Date())}.json`,
+    JSON.stringify(pacote, null, 2),
+    'application/json;charset=utf-8'
+  )
+  notificar('Backup exportado.', { tipo: 'sucesso' })
+}
+
+async function importarDados(arquivo) {
+  if (!arquivo) return
+  try {
+    const pacote = JSON.parse(await arquivo.text())
+    if (!pacote || typeof pacote !== 'object' || !Array.isArray(pacote.tarefas)) {
+      throw new Error('formato inesperado')
+    }
+
+    const ok = await confirmar({
+      titulo: 'Importar este backup?',
+      mensagem: `${pacote.tarefas.length} tarefa(s) e ${Object.keys(pacote.agendas || {}).length} agenda(s) substituirão os dados atuais deste perfil.`,
+      rotuloConfirmar: 'Importar',
+      perigo: true
+    })
+    if (!ok) return
+
+    estado.configuracoes = { ...CONFIG_PADRAO, ...(pacote.configuracoes || {}) }
+    estado.configuracoes.interrupcoes = Array.isArray(pacote.configuracoes?.interrupcoes)
+      ? pacote.configuracoes.interrupcoes
+      : []
+    estado.agendas = pacote.agendas && typeof pacote.agendas === 'object' ? pacote.agendas : {}
+    estado.historico = Array.isArray(pacote.historico) ? pacote.historico : []
+    estado.agendaAtual = estado.agendas[estado.dataAgenda] || null
+
+    if (pacote.perfil?.idade) {
+      estado.perfil = { ...estado.perfil, idade: pacote.perfil.idade, cronotipo: pacote.perfil.cronotipo || estado.perfil.cronotipo }
+      estado.bio = alg.montarPerfilBiologico(estado.perfil)
+      ui.atualizarCabecalho(estado.perfil, estado.bio)
+    }
+
+    tarefas.definirLista(pacote.tarefas)
+    aplicarConfiguracaoNaTela()
+    renderizarLista()
+    ui.renderizarAgenda(estado.agendaAtual)
+    atualizarPainel()
+    salvar({ imediato: true })
+    notificar('Backup importado com sucesso.', { tipo: 'sucesso' })
+  } catch {
+    notificar('Não foi possível ler esse arquivo. Verifique se é um backup do Chronos Ultra.', {
+      tipo: 'erro',
+      duracao: 6000
+    })
+  }
+}
+
 /* =========================================================================
    Navegação e tema
    ========================================================================= */
 
+const ATALHOS = [
+  ['N', 'Nova tarefa (foca o campo de nome)'],
+  ['G', 'Gerar a agenda do dia selecionado'],
+  ['C', 'Abrir o calendário'],
+  ['T', 'Alternar o tema (escuro → claro → sistema)'],
+  ['F', 'Focar no bloco que está acontecendo agora'],
+  ['?', 'Abrir esta lista de atalhos'],
+  ['Esc', 'Voltar ao painel / fechar diálogos']
+]
+
+function mostrarAtalhos() {
+  abrirPainel({
+    titulo: 'Atalhos de teclado',
+    descricao: 'Funcionam sempre que você não estiver digitando em um campo.',
+    html: `<ul class="lista-atalhos">
+      ${ATALHOS.map(([tecla, descricao]) => `<li><kbd>${escaparHTML(tecla)}</kbd><span>${escaparHTML(descricao)}</span></li>`).join('')}
+    </ul>`
+  })
+}
+
+/** Inicia o foco no bloco que está acontecendo agora. */
+function focarAgora() {
+  const botao = document.querySelector('#painel-agora [data-focar-agora]')
+  if (!botao) {
+    notificar('Nenhum bloco de tarefa em andamento neste momento.', { tipo: 'info' })
+    return
+  }
+  botao.click()
+}
+
 function abrirCalendario() {
-  ui.mostrarTela('tela-calendario')
-  calendario.renderizar()
+  anim.transicionar(() => {
+    ui.mostrarTela('tela-calendario')
+    calendario.renderizar()
+  })
 }
 
 /** Volta ao painel e redesenha os gráficos, que não medem enquanto ocultos. */
 function voltarAoPainel() {
-  ui.mostrarTela('tela-painel')
-  if (estado.autenticado) atualizarPainel()
+  anim.transicionar(() => {
+    ui.mostrarTela('tela-painel')
+    if (estado.autenticado) atualizarPainel()
+  })
 }
 
+const CICLO_TEMA = { escuro: 'claro', claro: 'auto', auto: 'escuro' }
+
 function alternarTema() {
-  estado.tema = estado.tema === 'escuro' ? 'claro' : 'escuro'
-  ui.aplicarTema(estado.tema)
+  estado.tema = CICLO_TEMA[estado.tema] || 'escuro'
+  anim.transicionar(() => ui.aplicarTema(estado.tema))
   storage.salvarTema(estado.tema)
-  const janela = montarJanelaAtual()
+  redesenharGraficos()
+}
+
+function redesenharGraficos() {
   graficos.atualizarTemaGraficos(
     estado.bio,
-    janela,
+    montarJanelaAtual(),
     estado.agendaAtual?.eventos || [],
-    estado.agendaAtual?.stats
+    estado.agendaAtual?.stats,
+    estado.agendas
   )
 }
 
@@ -640,6 +815,15 @@ function ligarEventosInventario() {
   $('#btn-limpar-concluidas')?.addEventListener('click', limparConcluidas)
   $('#btn-limpar-todas')?.addEventListener('click', limparTodas)
 
+  ui.ligarArrasteDeTarefas((idOrigem, idDestino) => {
+    if (!tarefas.mover(idOrigem, idDestino)) return
+    renderizarLista()
+    salvar()
+  })
+
+  ligarFiltros()
+  ligarBackup()
+
   const campoNome = $('#nome-tarefa')
   campoNome?.addEventListener('blur', () => {
     const sugestao = tarefas.obterSugestaoPorNome(campoNome.value, estado.historico)
@@ -650,6 +834,49 @@ function ligarEventosInventario() {
     if ($('#categoria-tarefa') && sugestao.categoria) $('#categoria-tarefa').value = sugestao.categoria
   })
   campoNome?.addEventListener('input', () => ui.mostrarSugestao(null))
+}
+
+function ligarFiltros() {
+  let debounce = null
+  $('#busca-tarefa')?.addEventListener('input', evento => {
+    clearTimeout(debounce)
+    const valor = evento.target.value
+    debounce = setTimeout(() => {
+      estado.filtros.busca = valor
+      renderizarLista()
+    }, 140)
+  })
+
+  $('#filtro-categoria')?.addEventListener('change', evento => {
+    estado.filtros.categoria = evento.target.value
+    renderizarLista()
+  })
+
+  $('#ordenar-tarefas')?.addEventListener('change', evento => {
+    estado.filtros.ordem = evento.target.value
+    renderizarLista()
+  })
+
+  $('.segmentado')?.addEventListener('click', evento => {
+    const opcao = evento.target.closest('[data-status]')
+    if (!opcao) return
+    estado.filtros.status = opcao.dataset.status
+    $$('.segmentado__opcao').forEach(botao => {
+      const ativo = botao === opcao
+      botao.classList.toggle('ativo', ativo)
+      botao.setAttribute('aria-pressed', String(ativo))
+    })
+    renderizarLista()
+  })
+}
+
+function ligarBackup() {
+  $('#btn-exportar-dados')?.addEventListener('click', exportarDados)
+  $('#btn-importar-dados')?.addEventListener('click', () => $('#arquivo-importacao')?.click())
+  $('#arquivo-importacao')?.addEventListener('change', async evento => {
+    await importarDados(evento.target.files?.[0])
+    evento.target.value = ''
+  })
 }
 
 function ligarEventosJanela() {
@@ -672,6 +899,7 @@ function ligarEventosAgenda() {
   $('#btn-whatsapp')?.addEventListener('click', enviarParaWhatsApp)
   $('#btn-copiar')?.addEventListener('click', copiarAgenda)
   $('#btn-ics')?.addEventListener('click', exportarICS)
+  $('#btn-duplicar')?.addEventListener('click', duplicarAgenda)
 
   $('#data-agenda')?.addEventListener('change', evento => {
     definirDataAgenda(evento.target.value || calendario.chaveData(new Date()))
@@ -701,6 +929,7 @@ function ligarEventosNavegacao() {
   $('#btn-voltar-painel')?.addEventListener('click', voltarAoPainel)
   $('#btn-trocar-perfil')?.addEventListener('click', trocarPerfil)
   $('#btn-tema')?.addEventListener('click', alternarTema)
+  $('#btn-atalhos')?.addEventListener('click', mostrarAtalhos)
 
   $$('[data-visao]').forEach(botao => {
     botao.addEventListener('click', () => calendario.definirVisao(botao.dataset.visao))
@@ -717,17 +946,28 @@ function ligarAtalhos() {
     if (digitando || evento.ctrlKey || evento.metaKey || evento.altKey) return
     if (!estado.autenticado) return
 
-    if (evento.key === 'n') {
+    const tecla = evento.key.toLowerCase()
+
+    if (tecla === 'n') {
       evento.preventDefault()
       voltarAoPainel()
       $('#nome-tarefa')?.focus()
-    } else if (evento.key === 'g') {
+    } else if (tecla === 'g') {
       evento.preventDefault()
       voltarAoPainel()
       gerarAgenda()
-    } else if (evento.key === 'c') {
+    } else if (tecla === 'c') {
       evento.preventDefault()
       abrirCalendario()
+    } else if (tecla === 't') {
+      evento.preventDefault()
+      alternarTema()
+    } else if (tecla === 'f') {
+      evento.preventDefault()
+      focarAgora()
+    } else if (evento.key === '?') {
+      evento.preventDefault()
+      mostrarAtalhos()
     } else if (evento.key === 'Escape') {
       if (document.body.dataset.tela === 'tela-calendario') voltarAoPainel()
     }
@@ -738,12 +978,81 @@ function ligarAtalhos() {
    Inicialização
    ========================================================================= */
 
+/** Registra o service worker e o botão de instalação, quando disponíveis. */
+function ligarPWA() {
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {
+        /* offline é um extra: falhar aqui não afeta o app */
+      })
+    })
+  }
+
+  let promptInstalacao = null
+  const botao = $('#btn-instalar')
+
+  window.addEventListener('beforeinstallprompt', evento => {
+    evento.preventDefault()
+    promptInstalacao = evento
+    if (botao) botao.hidden = false
+  })
+
+  botao?.addEventListener('click', async () => {
+    if (!promptInstalacao) return
+    promptInstalacao.prompt()
+    const escolha = await promptInstalacao.userChoice
+    promptInstalacao = null
+    botao.hidden = true
+    if (escolha.outcome === 'accepted') {
+      notificar('Chronos Ultra instalado. Ele abre offline também.', { tipo: 'sucesso' })
+    }
+  })
+
+  window.addEventListener('appinstalled', () => {
+    if (botao) botao.hidden = true
+  })
+}
+
+/** Executa `?acao=` do atalho do app instalado. */
+function aplicarAcaoDaURL() {
+  const acao = new URLSearchParams(location.search).get('acao')
+  if (!acao || !estado.autenticado) return
+  if (acao === 'gerar') gerarAgenda()
+  else if (acao === 'calendario') abrirCalendario()
+}
+
 function iniciar() {
   estado.tema = storage.lerTema() || 'escuro'
   ui.aplicarTema(estado.tema)
 
+  window
+    .matchMedia?.('(prefers-color-scheme: light)')
+    .addEventListener?.('change', () => {
+      if (estado.tema !== 'auto') return
+      ui.aplicarTema('auto')
+      redesenharGraficos()
+    })
+
   ui.preencherSelectCategorias($('#categoria-tarefa'), 'foco')
+  ui.preencherControlesInventario()
   ui.mostrarTela('tela-boas-vindas')
+
+  anim.ligarOndas()
+  anim.ligarCabecalhoElevado()
+  anim.revelar('.cartao, .calendario__lateral')
+
+  agora.iniciarMonitor({
+    obterAgenda: agendaDeHoje,
+    aoFocar: ({ titulo, minutos, tarefa }) =>
+      foco.iniciarFoco({
+        titulo,
+        minutos,
+        aoConcluir: () => {
+          const alvo = tarefa ? tarefas.obter(tarefa) : null
+          if (alvo && !alvo.concluida) alternarConcluida(tarefa)
+        }
+      })
+  })
 
   calendario.inicializar({
     container: $('#calendario-conteudo'),
@@ -765,6 +1074,7 @@ function iniciar() {
   ligarEventosAgenda()
   ligarEventosNavegacao()
   ligarAtalhos()
+  ligarPWA()
 
   const anoRodape = $('#ano-atual')
   if (anoRodape) anoRodape.textContent = new Date().getFullYear()

@@ -107,6 +107,20 @@ export function ordenarPorPeso() {
   return [...listaTarefas].sort((a, b) => b.peso - a.peso)
 }
 
+/**
+ * Move uma tarefa para a posição de outra (reordenação por arraste).
+ * A ordem manual vira o critério de desempate natural do agendador, já que a
+ * fila é percorrida nesta sequência.
+ */
+export function mover(idOrigem, idDestino) {
+  const origem = listaTarefas.findIndex(t => t.id === idOrigem)
+  const destino = listaTarefas.findIndex(t => t.id === idDestino)
+  if (origem === -1 || destino === -1 || origem === destino) return false
+  const [movida] = listaTarefas.splice(origem, 1)
+  listaTarefas.splice(destino, 0, movida)
+  return true
+}
+
 export function limparConcluidas() {
   const removidas = listaTarefas.filter(t => t.concluida)
   definirLista(listaTarefas.filter(t => !t.concluida))

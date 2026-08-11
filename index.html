@@ -12,6 +12,10 @@
     <title>Chronos Ultra — Agenda otimizada pela sua energia</title>
 
     <link rel="icon" href="img/favicon.ico" type="image/x-icon" sizes="any" />
+    <link rel="apple-touch-icon" href="img/icone-192.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Chronos Ultra" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -105,12 +109,18 @@
           <div id="chips-bio" class="chips" aria-label="Seu perfil biológico"></div>
 
           <nav class="cabecalho__acoes" aria-label="Ações principais">
+            <button type="button" id="btn-instalar" class="botao botao--secundario" hidden>
+              <span aria-hidden="true">⬇️</span> Instalar app
+            </button>
             <button type="button" id="btn-ver-calendario" class="botao botao--secundario">
               <span aria-hidden="true">🗓️</span> Calendário
             </button>
             <a class="botao botao--fantasma" href="texto/texto.html" target="_blank" rel="noopener">
               <span aria-hidden="true">📘</span> Manual
             </a>
+            <button type="button" id="btn-atalhos" class="botao botao--icone botao--fantasma" aria-label="Ver atalhos de teclado" title="Atalhos de teclado">
+              ⌨️
+            </button>
             <button type="button" id="btn-tema" class="botao botao--icone botao--fantasma" aria-label="Alternar tema">
               🌙
             </button>
@@ -206,6 +216,16 @@
               <canvas id="grafico-tempo" aria-label="Distribuição do dia entre trabalho, pausas e tempo livre" role="img"></canvas>
             </div>
           </div>
+
+          <div class="grafico">
+            <h3 class="grafico__titulo">Últimos 7 dias</h3>
+            <p id="semana-vazia" class="estado-vazio estado-vazio--compacto" hidden>
+              Gere agendas ao longo da semana para acompanhar sua evolução aqui.
+            </p>
+            <div class="grafico__area">
+              <canvas id="grafico-semana" aria-label="Trabalho e tempo livre nos últimos sete dias" role="img"></canvas>
+            </div>
+          </div>
         </section>
 
         <!-- --------------------------------------------- Coluna: tarefas -->
@@ -260,6 +280,32 @@
 
           <div id="resumo-inventario" class="resumo-inventario"></div>
 
+          <div class="ferramentas">
+            <div class="campo campo--busca">
+              <label class="visualmente-oculto" for="busca-tarefa">Buscar tarefa</label>
+              <input type="search" id="busca-tarefa" placeholder="Buscar tarefa…" autocomplete="off" />
+            </div>
+            <div class="campo">
+              <label class="visualmente-oculto" for="filtro-categoria">Filtrar por categoria</label>
+              <select id="filtro-categoria"></select>
+            </div>
+            <div class="campo">
+              <label class="visualmente-oculto" for="ordenar-tarefas">Ordenar tarefas</label>
+              <select id="ordenar-tarefas"></select>
+            </div>
+          </div>
+
+          <div class="segmentado-linha">
+            <div class="segmentado" role="group" aria-label="Filtrar por situação">
+              <button type="button" class="segmentado__opcao ativo" data-status="todas" aria-pressed="true">Todas</button>
+              <button type="button" class="segmentado__opcao" data-status="pendentes" aria-pressed="false">Pendentes</button>
+              <button type="button" class="segmentado__opcao" data-status="concluidas" aria-pressed="false">Concluídas</button>
+            </div>
+            <span id="contador-filtro" class="contador-filtro" aria-live="polite"></span>
+          </div>
+
+          <div id="lista-de-tarefas" class="lista lista--tarefas"></div>
+
           <div class="barra-acoes">
             <button type="button" id="btn-limpar-concluidas" class="botao botao--fantasma botao--pequeno">
               Limpar concluídas
@@ -268,8 +314,6 @@
               Apagar tudo
             </button>
           </div>
-
-          <div id="lista-de-tarefas" class="lista lista--tarefas"></div>
 
           <details class="acordeao">
             <summary class="acordeao__titulo">
@@ -305,6 +349,27 @@
               </table>
             </div>
           </details>
+
+          <details class="acordeao">
+            <summary class="acordeao__titulo">
+              <span>Backup dos seus dados</span>
+              <small>exportar ou restaurar</small>
+            </summary>
+
+            <div class="barra-acoes">
+              <button type="button" id="btn-exportar-dados" class="botao botao--fantasma botao--pequeno">
+                <span aria-hidden="true">⬇️</span> Exportar JSON
+              </button>
+              <button type="button" id="btn-importar-dados" class="botao botao--fantasma botao--pequeno">
+                <span aria-hidden="true">⬆️</span> Importar JSON
+              </button>
+              <input type="file" id="arquivo-importacao" accept="application/json,.json" hidden />
+            </div>
+            <p class="campo__ajuda">
+              O arquivo contém perfil, tarefas, configurações e agendas salvas — útil para migrar de
+              navegador ou guardar uma cópia de segurança.
+            </p>
+          </details>
         </section>
 
         <!-- ---------------------------------------------- Coluna: agenda -->
@@ -329,6 +394,8 @@
             </button>
           </div>
 
+          <section id="painel-agora" class="agora" aria-live="polite" aria-label="Bloco atual" hidden></section>
+
           <div id="indicadores" class="indicadores" hidden></div>
 
           <div id="resultado-agenda" class="resultado-agenda" aria-live="polite"></div>
@@ -342,6 +409,9 @@
             </button>
             <button type="button" id="btn-ics" class="botao botao--fantasma botao--pequeno" data-requer-agenda disabled>
               <span aria-hidden="true">📅</span> Exportar .ics
+            </button>
+            <button type="button" id="btn-duplicar" class="botao botao--fantasma botao--pequeno" data-requer-agenda disabled>
+              <span aria-hidden="true">📄</span> Duplicar para…
             </button>
           </div>
         </section>

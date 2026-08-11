@@ -4,6 +4,7 @@
  */
 
 import { escaparHTML } from './componentes.js'
+import { animarNumero } from './animacoes.js'
 import { CATEGORIAS, obterCategoria } from './tarefas.js'
 import {
   CRONOTIPOS,
@@ -29,15 +30,31 @@ export function mostrarTela(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+const TEMAS = {
+  escuro: { icone: '🌙', rotulo: 'Tema escuro' },
+  claro: { icone: '☀️', rotulo: 'Tema claro' },
+  auto: { icone: '🖥️', rotulo: 'Tema do sistema' }
+}
+
+/**
+ * Aplica o tema escolhido. Em `auto`, segue a preferência do sistema.
+ * @returns {string} o tema efetivamente aplicado (`escuro` ou `claro`)
+ */
 export function aplicarTema(tema) {
-  document.documentElement.dataset.tema = tema
+  const preferencia = TEMAS[tema] ? tema : 'escuro'
+  const sistemaClaro = window.matchMedia?.('(prefers-color-scheme: light)').matches
+  const resolvido = preferencia === 'auto' ? (sistemaClaro ? 'claro' : 'escuro') : preferencia
+
+  document.documentElement.dataset.tema = resolvido
+  document.documentElement.dataset.temaPreferido = preferencia
+
   const botao = $('#btn-tema')
   if (botao) {
-    const escuro = tema === 'escuro'
-    botao.textContent = escuro ? '🌙' : '☀️'
-    botao.setAttribute('aria-label', escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro')
-    botao.setAttribute('title', escuro ? 'Tema escuro ativo' : 'Tema claro ativo')
+    botao.textContent = TEMAS[preferencia].icone
+    botao.setAttribute('aria-label', `${TEMAS[preferencia].rotulo} — clique para alternar`)
+    botao.setAttribute('title', `${TEMAS[preferencia].rotulo} (clique para alternar)`)
   }
+  return resolvido
 }
 
 /* ---------------------------------------------------------------- perfil -- */
@@ -96,6 +113,21 @@ export function preencherSelectCategorias(select, selecionada) {
   ).join('')
 }
 
+/** Popula os controles de filtro e ordenação do inventário. */
+export function preencherControlesInventario() {
+  const filtro = $('#filtro-categoria')
+  if (filtro) {
+    filtro.innerHTML =
+      '<option value="todas">Todas as categorias</option>' +
+      CATEGORIAS.map(c => `<option value="${c.id}">${c.icone} ${c.rotulo}</option>`).join('')
+  }
+
+  const ordenar = $('#ordenar-tarefas')
+  if (ordenar) {
+    ordenar.innerHTML = ORDENACOES.map(o => `<option value="${o.id}">${o.rotulo}</option>`).join('')
+  }
+}
+
 function etiquetaPrazo(prazo) {
   if (!prazo) return ''
   const urgencia = calcularUrgencia(prazo)
@@ -105,11 +137,52 @@ function etiquetaPrazo(prazo) {
   return `<span class="etiqueta ${classe}" title="Prazo">📅 ${texto}</span>`
 }
 
-export function renderizarListaTarefas(lista) {
+export const ORDENACOES = [
+  { id: 'manual', rotulo: 'Ordem manual' },
+  { id: 'prioridade', rotulo: 'Prioridade' },
+  { id: 'prazo', rotulo: 'Prazo' },
+  { id: 'duracao', rotulo: 'Duração' }
+]
+
+function aplicarFiltros(lista, { busca = '', status = 'todas', categoria = 'todas' }) {
+  const termo = busca.trim().toLowerCase()
+  return lista.filter(tarefa => {
+    if (status === 'pendentes' && tarefa.concluida) return false
+    if (status === 'concluidas' && !tarefa.concluida) return false
+    if (categoria !== 'todas' && tarefa.categoria !== categoria) return false
+    if (termo && !tarefa.nome.toLowerCase().includes(termo)) return false
+    return true
+  })
+}
+
+function aplicarOrdenacao(lista, ordem) {
+  const copia = [...lista]
+  if (ordem === 'manual') {
+    return copia.sort((a, b) => Number(a.concluida) - Number(b.concluida))
+  }
+  return copia.sort((a, b) => {
+    if (a.concluida !== b.concluida) return a.concluida ? 1 : -1
+    if (ordem === 'prazo') {
+      return calcularUrgencia(b.prazo) - calcularUrgencia(a.prazo) || b.peso - a.peso
+    }
+    if (ordem === 'duracao') return b.tempo - a.tempo
+    return b.peso - a.peso || calcularUrgencia(b.prazo) - calcularUrgencia(a.prazo)
+  })
+}
+
+/**
+ * @param {Array} lista inventário completo
+ * @param {object} [filtros] `{ busca, status, categoria, ordem }`
+ */
+export function renderizarListaTarefas(lista, filtros = {}) {
   const container = $('#lista-de-tarefas')
   if (!container) return
 
+  const { ordem = 'manual' } = filtros
+  const contador = $('#contador-filtro')
+
   if (!lista.length) {
+    if (contador) contador.textContent = ''
     container.innerHTML = `
       <p class="estado-vazio">
         Nenhuma tarefa ainda. Comece adicionando o que precisa sair do papel hoje.
@@ -117,16 +190,32 @@ export function renderizarListaTarefas(lista) {
     return
   }
 
-  const ordenadas = [...lista].sort((a, b) => {
-    if (a.concluida !== b.concluida) return a.concluida ? 1 : -1
-    return calcularUrgencia(b.prazo) - calcularUrgencia(a.prazo) || b.peso - a.peso
-  })
+  const filtradas = aplicarFiltros(lista, filtros)
+  if (contador) {
+    contador.textContent =
+      filtradas.length === lista.length
+        ? `${lista.length} tarefa${lista.length === 1 ? '' : 's'}`
+        : `${filtradas.length} de ${lista.length}`
+  }
 
+  if (!filtradas.length) {
+    container.innerHTML = `
+      <p class="estado-vazio estado-vazio--compacto">
+        Nenhuma tarefa corresponde ao filtro atual.
+      </p>`
+    return
+  }
+
+  const ordenadas = aplicarOrdenacao(filtradas, ordem)
+  const arrastavel = ordem === 'manual'
+
+  container.classList.toggle('lista--arrastavel', arrastavel)
   container.innerHTML = ordenadas
-    .map(tarefa => {
+    .map((tarefa, indice) => {
       const categoria = obterCategoria(tarefa.categoria)
       return `
-      <article class="tarefa ${tarefa.concluida ? 'tarefa--concluida' : ''}" data-id="${tarefa.id}">
+      <article class="tarefa ${tarefa.concluida ? 'tarefa--concluida' : ''}" data-id="${tarefa.id}"
+        style="--i:${indice}" ${arrastavel ? 'draggable="true"' : ''}>
         <button type="button" class="tarefa__check" data-acao="concluir" data-id="${tarefa.id}"
           aria-label="${tarefa.concluida ? 'Reabrir' : 'Concluir'} ${escaparHTML(tarefa.nome)}"
           aria-pressed="${tarefa.concluida}">
@@ -144,6 +233,11 @@ export function renderizarListaTarefas(lista) {
         </div>
 
         <div class="tarefa__acoes">
+          ${
+            arrastavel
+              ? `<span class="tarefa__alca" aria-hidden="true" title="Arraste para reordenar">⠿</span>`
+              : ''
+          }
           <button type="button" class="botao botao--icone botao--fantasma" data-acao="editar" data-id="${tarefa.id}"
             aria-label="Editar ${escaparHTML(tarefa.nome)}">✏️</button>
           <button type="button" class="botao botao--icone botao--fantasma botao--perigo-suave" data-acao="excluir" data-id="${tarefa.id}"
@@ -152,6 +246,47 @@ export function renderizarListaTarefas(lista) {
       </article>`
     })
     .join('')
+}
+
+/** Liga o arraste de reordenação usando HTML5 drag and drop. */
+export function ligarArrasteDeTarefas(aoReordenar) {
+  const container = $('#lista-de-tarefas')
+  if (!container) return
+  let arrastando = null
+
+  container.addEventListener('dragstart', evento => {
+    const item = evento.target.closest('.tarefa[draggable="true"]')
+    if (!item) return
+    arrastando = item
+    item.classList.add('tarefa--arrastando')
+    evento.dataTransfer.effectAllowed = 'move'
+    evento.dataTransfer.setData('text/plain', item.dataset.id)
+  })
+
+  container.addEventListener('dragover', evento => {
+    if (!arrastando) return
+    evento.preventDefault()
+    evento.dataTransfer.dropEffect = 'move'
+    const alvo = evento.target.closest('.tarefa')
+    container.querySelectorAll('.tarefa--alvo').forEach(el => el.classList.remove('tarefa--alvo'))
+    if (alvo && alvo !== arrastando) alvo.classList.add('tarefa--alvo')
+  })
+
+  const encerrar = () => {
+    arrastando?.classList.remove('tarefa--arrastando')
+    container.querySelectorAll('.tarefa--alvo').forEach(el => el.classList.remove('tarefa--alvo'))
+    arrastando = null
+  }
+
+  container.addEventListener('drop', evento => {
+    evento.preventDefault()
+    const alvo = evento.target.closest('.tarefa')
+    const origem = arrastando?.dataset.id
+    encerrar()
+    if (alvo && origem && alvo.dataset.id !== origem) aoReordenar(origem, alvo.dataset.id)
+  })
+
+  container.addEventListener('dragend', encerrar)
 }
 
 export function renderizarResumoInventario(stats, limiteMinutos) {
@@ -221,11 +356,11 @@ export function renderizarInterrupcoes(lista) {
 
 /* --------------------------------------------------------------- agenda --- */
 
-function blocoTarefa(evento) {
+function blocoTarefa(evento, indice) {
   const categoria = obterCategoria(evento.categoria)
   const energia = classificarEnergia(evento.energia)
   return `
-    <article class="bloco bloco--tarefa ${evento.energiaClasse}" data-inicio="${evento.inicioMinutos}">
+    <article class="bloco bloco--tarefa ${evento.energiaClasse}" style="--i:${indice}" data-inicio="${evento.inicioMinutos}">
       <div class="bloco__horario">
         <strong>${formatarHora(evento.inicioMinutos)}</strong>
         <span>${formatarHora(evento.fimMinutos)}</span>
@@ -248,9 +383,9 @@ function blocoTarefa(evento) {
     </article>`
 }
 
-function blocoPausa(evento) {
+function blocoPausa(evento, indice) {
   return `
-    <article class="bloco bloco--pausa">
+    <article class="bloco bloco--pausa" style="--i:${indice}">
       <div class="bloco__horario">
         <strong>${formatarHora(evento.inicioMinutos)}</strong>
         <span>${formatarHora(evento.fimMinutos)}</span>
@@ -262,9 +397,9 @@ function blocoPausa(evento) {
     </article>`
 }
 
-function blocoInterrupcao(evento) {
+function blocoInterrupcao(evento, indice) {
   return `
-    <article class="bloco bloco--interrupcao">
+    <article class="bloco bloco--interrupcao" style="--i:${indice}">
       <div class="bloco__horario">
         <strong>${formatarHora(evento.inicioMinutos)}</strong>
         <span>${formatarHora(evento.fimMinutos)}</span>
@@ -294,10 +429,10 @@ export function renderizarAgenda(agenda) {
   const pendentes = agenda.eventos.filter(e => e.tipo === 'nao-agendada')
 
   const linhaDoTempo = agendados
-    .map(evento => {
-      if (evento.tipo === 'tarefa') return blocoTarefa(evento)
-      if (evento.tipo === 'pausa') return blocoPausa(evento)
-      return blocoInterrupcao(evento)
+    .map((evento, indice) => {
+      if (evento.tipo === 'tarefa') return blocoTarefa(evento, indice)
+      if (evento.tipo === 'pausa') return blocoPausa(evento, indice)
+      return blocoInterrupcao(evento, indice)
     })
     .join('')
 
@@ -336,35 +471,63 @@ export function renderizarIndicadores(agenda) {
   const stats = agenda?.stats
   if (!stats) {
     container.hidden = true
+    container.innerHTML = ''
     return
   }
   container.hidden = false
 
   const cartoes = [
-    { icone: '🎯', rotulo: 'Trabalho planejado', valor: formatarDuracao(stats.trabalhados), detalhe: `${stats.ocupacao}% da janela` },
-    { icone: '☕', rotulo: 'Pausas programadas', valor: formatarDuracao(stats.minutosPausa), detalhe: `${stats.eficiencia}% de eficiência` },
-    { icone: '🌤️', rotulo: 'Tempo livre', valor: formatarDuracao(stats.minutosLivres), detalhe: stats.minutosLivres ? `livre às ${formatarHora(stats.fimAgendaMinutos)}` : 'dia cheio' },
+    {
+      icone: '🎯',
+      rotulo: 'Trabalho planejado',
+      numero: stats.trabalhados,
+      formatar: formatarDuracao,
+      detalhe: `${stats.ocupacao}% da janela`,
+      tom: 'primaria'
+    },
+    {
+      icone: '☕',
+      rotulo: 'Pausas programadas',
+      numero: stats.minutosPausa,
+      formatar: formatarDuracao,
+      detalhe: `${stats.eficiencia}% de eficiência`,
+      tom: 'aviso'
+    },
+    {
+      icone: '🌤️',
+      rotulo: 'Tempo livre',
+      numero: stats.minutosLivres,
+      formatar: formatarDuracao,
+      detalhe: stats.minutosLivres ? `livre às ${formatarHora(stats.fimAgendaMinutos)}` : 'dia cheio',
+      tom: 'sucesso'
+    },
     {
       icone: stats.naoAgendadas ? '⚠️' : '✅',
       rotulo: 'Pendências',
-      valor: stats.naoAgendadas ? String(stats.naoAgendadas) : 'Nenhuma',
-      detalhe: stats.naoAgendadas ? `${formatarDuracao(stats.minutosNaoAgendados)} sobrando` : 'tudo encaixado'
+      numero: stats.naoAgendadas,
+      formatar: n => (Math.round(n) ? String(Math.round(n)) : 'Nenhuma'),
+      detalhe: stats.naoAgendadas ? `${formatarDuracao(stats.minutosNaoAgendados)} sobrando` : 'tudo encaixado',
+      tom: stats.naoAgendadas ? 'perigo' : 'sucesso'
     }
   ]
 
   container.innerHTML = cartoes
     .map(
-      c => `
-      <div class="indicador">
+      (c, i) => `
+      <div class="indicador indicador--${c.tom}" style="--i:${i}">
         <span class="indicador__icone" aria-hidden="true">${c.icone}</span>
         <div>
-          <strong class="indicador__valor">${escaparHTML(c.valor)}</strong>
+          <strong class="indicador__valor" data-valor>—</strong>
           <span class="indicador__rotulo">${escaparHTML(c.rotulo)}</span>
           <small class="indicador__detalhe">${escaparHTML(c.detalhe)}</small>
         </div>
       </div>`
     )
     .join('')
+
+  container.querySelectorAll('[data-valor]').forEach((alvo, i) => {
+    animarNumero(alvo, cartoes[i].numero, cartoes[i].formatar)
+  })
 }
 
 export function definirEstadoAcoesAgenda(temAgenda) {
@@ -377,12 +540,18 @@ export function limparPainel() {
   renderizarListaTarefas([])
   renderizarAgenda(null)
   renderizarInterrupcoes([])
+  renderizarIndicadores(null)
   mostrarSugestao(null)
-  const indicadores = $('#indicadores')
-  if (indicadores) indicadores.hidden = true
+
   const resumo = $('#resumo-inventario')
   if (resumo) resumo.innerHTML = ''
-  ;['#nome-tarefa', '#peso-tarefa', '#tempo-tarefa', '#prazo-tarefa'].forEach(seletor => {
+
+  const agora = $('#painel-agora')
+  if (agora) {
+    agora.hidden = true
+    agora.innerHTML = ''
+  }
+  ;['#nome-tarefa', '#peso-tarefa', '#tempo-tarefa', '#prazo-tarefa', '#busca-tarefa'].forEach(seletor => {
     const campo = $(seletor)
     if (campo) campo.value = ''
   })

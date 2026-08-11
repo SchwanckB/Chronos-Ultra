@@ -9,6 +9,12 @@ import { obterEnergia, formatarDuracao } from './algoritmo.js'
 
 let graficoEnergia = null
 let graficoTempo = null
+let graficoSemana = null
+
+const ANIMACAO = () =>
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    ? false
+    : { duration: 750, easing: 'easeOutQuart' }
 
 const temChart = () => typeof window !== 'undefined' && typeof window.Chart !== 'undefined'
 
@@ -87,6 +93,7 @@ export function renderizarEnergia(perfil, janela = null, eventos = []) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: ANIMACAO(),
       interaction: { intersect: false, mode: 'index' },
       scales: {
         y: { min: 0, max: 100, display: false },
@@ -139,6 +146,7 @@ export function renderizarDistribuicao(stats) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: ANIMACAO() && { ...ANIMACAO(), animateRotate: true },
       cutout: '68%',
       plugins: {
         legend: {
@@ -162,7 +170,104 @@ export function renderizarDistribuicao(stats) {
   })
 }
 
-export function atualizarTemaGraficos(perfil, janela, eventos, stats) {
+/**
+ * Barras com o tempo livre preservado nos últimos 7 dias.
+ * @param {object} agendas mapa `AAAA-MM-DD → { stats }`
+ */
+export function renderizarSemana(agendas = {}) {
+  const canvas = document.getElementById('grafico-semana')
+  const vazio = document.getElementById('semana-vazia')
+  if (!canvas || !temChart()) return
+
+  const dias = Array.from({ length: 7 }, (_, i) => {
+    const data = new Date()
+    data.setHours(0, 0, 0, 0)
+    data.setDate(data.getDate() - (6 - i))
+    const chave = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`
+    const stats = agendas[chave]?.stats
+    return {
+      rotulo: data.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
+      data: data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      livre: stats?.minutosLivres || 0,
+      trabalho: stats?.trabalhados || 0,
+      hoje: i === 6
+    }
+  })
+
+  const temDados = dias.some(d => d.trabalho > 0)
+  if (vazio) vazio.hidden = temDados
+  canvas.parentElement.hidden = !temDados
+  if (!temDados) {
+    graficoSemana = destruir(graficoSemana)
+    return
+  }
+
+  const primaria = cor('--cor-primaria', '#6366f1')
+  const sucesso = cor('--cor-sucesso', '#10b981')
+  const texto = cor('--cor-texto-suave', '#94a3b8')
+
+  graficoSemana = destruir(graficoSemana)
+  graficoSemana = new window.Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: dias.map(d => d.rotulo),
+      datasets: [
+        {
+          label: 'Trabalho',
+          data: dias.map(d => d.trabalho),
+          backgroundColor: dias.map(d => transparente(primaria, d.hoje ? 0.95 : 0.55)),
+          borderRadius: 6,
+          borderSkipped: false,
+          stack: 'dia'
+        },
+        {
+          label: 'Tempo livre',
+          data: dias.map(d => d.livre),
+          backgroundColor: dias.map(d => transparente(sucesso, d.hoje ? 0.95 : 0.5)),
+          borderRadius: 6,
+          borderSkipped: false,
+          stack: 'dia'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: ANIMACAO(),
+      scales: {
+        x: {
+          stacked: true,
+          grid: { display: false },
+          ticks: { color: texto, font: { size: 10 } }
+        },
+        y: { stacked: true, display: false, beginAtZero: true }
+      },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: texto,
+            boxWidth: 9,
+            boxHeight: 9,
+            usePointStyle: true,
+            padding: 12,
+            font: { size: 10 }
+          }
+        },
+        tooltip: {
+          displayColors: false,
+          callbacks: {
+            title: itens => dias[itens[0].dataIndex].data,
+            label: item => `${item.dataset.label}: ${formatarDuracao(item.parsed.y)}`
+          }
+        }
+      }
+    }
+  })
+}
+
+export function atualizarTemaGraficos(perfil, janela, eventos, stats, agendas) {
   renderizarEnergia(perfil, janela, eventos)
   if (stats) renderizarDistribuicao(stats)
+  if (agendas) renderizarSemana(agendas)
 }

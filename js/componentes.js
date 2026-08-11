@@ -170,6 +170,36 @@ export function confirmar({
 }
 
 /**
+ * Diálogo somente de leitura, para conteúdo informativo.
+ * @param {object} opcoes `titulo`, `descricao` e `html` já sanitizado
+ */
+export function abrirPainel({ titulo, descricao = '', html = '', largura = '32rem' } = {}) {
+  return new Promise(resolver => {
+    const { dialogo, botaoFechar } = montarDialogo({ titulo, descricao, largura })
+
+    const corpo = criarElemento('div', { classe: 'dialogo__corpo', html })
+    const acoes = criarElemento('footer', { classe: 'dialogo__acoes' })
+    const fechar = criarElemento('button', {
+      classe: 'botao botao--primario',
+      texto: 'Entendi',
+      atributos: { type: 'button' }
+    })
+
+    fechar.addEventListener('click', () => encerrar(dialogo, resolver, true))
+    botaoFechar.addEventListener('click', () => encerrar(dialogo, resolver, true))
+    dialogo.addEventListener('cancel', evento => {
+      evento.preventDefault()
+      encerrar(dialogo, resolver, true)
+    })
+
+    acoes.appendChild(fechar)
+    dialogo.append(corpo, acoes)
+    exibir(dialogo)
+    fechar.focus()
+  })
+}
+
+/**
  * Diálogo com formulário arbitrário.
  * `campos` é um array de descritores; resolve com um objeto `{ id: valor }`
  * ou `null` se o usuário cancelar.

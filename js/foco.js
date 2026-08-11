@@ -109,9 +109,35 @@ function encerrar(concluida) {
       duracao: 8000
     })
     tocarAviso()
+    avisarNoSistema('Bloco concluído ✅', `${titulo} — hora de pausar.`)
     aoConcluir?.()
   } else {
     notificar('Sessão de foco encerrada.', { tipo: 'info' })
+  }
+}
+
+/** Pede permissão de notificação sem bloquear o fluxo. */
+export function prepararNotificacoes() {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'default') return
+  Notification.requestPermission().catch(() => {})
+}
+
+/** Notificação do sistema — útil quando a aba está em segundo plano. */
+function avisarNoSistema(titulo, corpo) {
+  try {
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+    const aviso = new Notification(titulo, {
+      body: corpo,
+      icon: 'img/icone-192.png',
+      badge: 'img/icone-192.png',
+      tag: 'chronos-foco'
+    })
+    aviso.addEventListener('click', () => {
+      window.focus()
+      aviso.close()
+    })
+  } catch {
+    /* notificação é um extra */
   }
 }
 
@@ -167,6 +193,7 @@ export function iniciarFoco({ titulo, minutos, aoConcluir }) {
     aoConcluir
   }
 
+  prepararNotificacoes()
   montarPainel()
   atualizarPainel()
   intervalo = setInterval(atualizarPainel, 500)
