@@ -6,9 +6,9 @@
     <meta name="color-scheme" content="dark light" />
     <meta
       name="description"
-      content="Manual técnico do Chronos Ultra: a matemática do perfil biológico, da curva de energia, da priorização e do agendamento."
+      content="Manual do Chronos Ultra: guia de uso passo a passo de cada tela e cada campo, mais a matemática do motor de agendamento."
     />
-    <title>Manual técnico — Chronos Ultra</title>
+    <title>Manual do Chronos Ultra — guia de uso completo</title>
     <link rel="icon" href="../img/favicon.ico" type="image/x-icon" sizes="any" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,6 +18,9 @@
     />
 
     <style>
+      /* ==================================================================
+         1. Tokens
+         ================================================================== */
       :root {
         color-scheme: dark;
         --primaria: #6366f1;
@@ -33,6 +36,7 @@
         --superficie-alta: #1d2740;
         --suave: rgba(148, 163, 184, 0.08);
         --borda: rgba(148, 163, 184, 0.18);
+        --borda-forte: rgba(148, 163, 184, 0.32);
 
         --texto: #eef2ff;
         --texto-medio: #cbd5e1;
@@ -41,6 +45,12 @@
         --raio: 1rem;
         --raio-sm: 0.5rem;
         --sombra: 0 24px 50px -30px rgba(2, 6, 23, 0.9);
+
+        --txt-xs: clamp(0.78rem, 0.75rem + 0.12vw, 0.85rem);
+        --txt-sm: clamp(0.86rem, 0.83rem + 0.15vw, 0.94rem);
+        --txt-md: clamp(0.95rem, 0.92rem + 0.18vw, 1.03rem);
+
+        --transicao: 180ms cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       [data-tema='claro'] {
@@ -51,47 +61,107 @@
         --superficie-alta: #ffffff;
         --suave: rgba(15, 23, 42, 0.04);
         --borda: rgba(15, 23, 42, 0.12);
+        --borda-forte: rgba(15, 23, 42, 0.22);
         --texto: #0f172a;
         --texto-medio: #334155;
         --texto-suave: #64748b;
         --sombra: 0 24px 50px -34px rgba(15, 23, 42, 0.4);
       }
 
+      /* ==================================================================
+         2. Base
+         ================================================================== */
       *,
       *::before,
       *::after {
         box-sizing: border-box;
       }
 
+      html {
+        scroll-behavior: smooth;
+      }
+
       body {
         margin: 0;
         font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-        font-size: clamp(0.95rem, 0.92rem + 0.18vw, 1.03rem);
+        font-size: var(--txt-md);
         line-height: 1.7;
         color: var(--texto);
         background:
           radial-gradient(900px 500px at 15% -8%, rgba(99, 102, 241, 0.16), transparent 60%),
+          radial-gradient(700px 420px at 88% 2%, rgba(236, 72, 153, 0.1), transparent 65%),
           linear-gradient(180deg, var(--fundo-topo), var(--fundo) 40%);
         background-attachment: fixed;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4 {
+        margin: 0;
+        line-height: 1.25;
+        text-wrap: balance;
+      }
+      p {
+        margin: 0;
+      }
+      ul,
+      ol {
+        margin: 0;
+        padding-left: 1.3rem;
+      }
+      li {
+        margin-bottom: 0.35rem;
+      }
+      p,
+      li {
+        text-wrap: pretty;
+      }
+      a {
+        color: var(--primaria-clara);
+        text-underline-offset: 3px;
+      }
+      :focus-visible {
+        outline: 2px solid var(--primaria-clara);
+        outline-offset: 2px;
+        border-radius: var(--raio-sm);
+      }
+      [hidden] {
+        display: none !important;
+      }
+
+      /* ==================================================================
+         3. Cabeçalho e navegação
+         ================================================================== */
+      .progresso {
+        position: fixed;
+        inset: 0 0 auto;
+        height: 3px;
+        z-index: 20;
+        background: linear-gradient(90deg, var(--primaria), var(--secundaria));
+        transform-origin: 0 50%;
+        transform: scaleX(0);
+        transition: transform 90ms linear;
       }
 
       .barra {
         position: sticky;
         top: 0;
-        z-index: 10;
+        z-index: 15;
         display: flex;
         flex-wrap: wrap;
         gap: 0.5rem;
         align-items: center;
-        padding: 0.75rem clamp(1rem, 4vw, 2.5rem);
-        background: color-mix(in srgb, var(--fundo) 84%, transparent);
+        padding: 0.7rem clamp(1rem, 4vw, 2.5rem);
+        background: color-mix(in srgb, var(--fundo) 86%, transparent);
         backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--borda);
       }
       .barra__marca {
-        font-weight: 800;
-        letter-spacing: -0.01em;
         margin-right: auto;
+        font-weight: 800;
+        font-size: var(--txt-sm);
+        letter-spacing: -0.01em;
         background: linear-gradient(120deg, var(--primaria-clara), var(--secundaria));
         -webkit-background-clip: text;
         background-clip: text;
@@ -105,19 +175,20 @@
         min-height: 2.4rem;
         padding: 0.45rem 0.9rem;
         font: inherit;
-        font-size: 0.86rem;
+        font-size: var(--txt-xs);
         font-weight: 600;
         color: var(--texto-medio);
         text-decoration: none;
+        white-space: nowrap;
         background: var(--suave);
         border: 1px solid var(--borda);
         border-radius: 0.7rem;
         cursor: pointer;
-        transition: transform 0.18s ease, filter 0.18s ease;
+        transition: transform var(--transicao), filter var(--transicao);
       }
       .botao:hover {
         transform: translateY(-1px);
-        filter: brightness(1.1);
+        filter: brightness(1.12);
       }
       .botao--primario {
         color: #fff;
@@ -125,74 +196,147 @@
         border-color: transparent;
       }
 
+      /* ==================================================================
+         4. Layout
+         ================================================================== */
       .pagina {
-        width: min(100%, 62rem);
-        margin-inline: auto;
-        padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 4vw, 2.5rem) 4rem;
-      }
-
-      .capa {
-        text-align: center;
-        margin-bottom: 2.5rem;
-      }
-      .capa h1 {
-        font-size: clamp(1.8rem, 1.3rem + 2.2vw, 2.8rem);
-        line-height: 1.15;
-        margin: 0 0 0.5rem;
-        letter-spacing: -0.02em;
-      }
-      .capa p {
-        margin: 0;
-        color: var(--texto-suave);
-        text-wrap: pretty;
-      }
-
-      .sumario {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-        gap: 0.5rem;
-        padding: 1.25rem;
-        margin-bottom: 2.5rem;
-        background: var(--superficie);
-        border: 1px solid var(--borda);
-        border-radius: var(--raio);
-        box-shadow: var(--sombra);
+        grid-template-columns: minmax(0, 1fr);
+        gap: clamp(1.5rem, 3vw, 2.5rem);
+        width: min(100%, 78rem);
+        margin-inline: auto;
+        padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 4vw, 2.5rem) 5rem;
       }
-      .sumario h2 {
-        grid-column: 1 / -1;
-        margin: 0;
-        font-size: 0.78rem;
+
+      .indice {
+        display: none;
+      }
+
+      @media (min-width: 64rem) {
+        .pagina {
+          grid-template-columns: 16rem minmax(0, 1fr);
+          align-items: start;
+        }
+        .indice {
+          display: block;
+          position: sticky;
+          top: 5rem;
+          max-height: calc(100vh - 7rem);
+          overflow-y: auto;
+          padding: 1rem;
+          background: var(--superficie);
+          border: 1px solid var(--borda);
+          border-radius: var(--raio);
+          box-shadow: var(--sombra);
+          scrollbar-width: thin;
+        }
+        .capa {
+          grid-column: 1 / -1;
+        }
+      }
+
+      .indice__titulo {
+        font-size: 0.72rem;
         letter-spacing: 0.1em;
         text-transform: uppercase;
         color: var(--texto-suave);
+        margin-bottom: 0.6rem;
       }
-      .sumario a {
-        padding: 0.35rem 0.5rem;
-        font-size: 0.9rem;
-        color: var(--texto-medio);
+      .indice ol {
+        list-style: none;
+        padding: 0;
+        counter-reset: item;
+      }
+      .indice li {
+        margin: 0;
+      }
+      .indice a {
+        display: block;
+        padding: 0.3rem 0.55rem;
+        font-size: var(--txt-xs);
+        color: var(--texto-suave);
         text-decoration: none;
-        border-radius: var(--raio-sm);
         border-left: 2px solid transparent;
+        border-radius: 0 var(--raio-sm) var(--raio-sm) 0;
+        transition: color var(--transicao), background var(--transicao), border-color var(--transicao);
       }
-      .sumario a:hover {
+      .indice a:hover {
         color: var(--texto);
+        background: var(--suave);
+      }
+      .indice a.ativo {
+        color: var(--texto);
+        font-weight: 600;
         background: var(--suave);
         border-left-color: var(--primaria);
       }
+      .indice__grupo {
+        margin-top: 0.9rem;
+        padding-top: 0.6rem;
+        border-top: 1px solid var(--borda);
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--texto-suave);
+      }
+      .indice__grupo:first-of-type {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: 0;
+      }
+
+      /* ==================================================================
+         5. Conteúdo
+         ================================================================== */
+      .capa {
+        text-align: center;
+        padding-bottom: 0.5rem;
+      }
+      .capa h1 {
+        font-size: clamp(1.9rem, 1.3rem + 2.4vw, 3rem);
+        letter-spacing: -0.02em;
+        margin-bottom: 0.6rem;
+      }
+      .capa p {
+        max-width: 52ch;
+        margin-inline: auto;
+        color: var(--texto-suave);
+      }
+      .capa__acoes {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 1.25rem;
+      }
 
       section {
-        margin-bottom: 2.75rem;
+        margin-bottom: 3rem;
         scroll-margin-top: 5rem;
+      }
+
+      .selo-parte {
+        display: inline-block;
+        margin-bottom: 1rem;
+        padding: 0.3rem 0.85rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--primaria-clara);
+        background: rgba(99, 102, 241, 0.14);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        border-radius: 999px;
       }
 
       h2 {
         display: flex;
-        align-items: baseline;
-        gap: 0.6rem;
-        margin: 0 0 1rem;
+        align-items: center;
+        gap: 0.65rem;
+        margin-bottom: 0.9rem;
         padding-bottom: 0.6rem;
-        font-size: clamp(1.2rem, 1.05rem + 0.7vw, 1.6rem);
-        letter-spacing: -0.01em;
+        font-size: clamp(1.25rem, 1.05rem + 0.8vw, 1.65rem);
+        letter-spacing: -0.015em;
         border-bottom: 1px solid var(--borda);
       }
       h2 .num {
@@ -201,7 +345,8 @@
         flex: none;
         width: 1.9rem;
         height: 1.9rem;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
+        font-weight: 700;
         color: var(--primaria-clara);
         background: rgba(99, 102, 241, 0.16);
         border: 1px solid rgba(99, 102, 241, 0.3);
@@ -209,21 +354,13 @@
       }
 
       h3 {
-        margin: 1.5rem 0 0.5rem;
-        font-size: 1.02rem;
+        margin: 1.6rem 0 0.5rem;
+        font-size: 1.05rem;
         color: var(--primaria-clara);
       }
-
-      p,
-      li {
-        text-wrap: pretty;
-      }
-      ul,
-      ol {
-        padding-left: 1.25rem;
-      }
-      li {
-        margin-bottom: 0.35rem;
+      h4 {
+        margin: 1.1rem 0 0.35rem;
+        font-size: 0.98rem;
       }
 
       code {
@@ -236,14 +373,29 @@
         border-radius: 0.35rem;
       }
 
+      kbd {
+        display: inline-block;
+        min-width: 1.6rem;
+        padding: 0.1rem 0.4rem;
+        font-family: ui-monospace, Menlo, monospace;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-align: center;
+        color: var(--texto);
+        background: var(--superficie-alta);
+        border: 1px solid var(--borda-forte);
+        border-bottom-width: 2px;
+        border-radius: 0.35rem;
+      }
+
+      /* --------------------------------------------------- blocos ------ */
       .formula {
         overflow-x: auto;
         padding: 1rem 1.25rem;
         margin: 1rem 0;
         font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
-        font-size: 0.92rem;
-        line-height: 1.9;
-        color: var(--texto);
+        font-size: 0.9rem;
+        line-height: 1.85;
         background: var(--superficie-alta);
         border: 1px solid var(--borda);
         border-left: 3px solid var(--primaria);
@@ -254,7 +406,7 @@
       .nota {
         padding: 0.9rem 1.1rem;
         margin: 1rem 0;
-        font-size: 0.92rem;
+        font-size: var(--txt-sm);
         background: var(--suave);
         border: 1px solid var(--borda);
         border-left: 3px solid var(--sucesso);
@@ -263,8 +415,116 @@
       .nota--atencao {
         border-left-color: var(--aviso);
       }
+      .nota--erro {
+        border-left-color: var(--perigo);
+      }
       .nota strong {
         color: var(--texto);
+      }
+
+      .passos {
+        counter-reset: passo;
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0;
+        display: grid;
+        gap: 0.6rem;
+      }
+      .passos > li {
+        counter-increment: passo;
+        position: relative;
+        margin: 0;
+        padding: 0.85rem 1rem 0.85rem 3.1rem;
+        background: var(--superficie);
+        border: 1px solid var(--borda);
+        border-radius: var(--raio-sm);
+        font-size: var(--txt-sm);
+      }
+      .passos > li::before {
+        content: counter(passo);
+        position: absolute;
+        left: 0.85rem;
+        top: 0.8rem;
+        display: grid;
+        place-items: center;
+        width: 1.6rem;
+        height: 1.6rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(120deg, var(--primaria), var(--secundaria));
+        border-radius: 50%;
+      }
+      .passos strong {
+        color: var(--texto);
+      }
+
+      .campos {
+        display: grid;
+        gap: 0.6rem;
+        margin: 1rem 0;
+      }
+      .campo-doc {
+        display: grid;
+        grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+        gap: 0.3rem 1rem;
+        padding: 0.8rem 1rem;
+        background: var(--superficie);
+        border: 1px solid var(--borda);
+        border-radius: var(--raio-sm);
+      }
+      .campo-doc__nome {
+        font-weight: 700;
+        font-size: var(--txt-sm);
+        color: var(--texto);
+      }
+      .campo-doc__meta {
+        grid-column: 1;
+        font-size: var(--txt-xs);
+        color: var(--texto-suave);
+      }
+      .campo-doc__desc {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        font-size: var(--txt-sm);
+        color: var(--texto-medio);
+      }
+      @media (max-width: 40rem) {
+        .campo-doc {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .campo-doc__meta,
+        .campo-doc__desc {
+          grid-column: 1;
+          grid-row: auto;
+        }
+      }
+
+      .cartoes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+        gap: 0.75rem;
+        margin: 1rem 0;
+      }
+      .cartao {
+        padding: 0.9rem 1rem;
+        background: var(--superficie);
+        border: 1px solid var(--borda);
+        border-radius: var(--raio-sm);
+        transition: transform var(--transicao), border-color var(--transicao);
+      }
+      .cartao:hover {
+        transform: translateY(-2px);
+        border-color: var(--borda-forte);
+      }
+      .cartao strong {
+        display: block;
+        margin-bottom: 0.2rem;
+        font-size: var(--txt-sm);
+      }
+      .cartao span {
+        font-size: var(--txt-xs);
+        color: var(--texto-suave);
       }
 
       .tabela-envoltorio {
@@ -276,14 +536,14 @@
       table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 0.88rem;
+        font-size: var(--txt-xs);
       }
       th,
       td {
         padding: 0.6rem 0.8rem;
         text-align: left;
-        border-bottom: 1px solid var(--borda);
         vertical-align: top;
+        border-bottom: 1px solid var(--borda);
       }
       th {
         color: var(--texto);
@@ -304,269 +564,1322 @@
         white-space: nowrap;
       }
 
-      .cartoes {
+      /* maquete da tela ---------------------------------------------------- */
+      .maquete {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-        gap: 0.75rem;
-        margin: 1rem 0;
+        gap: 0.6rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin: 1.25rem 0;
       }
-      .cartao {
-        padding: 0.9rem 1rem;
+      .maquete__coluna {
+        display: grid;
+        gap: 0.4rem;
+        align-content: start;
+        padding: 0.8rem;
         background: var(--superficie);
         border: 1px solid var(--borda);
         border-radius: var(--raio-sm);
       }
-      .cartao strong {
-        display: block;
-        margin-bottom: 0.2rem;
-        font-size: 0.95rem;
+      .maquete__titulo {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: var(--txt-xs);
+        font-weight: 700;
+        color: var(--texto);
       }
-      .cartao span {
-        font-size: 0.85rem;
+      .maquete__titulo span {
+        display: grid;
+        place-items: center;
+        width: 1.25rem;
+        height: 1.25rem;
+        font-size: 0.68rem;
+        color: #fff;
+        background: linear-gradient(120deg, var(--primaria), var(--secundaria));
+        border-radius: 0.35rem;
+      }
+      .maquete__item {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.72rem;
         color: var(--texto-suave);
+        background: var(--suave);
+        border-radius: 0.3rem;
+      }
+      @media (max-width: 48rem) {
+        .maquete {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      /* legenda de cores --------------------------------------------------- */
+      .legenda {
+        display: grid;
+        gap: 0.4rem;
+        margin: 1rem 0;
+      }
+      .legenda__item {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        padding: 0.55rem 0.8rem;
+        font-size: var(--txt-xs);
+        background: var(--superficie);
+        border: 1px solid var(--borda);
+        border-left: 4px solid var(--cor, var(--primaria));
+        border-radius: var(--raio-sm);
+      }
+      .legenda__item strong {
+        flex: none;
+        min-width: 8.5rem;
+        color: var(--texto);
+      }
+      .legenda__item span {
+        color: var(--texto-suave);
+      }
+      @media (max-width: 34rem) {
+        .legenda__item {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.15rem;
+        }
+      }
+
+      /* perguntas frequentes ---------------------------------------------- */
+      .faq {
+        display: grid;
+        gap: 0.5rem;
+        margin: 1rem 0;
+      }
+      .faq details {
+        background: var(--superficie);
+        border: 1px solid var(--borda);
+        border-radius: var(--raio-sm);
+        overflow: hidden;
+      }
+      .faq summary {
+        padding: 0.8rem 1rem;
+        font-size: var(--txt-sm);
+        font-weight: 600;
+        cursor: pointer;
+        list-style: none;
+        transition: background var(--transicao);
+      }
+      .faq summary::-webkit-details-marker {
+        display: none;
+      }
+      .faq summary::after {
+        content: '+';
+        float: right;
+        font-weight: 400;
+        color: var(--texto-suave);
+      }
+      .faq details[open] summary::after {
+        content: '−';
+      }
+      .faq summary:hover {
+        background: var(--suave);
+      }
+      .faq details > p,
+      .faq details > ul {
+        padding: 0 1rem 0.9rem;
+        font-size: var(--txt-sm);
+        color: var(--texto-medio);
+      }
+
+      /* voltar ao topo ----------------------------------------------------- */
+      .topo {
+        position: fixed;
+        right: 1.25rem;
+        bottom: 1.25rem;
+        z-index: 12;
+        width: 2.8rem;
+        height: 2.8rem;
+        display: grid;
+        place-items: center;
+        font-size: 1.1rem;
+        color: var(--texto);
+        background: var(--superficie-alta);
+        border: 1px solid var(--borda-forte);
+        border-radius: 50%;
+        box-shadow: var(--sombra);
+        cursor: pointer;
+        opacity: 0;
+        transform: translateY(12px);
+        pointer-events: none;
+        transition: opacity var(--transicao), transform var(--transicao);
+      }
+      .topo.visivel {
+        opacity: 1;
+        transform: none;
+        pointer-events: auto;
       }
 
       .rodape {
-        margin-top: 3rem;
+        grid-column: 1 / -1;
+        margin-top: 2rem;
         padding-top: 1.5rem;
-        font-size: 0.85rem;
+        font-size: var(--txt-xs);
         color: var(--texto-suave);
         text-align: center;
         border-top: 1px solid var(--borda);
       }
 
+      /* ==================================================================
+         6. Impressão e movimento reduzido
+         ================================================================== */
       @media print {
         .barra,
-        .sumario {
-          display: none;
+        .indice,
+        .topo,
+        .progresso,
+        .capa__acoes {
+          display: none !important;
         }
         body {
           background: #fff;
           color: #000;
+          font-size: 11pt;
+        }
+        .pagina {
+          display: block;
+          padding: 0;
+          max-width: 100%;
         }
         .formula,
         .cartao,
-        .nota {
+        .nota,
+        .passos > li,
+        .campo-doc,
+        .legenda__item {
           background: #f8fafc;
           color: #000;
+          border-color: #cbd5e1;
         }
         section {
           break-inside: avoid;
         }
+        .faq details {
+          break-inside: avoid;
+        }
+        .faq details > p,
+        .faq details > ul {
+          display: block !important;
+        }
+        a::after {
+          content: ' (' attr(href) ')';
+          font-size: 9pt;
+          color: #64748b;
+        }
       }
 
       @media (prefers-reduced-motion: reduce) {
-        * {
+        html {
+          scroll-behavior: auto;
+        }
+        *,
+        *::before,
+        *::after {
           transition: none !important;
+          animation: none !important;
         }
       }
     </style>
   </head>
 
   <body>
+    <div class="progresso" id="progresso" aria-hidden="true"></div>
+
     <header class="barra">
-      <span class="barra__marca">Chronos Ultra · Manual técnico</span>
+      <span class="barra__marca">Chronos Ultra · Manual</span>
       <button type="button" class="botao" id="btn-tema">🌙 Tema</button>
-      <button type="button" class="botao" onclick="window.print()">📄 Salvar em PDF</button>
+      <button type="button" class="botao" id="btn-imprimir">📄 Salvar em PDF</button>
       <a class="botao botao--primario" href="../index.html">← Voltar ao app</a>
     </header>
 
-    <main class="pagina">
+    <div class="pagina">
       <div class="capa">
-        <h1>Como o Chronos Ultra decide o seu dia</h1>
+        <h1>Manual do Chronos Ultra</h1>
         <p>
-          A matemática, as regras e as decisões de produto por trás do motor de agendamento —
-          exatamente como estão implementadas no código.
+          Como usar cada tela, cada campo e cada botão — e, na segunda metade, exatamente como o motor
+          decide onde cada tarefa entra no seu dia.
         </p>
+        <div class="capa__acoes">
+          <a class="botao" href="#comecar">🚀 Começar em 2 minutos</a>
+          <a class="botao" href="#painel">🧭 Tour do painel</a>
+          <a class="botao" href="#duvidas">❓ Dúvidas comuns</a>
+        </div>
       </div>
 
-      <nav class="sumario" aria-label="Sumário">
-        <h2>Sumário</h2>
-        <a href="#visao">1 · Visão geral</a>
-        <a href="#variaveis">2 · Variáveis do sistema</a>
-        <a href="#perfil">3 · Perfil biológico</a>
-        <a href="#energia">4 · Curva de energia</a>
-        <a href="#janela">5 · Janela e compromissos</a>
-        <a href="#prioridade">6 · Priorização</a>
-        <a href="#motor">7 · Montagem da agenda</a>
-        <a href="#pausas">8 · Política de pausas</a>
-        <a href="#indicadores">9 · Indicadores</a>
-        <a href="#sugestoes">10 · Sugestões automáticas</a>
-        <a href="#persistencia">11 · Persistência</a>
-        <a href="#exportacao">12 · Exportações</a>
-        <a href="#formulas">13 · Resumo das fórmulas</a>
+      <!-- ================================================================
+           Índice lateral
+           ================================================================ -->
+      <nav class="indice" aria-label="Índice do manual">
+        <p class="indice__titulo">Neste manual</p>
+        <ol>
+          <li class="indice__grupo">Parte 1 · Usando</li>
+          <li><a href="#o-que-e">1. O que o app faz</a></li>
+          <li><a href="#comecar">2. Começar em 2 minutos</a></li>
+          <li><a href="#painel">3. Tour do painel</a></li>
+          <li><a href="#janela">4. Janela de trabalho</a></li>
+          <li><a href="#compromissos">5. Compromissos fixos</a></li>
+          <li><a href="#graficos">6. Lendo os gráficos</a></li>
+          <li><a href="#tarefas">7. Cadastrando tarefas</a></li>
+          <li><a href="#organizar">8. Organizando o inventário</a></li>
+          <li><a href="#gerar">9. Gerando a agenda</a></li>
+          <li><a href="#ler-agenda">10. Lendo a agenda</a></li>
+          <li><a href="#agora-foco">11. Painel Agora e foco</a></li>
+          <li><a href="#exportar">12. Exportar e compartilhar</a></li>
+          <li><a href="#calendario">13. Calendário</a></li>
+          <li><a href="#preferencias">14. Tema, atalhos e instalação</a></li>
+          <li><a href="#dados">15. Seus dados e backup</a></li>
+          <li><a href="#receitas">16. Receitas de uso</a></li>
+          <li><a href="#duvidas">17. Dúvidas e problemas</a></li>
+
+          <li class="indice__grupo">Parte 2 · Por dentro</li>
+          <li><a href="#variaveis">18. Variáveis do sistema</a></li>
+          <li><a href="#perfil-tec">19. Perfil biológico</a></li>
+          <li><a href="#energia-tec">20. Curva de energia</a></li>
+          <li><a href="#janela-tec">21. Janela e recortes</a></li>
+          <li><a href="#prioridade-tec">22. Priorização</a></li>
+          <li><a href="#motor-tec">23. Montagem da agenda</a></li>
+          <li><a href="#pausas-tec">24. Política de pausas</a></li>
+          <li><a href="#indicadores-tec">25. Indicadores</a></li>
+          <li><a href="#persistencia-tec">26. Persistência</a></li>
+          <li><a href="#formulas">27. Resumo das fórmulas</a></li>
+        </ol>
       </nav>
 
-      <!-- ============================================================= -->
-      <section id="visao">
-        <h2><span class="num">1</span> Visão geral</h2>
-        <p>
-          O Chronos Ultra parte de uma premissa simples: <strong>o dia não é uniforme</strong>. A mesma
-          hora de trabalho rende muito mais às 10h do que às 15h, e isso muda de pessoa para pessoa.
-          O app modela essa variação e usa o modelo para decidir <em>o que</em> fazer e <em>quando</em>.
-        </p>
+      <main>
+        <span class="selo-parte">Parte 1 · Usando o app</span>
 
-        <div class="cartoes">
-          <div class="cartao">
-            <strong>1 · Perfil</strong>
-            <span>Idade e cronotipo definem o pico de energia e a duração do foco contínuo.</span>
+        <!-- ============================================================= -->
+        <section id="o-que-e">
+          <h2><span class="num">1</span> O que o app faz</h2>
+          <p>
+            O Chronos Ultra monta a agenda do seu dia a partir de duas coisas que a maioria dos
+            aplicativos de tarefa ignora: <strong>a hora em que você rende mais</strong> e
+            <strong>o quanto de descanso você precisa</strong> entre um bloco e outro.
+          </p>
+          <p style="margin-top: 0.6rem">
+            Você informa o que precisa fazer e quando está disponível. Ele devolve uma sequência de
+            horários com as tarefas exigentes nos picos de energia, as leves nos vales, pausas
+            proporcionais ao esforço e — o mais importante — <strong>o tempo livre que sobra</strong>.
+          </p>
+
+          <div class="cartoes">
+            <div class="cartao">
+              <strong>Não é uma lista de tarefas</strong>
+              <span>É um planejador: ele decide a ordem e o horário, você só informa os dados.</span>
+            </div>
+            <div class="cartao">
+              <strong>Não precisa de conta</strong>
+              <span>Nada de login, e-mail ou servidor. Tudo fica salvo no próprio navegador.</span>
+            </div>
+            <div class="cartao">
+              <strong>Protege seu tempo livre</strong>
+              <span>O limite diário é um teto de trabalho, não uma meta a ser preenchida.</span>
+            </div>
+            <div class="cartao">
+              <strong>Funciona offline</strong>
+              <span>Depois da primeira visita, abre sem internet — e pode ser instalado.</span>
+            </div>
           </div>
-          <div class="cartao">
-            <strong>2 · Janela</strong>
-            <span>Intervalo disponível menos compromissos fixos, com teto de horas produtivas.</span>
+        </section>
+
+        <!-- ============================================================= -->
+        <section id="comecar">
+          <h2><span class="num">2</span> Começar em 2 minutos</h2>
+          <p>Na primeira tela o app pede três informações. Nenhuma delas sai do seu navegador.</p>
+
+          <ol class="passos">
+            <li>
+              <strong>Seu nome.</strong> Serve de identificação do perfil. Se você voltar depois e
+              digitar o mesmo nome, tudo o que você cadastrou reaparece. Nomes diferentes criam
+              perfis diferentes — útil para separar “trabalho” e “faculdade”, por exemplo.
+            </li>
+            <li>
+              <strong>Sua idade</strong> (de 8 a 100). Define quanto tempo você consegue manter foco
+              contínuo sem cair de rendimento. Esse número vira o tamanho dos blocos de trabalho.
+            </li>
+            <li>
+              <strong>Seu cronotipo.</strong> É a pergunta mais importante da tela: determina a que
+              horas fica o seu pico de energia, e portanto onde as tarefas difíceis vão cair.
+            </li>
+            <li>
+              Clique em <strong>Iniciar otimização</strong>. Pronto — você está no painel.
+            </li>
+          </ol>
+
+          <h3>Qual é o meu cronotipo?</h3>
+          <p>
+            Use um teste simples: <em>em um fim de semana sem compromisso e sem despertador, que
+            horas você acordaria naturalmente?</em>
+          </p>
+
+          <div class="tabela-envoltorio">
+            <table>
+              <thead>
+                <tr>
+                  <th>Você acorda por volta de…</th>
+                  <th>Cronotipo</th>
+                  <th>Pico de energia</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>6h – 7h, já disposto</td><td>🌅 Matutino</td><td>~9h30</td></tr>
+                <tr><td>7h30 – 9h</td><td>☀️ Intermediário</td><td>~11h30</td></tr>
+                <tr><td>9h – 10h30, demora a engrenar</td><td>🌇 Vespertino</td><td>~15h</td></tr>
+                <tr><td>Depois das 10h30; rende de noite</td><td>🌙 Noturno</td><td>~19h</td></tr>
+              </tbody>
+            </table>
           </div>
-          <div class="cartao">
-            <strong>3 · Priorização</strong>
-            <span>Cada tarefa recebe uma nota que depende do horário sendo avaliado.</span>
+
+          <div class="nota">
+            <strong>Na dúvida, escolha Intermediário.</strong> Você pode trocar quando quiser: basta
+            clicar em <em>Trocar perfil</em> e entrar de novo com o mesmo nome e outro cronotipo. As
+            tarefas continuam salvas.
           </div>
-          <div class="cartao">
-            <strong>4 · Agenda</strong>
-            <span>Blocos de foco, pausas proporcionais e o tempo livre que sobra no fim.</span>
+        </section>
+
+        <!-- ============================================================= -->
+        <section id="painel">
+          <h2><span class="num">3</span> Tour do painel</h2>
+          <p>
+            O painel tem três colunas que seguem a ordem natural do planejamento: primeiro
+            <strong>quando</strong> você pode, depois <strong>o que</strong> precisa fazer, e por fim
+            <strong>o plano</strong> pronto.
+          </p>
+
+          <div class="maquete" aria-hidden="true">
+            <div class="maquete__coluna">
+              <p class="maquete__titulo"><span>1</span> Janela de trabalho</p>
+              <p class="maquete__item">Início · Fim · Limite diário</p>
+              <p class="maquete__item">Compromissos fixos</p>
+              <p class="maquete__item">Curva de energia</p>
+              <p class="maquete__item">Divisão do dia</p>
+              <p class="maquete__item">Últimos 7 dias</p>
+            </div>
+            <div class="maquete__coluna">
+              <p class="maquete__titulo"><span>2</span> Inventário de tarefas</p>
+              <p class="maquete__item">Formulário de nova tarefa</p>
+              <p class="maquete__item">Resumo e barra de ocupação</p>
+              <p class="maquete__item">Busca · filtros · ordenação</p>
+              <p class="maquete__item">Lista de tarefas</p>
+              <p class="maquete__item">Guia de peso · Backup</p>
+            </div>
+            <div class="maquete__coluna">
+              <p class="maquete__titulo"><span>3</span> Agenda otimizada</p>
+              <p class="maquete__item">Data + botão Gerar</p>
+              <p class="maquete__item">Painel “Agora”</p>
+              <p class="maquete__item">4 indicadores</p>
+              <p class="maquete__item">Linha do tempo do dia</p>
+              <p class="maquete__item">Exportar · Duplicar</p>
+            </div>
           </div>
-        </div>
 
-        <div class="nota">
-          <strong>Regra de ouro do produto:</strong> o limite diário conta apenas
-          <strong>minutos de trabalho</strong>. Pausas consomem relógio, nunca o orçamento produtivo.
-          É isso que impede o dia de inchar e o que preserva o tempo livre no final.
-        </div>
-      </section>
+          <p>
+            Em telas menores as colunas empilham nessa mesma ordem, então o fluxo de leitura continua
+            o mesmo no celular.
+          </p>
 
-      <!-- ============================================================= -->
-      <section id="variaveis">
-        <h2><span class="num">2</span> Variáveis do sistema</h2>
-        <div class="tabela-envoltorio">
-          <table>
-            <thead>
-              <tr>
-                <th>Símbolo</th>
-                <th>Nome</th>
-                <th>Descrição</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><span class="var">idade</span></td>
-                <td>Idade</td>
-                <td>Informada no início; define o foco contínuo e ajusta levemente o pico.</td>
-              </tr>
-              <tr>
-                <td><span class="var">cronotipo</span></td>
-                <td>Cronotipo</td>
-                <td>Matutino, intermediário, vespertino ou noturno. Define a hora-base do pico.</td>
-              </tr>
-              <tr>
-                <td><span class="var">f_max</span></td>
-                <td>Foco máximo</td>
-                <td>Maior bloco de trabalho contínuo saudável, em minutos (25 a 90).</td>
-              </tr>
-              <tr>
-                <td><span class="var">p</span></td>
-                <td>Hora do pico</td>
-                <td>Momento de maior energia no dia, em horas decimais (ex.: 9,5 = 09h30).</td>
-              </tr>
-              <tr>
-                <td><span class="var">E(h)</span></td>
-                <td>Energia</td>
-                <td>Energia estimada na hora <code>h</code>, de 3 a 100.</td>
-              </tr>
-              <tr>
-                <td><span class="var">J</span></td>
-                <td>Janela</td>
-                <td>Intervalo disponível do dia, já descontados os compromissos fixos.</td>
-              </tr>
-              <tr>
-                <td><span class="var">O</span></td>
-                <td>Orçamento</td>
-                <td><code>min(limite diário × 60, minutos livres da janela)</code>.</td>
-              </tr>
-              <tr>
-                <td><span class="var">w</span></td>
-                <td>Peso</td>
-                <td>Importância declarada da tarefa, de 1 a 10.</td>
-              </tr>
-              <tr>
-                <td><span class="var">d</span></td>
-                <td>Duração</td>
-                <td>Estimativa de minutos necessários para concluir a tarefa.</td>
-              </tr>
-              <tr>
-                <td><span class="var">x</span></td>
-                <td>Exigência</td>
-                <td>Quanta energia a tarefa pede, de 0 a 1 (peso + natureza da categoria).</td>
-              </tr>
-              <tr>
-                <td><span class="var">u</span></td>
-                <td>Urgência</td>
-                <td>Pressão do prazo, de 0,3 (distante) a 1 (hoje ou atrasado).</td>
-              </tr>
-              <tr>
-                <td><span class="var">S</span></td>
-                <td>Score</td>
-                <td>Nota final da tarefa para um instante específico do dia.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+          <h3>No cabeçalho</h3>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead><tr><th>Elemento</th><th>Para que serve</th></tr></thead>
+              <tbody>
+                <tr><td>Suas “pílulas” de perfil</td><td>Foco contínuo, cronotipo e hora do pico calculados para você.</td></tr>
+                <tr><td>⬇️ Instalar app</td><td>Aparece quando o navegador permite instalar o Chronos como aplicativo.</td></tr>
+                <tr><td>🗓️ Calendário</td><td>Abre a visão mensal com feriados e agendas salvas.</td></tr>
+                <tr><td>📘 Manual</td><td>Traz você para esta página.</td></tr>
+                <tr><td>⌨️ Atalhos</td><td>Lista os atalhos de teclado.</td></tr>
+                <tr><td>🌙 / ☀️ / 🖥️ Tema</td><td>Alterna escuro → claro → seguir o sistema.</td></tr>
+                <tr><td>Trocar perfil</td><td>Salva tudo e volta para a tela inicial.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
 
-      <!-- ============================================================= -->
-      <section id="perfil">
-        <h2><span class="num">3</span> Perfil biológico</h2>
+        <!-- ============================================================= -->
+        <section id="janela">
+          <h2><span class="num">4</span> Janela de trabalho</h2>
+          <p>
+            É o primeiro cartão, e o que mais muda o resultado. Aqui você diz <strong>em que
+            intervalo</strong> pode trabalhar e <strong>quantas horas no máximo</strong> quer
+            trabalhar dentro dele.
+          </p>
 
-        <h3>Foco contínuo máximo</h3>
-        <p>
-          A capacidade de sustentar atenção cresce até o início da vida adulta e decai devagar
-          depois. A queda antes dos 30 é mais acentuada do que depois — por isso os dois
-          coeficientes diferentes:
-        </p>
-        <div class="formula">penalidade = |idade − 30| × (idade &lt; 30 ? 2,2 : 0,9)
+          <div class="campos">
+            <div class="campo-doc">
+              <p class="campo-doc__nome">Início</p>
+              <p class="campo-doc__meta">horário</p>
+              <p class="campo-doc__desc">
+                A partir de que horas você está disponível. Não precisa ser o horário em que você
+                acorda — é quando você poderia começar a produzir.
+              </p>
+            </div>
+            <div class="campo-doc">
+              <p class="campo-doc__nome">Fim</p>
+              <p class="campo-doc__meta">horário</p>
+              <p class="campo-doc__desc">
+                Até que horas. Se o fim for menor ou igual ao início (por exemplo 22:00 → 06:00), o
+                app entende que é um <strong>turno noturno</strong> e atravessa a meia-noite
+                normalmente.
+              </p>
+            </div>
+            <div class="campo-doc">
+              <p class="campo-doc__nome">Limite diário</p>
+              <p class="campo-doc__meta">0,5 a 16 horas</p>
+              <p class="campo-doc__desc">
+                Quantas horas de <strong>trabalho efetivo</strong> você aceita fazer. As pausas
+                <em>não</em> descontam desse valor — elas ocupam o relógio, mas não o seu orçamento.
+                É este campo que garante que sobre tempo livre.
+              </p>
+            </div>
+          </div>
+
+          <div class="nota">
+            <strong>A diferença entre janela e limite, na prática.</strong> Janela 08:00–20:00 são 12
+            horas disponíveis. Com limite de 6h, o app agenda no máximo 6 horas de trabalho, espalha
+            as pausas necessárias entre elas e o dia termina por volta das 15h30 — devolvendo mais de
+            4 horas livres. Se você colocasse limite 12, ele encheria o dia inteiro.
+          </div>
+
+          <h3>A linha de aviso</h3>
+          <p>Logo abaixo dos campos aparece um resumo que se atualiza sozinho, por exemplo:</p>
+          <div class="formula">Janela de 10h • 1h em compromissos • 6h de trabalho no máximo</div>
+          <ul>
+            <li><strong>Janela de 10h</strong> — o intervalo bruto entre início e fim.</li>
+            <li><strong>1h em compromissos</strong> — o total já bloqueado por almoço, reuniões etc.</li>
+            <li><strong>6h de trabalho no máximo</strong> — o teto efetivo, já considerando o que sobrou.</li>
+            <li>Se o turno cruzar a meia-noite, aparece também <em>“turno cruza a meia-noite”</em>.</li>
+          </ul>
+          <p>
+            Se a linha ficar vermelha dizendo <em>“Janela inválida”</em>, os horários estão
+            incoerentes — normalmente um campo de hora vazio.
+          </p>
+        </section>
+
+        <!-- ============================================================= -->
+        <section id="compromissos">
+          <h2><span class="num">5</span> Compromissos fixos</h2>
+          <p>
+            Abra o bloco <strong>“Compromissos fixos do dia”</strong> dentro do primeiro cartão. Aqui
+            entram os horários que já estão comprometidos e nos quais o app não pode encaixar nada:
+            almoço, reunião, buscar alguém na escola, deslocamento.
+          </p>
+
+          <div class="campos">
+            <div class="campo-doc">
+              <p class="campo-doc__nome">Tipo</p>
+              <p class="campo-doc__meta">lista</p>
+              <p class="campo-doc__desc">
+                Almoço, Café da manhã, Café da tarde, Jantar, Reunião, Deslocamento, Descanso ou
+                Outro. Aparece como título do bloco na agenda.
+              </p>
+            </div>
+            <div class="campo-doc">
+              <p class="campo-doc__nome">Descrição</p>
+              <p class="campo-doc__meta">opcional</p>
+              <p class="campo-doc__desc">
+                Um detalhe para você se localizar, como “Daily do time” ou “Consulta”.
+              </p>
+            </div>
+            <div class="campo-doc">
+              <p class="campo-doc__nome">Começa / Termina</p>
+              <p class="campo-doc__meta">horários</p>
+              <p class="campo-doc__desc">
+                O intervalo bloqueado. Se o fim for anterior ao início, o app entende que o
+                compromisso atravessa a meia-noite.
+              </p>
+            </div>
+          </div>
+
+          <h3>Coisas que o app resolve sozinho</h3>
+          <ul>
+            <li>
+              <strong>Compromissos sobrepostos são fundidos.</strong> Se você cadastrar 12:00–13:00 e
+              12:30–14:00, vira um único bloqueio de 12:00 às 14:00.
+            </li>
+            <li>
+              <strong>O que passa da janela é recortado.</strong> Uma reunião das 17h às 19h com
+              janela terminando às 18h bloqueia apenas até as 18h.
+            </li>
+            <li>
+              <strong>Compromisso zera o cansaço acumulado.</strong> Depois do almoço o app não
+              insere uma pausa logo em seguida — o almoço já foi o descanso.
+            </li>
+          </ul>
+
+          <p>
+            Cada compromisso cadastrado aparece na lista abaixo do formulário, com um botão 🗑️ para
+            remover. Removeu sem querer? O aviso que aparece no canto tem um botão
+            <strong>Desfazer</strong>.
+          </p>
+        </section>
+
+        <!-- ============================================================= -->
+        <section id="graficos">
+          <h2><span class="num">6</span> Lendo os gráficos</h2>
+
+          <h3>Sua curva de energia</h3>
+          <p>
+            Mostra as 24 horas do dia com a energia estimada de 0 a 100%. O trecho dentro da sua
+            janela aparece em cor cheia; fora dela, esmaecido. Passe o mouse (ou toque) para ver o
+            valor de cada meia hora.
+          </p>
+          <ul>
+            <li>O <strong>ponto mais alto</strong> é o seu pico — é ali que as tarefas pesadas tendem a cair.</li>
+            <li>A <strong>queda no meio da tarde</strong> é o vale pós-almoço, quando entram tarefas leves.</li>
+            <li>Os <strong>pontos verdes</strong> marcam os horários em que existe tarefa agendada.</li>
+          </ul>
+
+          <h3>Como o dia é dividido</h3>
+          <p>
+            Rosca com quatro fatias: <strong>Trabalho</strong>, <strong>Pausas</strong>,
+            <strong>Compromissos</strong> e <strong>Tempo livre</strong>. Antes de gerar a agenda,
+            ela mostra a janela ainda inteira como tempo livre. Depois de gerar, mostra a divisão
+            real. Fatias com valor zero somem.
+          </p>
+
+          <h3>Últimos 7 dias</h3>
+          <p>
+            Barras empilhadas com trabalho e tempo livre de cada dia da última semana, com hoje
+            destacado. Só aparece depois que você tiver pelo menos uma agenda gerada — é o painel que
+            mostra se você está mesmo preservando tempo ou apenas planejando bem um dia isolado.
+          </p>
+        </section>
+
+        <!-- ============================================================= -->
+        <section id="tarefas">
+          <h2><span class="num">7</span> Cadastrando tarefas</h2>
+          <p>Segundo cartão. A qualidade do plano depende diretamente da honestidade destes campos.</p>
+
+          <div class="campos">
+            <div class="campo-doc">
+              <p class="campo-doc__nome">Tarefa</p>
+              <p class="campo-doc__meta">até 120 caracteres</p>
+              <p class="campo-doc__desc">
+                Seja específico: “Revisar capítulo 4 de Cálculo” funciona melhor que “Estudar”, tanto
+                para você se orientar quanto para as sugestões automáticas acertarem depois.
+              </p>
+            </div>
+            <div class="campo-doc">
+              <p class="campo-doc__nome">Categoria</p>
+              <p class="campo-doc__meta">6 opções</p>
+              <p class="campo-doc__desc">
+                Diz ao app <em>que tipo de energia</em> a tarefa consome. Não é só um rótulo: muda o
+                horário em que ela é encaixada.
+              </p>
+            </div>
+            <div class="campo-doc">
+              <p class="campo-doc__nome">Peso</p>
+              <p class="campo-doc__meta">1 a 10</p>
+              <p class="campo-doc__desc">
+                O quanto ela importa <em>hoje</em>. Peso alto disputa os melhores horários.
+              </p>
+            </div>
+            <div class="campo-doc">
+              <p class="campo-doc__nome">Minutos</p>
+              <p class="campo-doc__meta">1 a 1440</p>
+              <p class="campo-doc__desc">
+                Sua estimativa de duração total. Tarefas maiores que o seu foco contínuo são
+                divididas automaticamente em blocos com pausas entre eles.
+              </p>
+            </div>
+            <div class="campo-doc">
+              <p class="campo-doc__nome">Prazo</p>
+              <p class="campo-doc__meta">opcional</p>
+              <p class="campo-doc__desc">
+                Quanto mais perto o prazo, mais cedo a tarefa é puxada — mesmo que o peso dela seja
+                médio.
+              </p>
+            </div>
+          </div>
+
+          <h3>Escolhendo a categoria certa</h3>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead>
+                <tr><th>Categoria</th><th>Use para</th><th>Onde tende a cair</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>🧠 Foco profundo</td><td>Programar, escrever, projetar, resolver problema difícil</td><td>No pico de energia</td></tr>
+                <tr><td>📚 Estudo</td><td>Ler matéria nova, fazer exercícios, decorar</td><td>Perto do pico</td></tr>
+                <tr><td>🎨 Criativa</td><td>Desenhar, roteirizar, criar campanha, brainstorm</td><td>Energia alta a média</td></tr>
+                <tr><td>🗂️ Administrativa</td><td>E-mails, planilhas, burocracia, organizar arquivos</td><td>Energia média</td></tr>
+                <tr><td>🌱 Pessoal</td><td>Academia, mercado, resolver algo da casa</td><td>Energia média a baixa</td></tr>
+                <tr><td>🔁 Rotina</td><td>Tarefas repetitivas e mecânicas</td><td>Nos vales de energia</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Calibrando o peso</h3>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead><tr><th>Peso</th><th>Significa</th><th>Exemplo</th></tr></thead>
+              <tbody>
+                <tr><td><strong>8 a 10</strong></td><td>Urgente ou de alta complexidade</td><td>Entrega que vence hoje; prova amanhã</td></tr>
+                <tr><td><strong>4 a 7</strong></td><td>Importante, complexidade média</td><td>Adiantar relatório da semana</td></tr>
+                <tr><td><strong>1 a 3</strong></td><td>Rotina, baixa complexidade</td><td>Responder mensagens, arquivar documentos</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="nota nota--atencao">
+            <strong>Cuidado com a inflação de peso.</strong> Se tudo é 10, nada é prioridade — o
+            critério vira empate e o app decide pela ordem da lista. Reserve 8 a 10 para o que
+            realmente não pode falhar hoje.
+          </div>
+
+          <h3>Estimando os minutos</h3>
+          <ul>
+            <li><strong>45 min ou mais</strong> — tarefa complexa; será dividida em blocos.</li>
+            <li><strong>20 a 45 min</strong> — tarefa básica; costuma caber em um bloco só.</li>
+            <li><strong>até 20 min</strong> — micro-tarefa; ótima para encaixar em sobras de tempo.</li>
+          </ul>
+          <p>
+            Se você informar mais minutos do que o seu foco contínuo, o app avisa e explica que vai
+            fatiar a tarefa. Isso não é um erro — é o comportamento desejado.
+          </p>
+
+          <h3>Sugestões automáticas</h3>
+          <p>
+            Ao <strong>sair do campo de nome</strong> (clicando fora ou apertando Tab), o app procura
+            tarefas parecidas que você já cadastrou e sugere peso, duração e categoria, preenchendo
+            apenas os campos que estiverem vazios. Uma linha aparece abaixo do nome dizendo em
+            quantos registros a sugestão se baseia.
+          </p>
+          <p style="margin-top: 0.5rem">
+            Ele considera o inventário atual e um histórico das 60 tarefas distintas mais recentes do
+            perfil, com preferência para nomes idênticos. Quanto mais você usa, melhor fica.
+          </p>
+        </section>
+
+        <!-- ============================================================= -->
+        <section id="organizar">
+          <h2><span class="num">8</span> Organizando o inventário</h2>
+
+          <h3>Resumo e barra de ocupação</h3>
+          <p>
+            Logo abaixo do formulário aparecem quantas tarefas estão pendentes, o total de minutos e
+            uma barra comparando esse total com o seu limite diário:
+          </p>
+          <div class="legenda">
+            <div class="legenda__item" style="--cor: #6366f1">
+              <strong>Barra roxa</strong><span>Tudo cabe no limite, com folga.</span>
+            </div>
+            <div class="legenda__item" style="--cor: #f59e0b">
+              <strong>Barra âmbar</strong><span>Acima de 80% do limite — o dia está apertado.</span>
+            </div>
+            <div class="legenda__item" style="--cor: #ef4444">
+              <strong>Barra vermelha</strong><span>Passou do limite; algo vai ficar para outro dia.</span>
+            </div>
+          </div>
+
+          <h3>Busca, filtros e ordenação</h3>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead><tr><th>Controle</th><th>O que faz</th></tr></thead>
+              <tbody>
+                <tr><td>Campo de busca</td><td>Filtra pelo texto do nome enquanto você digita.</td></tr>
+                <tr><td>Filtro de categoria</td><td>Mostra apenas uma categoria por vez.</td></tr>
+                <tr><td>Todas / Pendentes / Concluídas</td><td>Filtra pela situação. O contador ao lado mostra “X de Y”.</td></tr>
+                <tr><td>Ordem manual</td><td>Respeita a ordem em que você arrastou. <strong>Só nesse modo dá para arrastar.</strong></td></tr>
+                <tr><td>Prioridade</td><td>Maior peso primeiro, desempatando por prazo.</td></tr>
+                <tr><td>Prazo</td><td>Mais urgente primeiro.</td></tr>
+                <tr><td>Duração</td><td>Mais longa primeiro.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="nota">
+            <strong>A ordem manual não é só visual.</strong> Quando duas tarefas empatam na nota do
+            algoritmo, ganha a que estiver mais acima na sua lista. Arrastar é a forma de dar o
+            desempate manualmente.
+          </div>
+
+          <h3>Reordenar arrastando</h3>
+          <p>
+            Com a ordenação em <em>Ordem manual</em>, cada tarefa mostra a alça <code>⠿</code> e pode
+            ser arrastada. Solte sobre a tarefa que deve ficar na posição desejada; a linha de destino
+            fica destacada enquanto você arrasta.
+          </p>
+
+          <h3>Ações de cada tarefa</h3>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead><tr><th>Botão</th><th>O que faz</th></tr></thead>
+              <tbody>
+                <tr><td>Caixa à esquerda</td><td>Marca como concluída (ou reabre). Concluídas saem do planejamento e vão para o fim da lista.</td></tr>
+                <tr><td>✏️</td><td>Abre a janela de edição com nome, categoria, peso, minutos e prazo.</td></tr>
+                <tr><td>🗑️</td><td>Exclui a tarefa — com <strong>Desfazer</strong> no aviso que aparece.</td></tr>
+                <tr><td>Limpar concluídas</td><td>Remove de uma vez tudo o que já foi feito. Também tem desfazer.</td></tr>
+                <tr><td>Apagar tudo</td><td>Esvazia o inventário. Pede confirmação e ainda oferece desfazer.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="nota">
+            <strong>Toda ação destrutiva tem volta.</strong> O aviso no canto inferior fica alguns
+            segundos na tela com o botão Desfazer. Passar o mouse por cima congela o tempo dele.
+          </div>
+
+          <p>
+            Sempre que você adiciona, edita, conclui ou remove uma tarefa, <strong>a agenda já
+            gerada é recalculada na hora</strong> — você não precisa clicar em Gerar de novo.
+          </p>
+        </section>
+
+        <!-- ============================================================= -->
+        <section id="gerar">
+          <h2><span class="num">9</span> Gerando a agenda</h2>
+
+          <ol class="passos">
+            <li>
+              <strong>Escolha o dia</strong> no campo <em>Planejar o dia</em>. Vem preenchido com
+              hoje. Trocar a data também troca o cálculo de urgência dos prazos.
+            </li>
+            <li>
+              Clique em <strong>⚡ Gerar horários perfeitos</strong> (ou aperte <kbd>G</kbd>).
+            </li>
+            <li>
+              A agenda aparece logo abaixo e é <strong>salva automaticamente</strong> naquela data —
+              é assim que ela passa a aparecer no calendário.
+            </li>
+          </ol>
+
+          <p>
+            Se você escolher uma data que já tem agenda salva, ela é carregada na tela. Gerar de novo
+            substitui a anterior.
+          </p>
+
+          <div class="nota nota--atencao">
+            <strong>Precisa de pelo menos uma tarefa pendente.</strong> Se todas estiverem concluídas
+            ou o inventário estiver vazio, o app avisa e não gera nada. Já as atualizações
+            automáticas em segundo plano preservam o plano que está na tela — concluir a última
+            tarefa não apaga a sua agenda.
+          </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <section id="ler-agenda">
+          <h2><span class="num">10</span> Lendo a agenda</h2>
+
+          <h3>Os quatro indicadores</h3>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead><tr><th>Indicador</th><th>Significa</th><th>O que fazer com ele</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>🎯 Trabalho planejado</td>
+                  <td>Soma dos blocos de tarefa e quanto isso representa da janela.</td>
+                  <td>Se estiver muito abaixo do limite, sobrou orçamento — cabe mais coisa.</td>
+                </tr>
+                <tr>
+                  <td>☕ Pausas programadas</td>
+                  <td>Tempo total de descanso e a eficiência (trabalho ÷ trabalho + pausas).</td>
+                  <td>Eficiência muito alta indica dia sem respiro, não dia melhor.</td>
+                </tr>
+                <tr>
+                  <td>🌤️ Tempo livre</td>
+                  <td>Quanto sobra da janela depois do último bloco, e a partir de que horas.</td>
+                  <td>É o placar do app. Se for zero, revise o limite diário.</td>
+                </tr>
+                <tr>
+                  <td>⚠️ / ✅ Pendências</td>
+                  <td>Quantas tarefas não couberam e quantos minutos ficaram de fora.</td>
+                  <td>Veja a lista no fim da agenda e decida o que adiar.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Os tipos de bloco</h3>
+          <p>A cor da borda esquerda diz o que é cada linha:</p>
+          <div class="legenda">
+            <div class="legenda__item" style="--cor: #10b981">
+              <strong>Tarefa · verde</strong>
+              <span>Agendada em energia alta (72% ou mais) — o melhor encaixe possível.</span>
+            </div>
+            <div class="legenda__item" style="--cor: #6366f1">
+              <strong>Tarefa · roxo</strong>
+              <span>Energia média (45% a 71%).</span>
+            </div>
+            <div class="legenda__item" style="--cor: #f59e0b">
+              <strong>Tarefa · âmbar</strong>
+              <span>Energia baixa (abaixo de 45%) — normalmente tarefa leve num vale.</span>
+            </div>
+            <div class="legenda__item" style="--cor: #10b981">
+              <strong>Pausa</strong>
+              <span>Descanso inserido pelo app, com o motivo escrito embaixo.</span>
+            </div>
+            <div class="legenda__item" style="--cor: #ec4899">
+              <strong>Compromisso</strong>
+              <span>Bloqueio que você cadastrou. O app não agenda nada aqui.</span>
+            </div>
+          </div>
+
+          <h3>O que cada bloco de tarefa mostra</h3>
+          <ul>
+            <li><strong>Horário de início e fim</strong> à esquerda.</li>
+            <li><strong>Nome da tarefa</strong>, com a marca <em>continuação</em> quando é a sequência de um bloco anterior.</li>
+            <li><strong>Categoria, duração e energia</strong> daquele momento.</li>
+            <li>
+              <strong>A justificativa</strong> — uma frase explicando por que a tarefa caiu ali:
+              “tarefa exigente alocada no seu pico de energia (90%)”, “prazo apertado”, “tarefa leve
+              aproveitando um vale”. Plano que você não entende, você não segue.
+            </li>
+            <li><strong>▶ Focar</strong> — inicia o cronômetro daquele bloco.</li>
+          </ul>
+
+          <h3>Faixa de tempo livre</h3>
+          <p>
+            No fim da linha do tempo, uma faixa verde anuncia quanto tempo livre foi preservado e a
+            partir de que horas. É o resultado que o app existe para produzir.
+          </p>
+
+          <h3>Pendências</h3>
+          <p>
+            Se algo não coube, aparece uma caixa âmbar listando o que ficou de fora e quantos minutos
+            faltaram — inclusive tarefas parcialmente agendadas (“40 min ainda pendentes”). As saídas:
+          </p>
+          <ul>
+            <li>aumentar o limite diário, se você realmente tiver disposição;</li>
+            <li>ampliar a janela ou remover um compromisso;</li>
+            <li>reduzir o peso de algo que pode esperar;</li>
+            <li>ou simplesmente aceitar e planejar essa tarefa para outro dia.</li>
+          </ul>
+        </section>
+
+        <!-- ============================================================= -->
+        <section id="agora-foco">
+          <h2><span class="num">11</span> Painel “Agora” e cronômetro de foco</h2>
+
+          <h3>O painel “Agora”</h3>
+          <p>
+            No topo da agenda, um cartão destacado mostra o que está acontecendo <em>neste
+            momento</em>, atualizando sozinho a cada 15 segundos. Ele assume quatro estados:
+          </p>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead><tr><th>Estado</th><th>O que mostra</th></tr></thead>
+              <tbody>
+                <tr><td>🎯 Agora (tarefa)</td><td>Nome, barra de progresso, quanto falta, o que vem depois e um botão para focar só nos minutos restantes.</td></tr>
+                <tr><td>☕ Agora (pausa)</td><td>Que descanso é, quanto falta e qual é a próxima tarefa.</td></tr>
+                <tr><td>⏭️ A seguir</td><td>Você está numa folga: mostra o próximo bloco e em quanto tempo ele começa.</td></tr>
+                <tr><td>🌤️ Dia concluído</td><td>Tudo o que estava agendado já passou; mostra desde que horas o tempo é seu.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            O painel só considera a agenda <strong>de hoje</strong> — se você estiver planejando outro
+            dia, ele continua mostrando a situação real do momento.
+          </p>
+
+          <h3>O cronômetro</h3>
+          <p>
+            Clicando em <strong>▶ Focar</strong> (em um bloco ou no painel Agora), uma barra flutuante
+            aparece na parte de baixo da tela com um anel de progresso e o tempo restante.
+          </p>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead><tr><th>Recurso</th><th>Detalhe</th></tr></thead>
+              <tbody>
+                <tr><td>⏸️ / ▶️</td><td>Pausa e retoma a contagem.</td></tr>
+                <tr><td>⏹️</td><td>Encerra a sessão sem marcar nada.</td></tr>
+                <tr><td>Título da aba</td><td>Mostra o tempo restante, dá para acompanhar de outra aba.</td></tr>
+                <tr><td>Ao terminar</td><td>Toca um som curto, mostra um aviso e <strong>marca a tarefa como concluída</strong>.</td></tr>
+                <tr><td>Notificação do sistema</td><td>Se você autorizar, chega mesmo com a aba em segundo plano.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="nota">
+            <strong>O tempo é medido pelo relógio real.</strong> Se você trocar de aba ou o navegador
+            reduzir a prioridade da página, a contagem continua correta ao voltar.
+          </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <section id="exportar">
+          <h2><span class="num">12</span> Exportar e compartilhar</h2>
+          <p>Na base do cartão da agenda ficam quatro botões, ativos assim que existe um plano gerado.</p>
+
+          <div class="cartoes">
+            <div class="cartao">
+              <strong>📱 WhatsApp</strong>
+              <span>Abre o WhatsApp com a agenda já formatada: horários, pendências e o total de tempo livre.</span>
+            </div>
+            <div class="cartao">
+              <strong>📋 Copiar</strong>
+              <span>Mesmo texto na área de transferência, para colar onde quiser.</span>
+            </div>
+            <div class="cartao">
+              <strong>📅 Exportar .ics</strong>
+              <span>Baixa um arquivo de calendário com um evento por bloco. Importe no Google Agenda, Outlook ou Apple Calendar.</span>
+            </div>
+            <div class="cartao">
+              <strong>📄 Duplicar para…</strong>
+              <span>Copia o plano para outra data. Ideal para rotinas que se repetem.</span>
+            </div>
+          </div>
+
+          <h3>Imprimir ou salvar em PDF</h3>
+          <p>
+            Use <kbd>Ctrl</kbd>+<kbd>P</kbd> na tela do app. A folha de impressão esconde formulários,
+            gráficos e botões e imprime somente a linha do tempo — cabe em uma página e serve de
+            roteiro do dia.
+          </p>
+        </section>
+
+        <!-- ============================================================= -->
+        <section id="calendario">
+          <h2><span class="num">13</span> Calendário</h2>
+          <p>
+            Abra pelo botão <strong>🗓️ Calendário</strong> ou pela tecla <kbd>C</kbd>. Ele mostra
+            feriados nacionais e <strong>todas as agendas que você já gerou</strong>.
+          </p>
+
+          <h3>As três visões</h3>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead><tr><th>Visão</th><th>Mostra</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Mês</strong></td><td>Grade do mês. Cada dia com agenda salva exibe quantas tarefas e quanto tempo.</td></tr>
+                <tr><td><strong>Semana</strong></td><td>Sete colunas com os blocos de cada dia. Clique no número do dia para abrir a visão Dia.</td></tr>
+                <tr><td><strong>Dia</strong></td><td>Linha do tempo hora a hora, com os blocos posicionados e as horas livres marcadas.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Cores da grade</h3>
+          <div class="legenda">
+            <div class="legenda__item" style="--cor: #10b981">
+              <strong>Fundo esverdeado</strong><span>Dia com agenda salva.</span>
+            </div>
+            <div class="legenda__item" style="--cor: #f59e0b">
+              <strong>Fundo âmbar</strong><span>Feriado nacional — o nome aparece na célula.</span>
+            </div>
+            <div class="legenda__item" style="--cor: #818cf8">
+              <strong>Contorno azulado</strong><span>Hoje.</span>
+            </div>
+            <div class="legenda__item" style="--cor: #6366f1">
+              <strong>Preenchido</strong><span>Dia selecionado no momento.</span>
+            </div>
+          </div>
+          <p>No celular as etiquetas viram pontinhos coloridos para não estourar a célula.</p>
+
+          <h3>Navegação</h3>
+          <ul>
+            <li><strong>← e →</strong> avançam mês, semana ou dia, conforme a visão ativa.</li>
+            <li><strong>Hoje</strong> volta para a data atual.</li>
+            <li>
+              Clicar em um dia <strong>também muda a data do painel</strong>: ao voltar, o campo
+              <em>Planejar o dia</em> já está naquela data, pronto para gerar.
+            </li>
+            <li><kbd>Esc</kbd> volta ao painel.</li>
+          </ul>
+
+          <h3>Feriados incluídos</h3>
+          <p>
+            Os nove feriados nacionais fixos (Confraternização Universal, Tiradentes, Dia do Trabalho,
+            Independência, Nossa Senhora Aparecida, Finados, Proclamação da República, Consciência
+            Negra e Natal) mais os móveis calculados a partir da Páscoa: Carnaval, Sexta-feira Santa,
+            Páscoa e Corpus Christi. Feriados municipais e estaduais não entram — cadastre-os como
+            compromisso fixo se precisar.
+          </p>
+        </section>
+
+        <!-- ============================================================= -->
+        <section id="preferencias">
+          <h2><span class="num">14</span> Tema, atalhos e instalação</h2>
+
+          <h3>Tema</h3>
+          <p>O botão do cabeçalho gira entre três estados, e a escolha fica salva:</p>
+          <ul>
+            <li>🌙 <strong>Escuro</strong> — padrão.</li>
+            <li>☀️ <strong>Claro</strong>.</li>
+            <li>🖥️ <strong>Sistema</strong> — acompanha o tema do seu aparelho e muda junto com ele.</li>
+          </ul>
+
+          <h3>Atalhos de teclado</h3>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead><tr><th>Tecla</th><th>Ação</th></tr></thead>
+              <tbody>
+                <tr><td><kbd>N</kbd></td><td>Nova tarefa (leva o cursor para o campo de nome)</td></tr>
+                <tr><td><kbd>G</kbd></td><td>Gerar a agenda do dia selecionado</td></tr>
+                <tr><td><kbd>C</kbd></td><td>Abrir o calendário</td></tr>
+                <tr><td><kbd>T</kbd></td><td>Alternar o tema</td></tr>
+                <tr><td><kbd>F</kbd></td><td>Focar no bloco que está acontecendo agora</td></tr>
+                <tr><td><kbd>?</kbd></td><td>Abrir a lista de atalhos</td></tr>
+                <tr><td><kbd>Esc</kbd></td><td>Voltar ao painel / fechar janelas</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Os atalhos ficam desativados enquanto você digita em um campo.</p>
+
+          <h3>Instalar como aplicativo</h3>
+          <p>
+            Quando o navegador oferece, aparece o botão <strong>⬇️ Instalar app</strong> no cabeçalho.
+            Instalado, o Chronos ganha ícone próprio, abre em janela sem barra de endereço e
+            <strong>funciona offline</strong>. Também dá para instalar pelo menu do navegador
+            (“Instalar aplicativo” no Chrome/Edge, “Adicionar à tela de início” no celular).
+          </p>
+          <p style="margin-top: 0.5rem">
+            O ícone instalado ainda oferece dois atalhos rápidos: <em>Gerar agenda de hoje</em> e
+            <em>Abrir calendário</em>.
+          </p>
+
+          <h3>Acessibilidade</h3>
+          <ul>
+            <li>Navegação completa por teclado, com indicador de foco visível.</li>
+            <li>Se o seu sistema estiver com “reduzir movimento”, todas as animações são desligadas.</li>
+            <li>Textos, gráficos e listas têm rótulos para leitores de tela.</li>
+            <li>Nenhuma informação depende só de cor — sempre há texto ou ícone junto.</li>
+          </ul>
+        </section>
+
+        <!-- ============================================================= -->
+        <section id="dados">
+          <h2><span class="num">15</span> Seus dados e backup</h2>
+          <p>
+            Tudo fica no <strong>armazenamento local do navegador</strong>. Não há servidor, conta ou
+            envio de dados. Isso traz duas consequências práticas:
+          </p>
+          <ul>
+            <li>
+              <strong>Os dados são por navegador e por aparelho.</strong> O que você cadastrou no
+              computador não aparece sozinho no celular.
+            </li>
+            <li>
+              <strong>Limpar os dados de navegação apaga tudo.</strong> Modo anônimo também não
+              guarda nada depois que a janela fecha.
+            </li>
+          </ul>
+
+          <h3>Exportar e importar</h3>
+          <p>
+            No cartão de tarefas, abra <strong>“Backup dos seus dados”</strong>:
+          </p>
+          <ul>
+            <li>
+              <strong>⬇️ Exportar JSON</strong> baixa um arquivo com perfil, configurações, tarefas,
+              agendas salvas e histórico.
+            </li>
+            <li>
+              <strong>⬆️ Importar JSON</strong> restaura esse arquivo, substituindo os dados do perfil
+              atual. Ele pede confirmação mostrando quantas tarefas e agendas virão.
+            </li>
+          </ul>
+          <p>
+            É o caminho para levar tudo para outro navegador, outro computador ou guardar uma cópia
+            de segurança.
+          </p>
+
+          <div class="nota">
+            <strong>Limites de armazenamento.</strong> São guardadas as <strong>90 agendas mais
+            recentes</strong> e as <strong>60 tarefas distintas</strong> mais recentes no histórico de
+            sugestões. Nada disso limita quantas tarefas você pode ter agora — é só a memória de
+            longo prazo.
+          </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <section id="receitas">
+          <h2><span class="num">16</span> Receitas de uso</h2>
+
+          <h3>Estudante na véspera da prova</h3>
+          <ol class="passos">
+            <li>Janela ampla (por exemplo 08:00–22:00) e limite diário realista: <strong>5 a 6 horas</strong>, não 14.</li>
+            <li>Cadastre cada assunto como uma tarefa de <strong>Estudo</strong> separada, com o peso refletindo o quanto cai na prova.</li>
+            <li>Coloque o <strong>prazo</strong> na data da prova — assuntos com prova mais próxima sobem sozinhos.</li>
+            <li>Gere e siga usando o botão <strong>▶ Focar</strong>: ele marca cada bloco como concluído no fim.</li>
+          </ol>
+
+          <h3>Quem trabalha com muitas reuniões</h3>
+          <ol class="passos">
+            <li>Cadastre <strong>todas</strong> as reuniões como compromissos fixos antes de gerar.</li>
+            <li>Observe a linha de aviso: ela mostra quanto sobrou de fato depois dos bloqueios.</li>
+            <li>Deixe tarefas de <strong>Foco profundo</strong> apenas se sobrarem janelas de pelo menos 50 minutos; blocos menores viram Administrativa ou Rotina.</li>
+            <li>Exporte em <strong>.ics</strong> para o plano conviver com a agenda corporativa.</li>
+          </ol>
+
+          <h3>Turno noturno</h3>
+          <ol class="passos">
+            <li>Cronotipo <strong>Noturno</strong> e janela invertida, por exemplo 22:00 → 06:00.</li>
+            <li>O app entende sozinho que o turno atravessa a meia-noite; a curva de energia se desloca junto.</li>
+            <li>Cadastre a refeição da madrugada como compromisso fixo — ela zera o cansaço acumulado.</li>
+          </ol>
+
+          <h3>O dia está cheio demais</h3>
+          <ol class="passos">
+            <li>Olhe a <strong>barra de ocupação</strong>: vermelha significa que não vai caber.</li>
+            <li>Gere assim mesmo e leia a caixa de <strong>pendências</strong> — ela diz exatamente o que sobra.</li>
+            <li>Rebaixe o peso do que pode esperar, em vez de aumentar o limite diário. O limite é justamente a proteção.</li>
+            <li>Use <strong>Duplicar para…</strong> para jogar o plano de hoje para amanhã e recomeçar com menos coisas.</li>
+          </ol>
+        </section>
+
+        <!-- ============================================================= -->
+        <section id="duvidas">
+          <h2><span class="num">17</span> Dúvidas e problemas</h2>
+
+          <div class="faq">
+            <details>
+              <summary>Por que minha tarefa mais importante ficou para a tarde?</summary>
+              <p>
+                O app preenche a janela do início para o fim, escolhendo a cada momento a melhor
+                tarefa disponível — ele não deixa a manhã vazia esperando o pico. Se algo importante
+                caiu tarde, normalmente houve uma tarefa com prazo mais apertado antes, ou ela foi
+                cadastrada depois que o começo do dia já estava ocupado. Aumente o peso, defina um
+                prazo mais próximo, ou arraste-a para o topo na ordem manual.
+              </p>
+            </details>
+
+            <details>
+              <summary>Gerei a agenda e quase nada foi agendado.</summary>
+              <p>Quase sempre é uma destas três causas, nesta ordem:</p>
+              <ul>
+                <li><strong>Limite diário muito baixo</strong> — confira o campo; ele é o teto real.</li>
+                <li><strong>Janela tomada por compromissos</strong> — a linha de aviso mostra quanto sobrou.</li>
+                <li><strong>Sobras curtas</strong> — trechos livres menores que 10 minutos não recebem tarefa, para não picotar o trabalho.</li>
+              </ul>
+            </details>
+
+            <details>
+              <summary>Minhas tarefas sumiram.</summary>
+              <p>
+                Verifique se você entrou com <strong>exatamente o mesmo nome</strong> de antes —
+                nomes diferentes são perfis diferentes. Também confira se está no mesmo navegador e se
+                não limpou os dados de navegação. Em janela anônima nada é guardado depois que ela
+                fecha.
+              </p>
+            </details>
+
+            <details>
+              <summary>O calendário está vazio.</summary>
+              <p>
+                O calendário mostra apenas as agendas que você <strong>gerou e salvou</strong>. Volte
+                ao painel, escolha a data e clique em Gerar — o dia passa a aparecer marcado.
+              </p>
+            </details>
+
+            <details>
+              <summary>Posso usar no celular e no computador ao mesmo tempo?</summary>
+              <p>
+                Pode usar nos dois, mas os dados não sincronizam sozinhos — não há servidor. Use
+                <strong>Exportar JSON</strong> em um e <strong>Importar JSON</strong> no outro para
+                transferir tudo.
+              </p>
+            </details>
+
+            <details>
+              <summary>As pausas estão me atrapalhando.</summary>
+              <p>
+                As pausas são calculadas a partir do seu foco contínuo, que vem da idade. Se elas
+                parecem longas demais, é sinal de que os blocos estão grandes para o perfil
+                informado. Confira se a idade está correta; ela também controla o tamanho dos blocos.
+                Lembre-se de que pausa não consome o limite diário — ela não está “roubando” trabalho.
+              </p>
+            </details>
+
+            <details>
+              <summary>O cronômetro parou quando troquei de aba.</summary>
+              <p>
+                Não parou. A contagem usa o relógio real do sistema, então mesmo que o navegador
+                reduza a prioridade da página em segundo plano, o tempo mostrado ao voltar está
+                correto. Para receber o aviso mesmo fora da aba, autorize as notificações quando o
+                navegador perguntar.
+              </p>
+            </details>
+
+            <details>
+              <summary>Não aparece o botão de instalar.</summary>
+              <p>
+                Ele só surge quando o navegador oferece a instalação — o que exige conexão segura
+                (https) e navegador compatível (Chrome, Edge, Samsung Internet e similares). No
+                Safari, use <em>Compartilhar → Adicionar à Tela de Início</em>. Se o app já estiver
+                instalado, o botão não aparece.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <span class="selo-parte">Parte 2 · Como funciona por dentro</span>
+
+        <section id="variaveis">
+          <h2><span class="num">18</span> Variáveis do sistema</h2>
+          <p>
+            Esta segunda parte descreve a implementação real em <code>js/algoritmo.js</code>. Você não
+            precisa dela para usar o app — mas ela explica cada decisão que o motor toma.
+          </p>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead><tr><th>Símbolo</th><th>Nome</th><th>Descrição</th></tr></thead>
+              <tbody>
+                <tr><td><span class="var">idade</span></td><td>Idade</td><td>Define o foco contínuo e ajusta levemente o pico.</td></tr>
+                <tr><td><span class="var">cronotipo</span></td><td>Cronotipo</td><td>Define a hora-base do pico circadiano.</td></tr>
+                <tr><td><span class="var">f_max</span></td><td>Foco máximo</td><td>Maior bloco contínuo saudável, de 25 a 90 minutos.</td></tr>
+                <tr><td><span class="var">p</span></td><td>Hora do pico</td><td>Em horas decimais (9,5 = 09h30).</td></tr>
+                <tr><td><span class="var">E(h)</span></td><td>Energia</td><td>Energia estimada na hora <code>h</code>, de 3 a 100.</td></tr>
+                <tr><td><span class="var">J</span></td><td>Janela</td><td>Intervalo disponível, já sem os compromissos.</td></tr>
+                <tr><td><span class="var">O</span></td><td>Orçamento</td><td><code>min(limite × 60, minutos livres da janela)</code>.</td></tr>
+                <tr><td><span class="var">w</span></td><td>Peso</td><td>Importância declarada, de 1 a 10.</td></tr>
+                <tr><td><span class="var">x</span></td><td>Exigência</td><td>Energia que a tarefa pede, de 0 a 1.</td></tr>
+                <tr><td><span class="var">u</span></td><td>Urgência</td><td>Pressão do prazo, de 0,3 a 1.</td></tr>
+                <tr><td><span class="var">S</span></td><td>Score</td><td>Nota da tarefa para um instante específico.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="perfil-tec">
+          <h2><span class="num">19</span> Perfil biológico</h2>
+
+          <h3>Foco contínuo máximo</h3>
+          <p>
+            A capacidade de sustentar atenção cresce até o início da vida adulta e decai devagar
+            depois. A queda antes dos 30 é mais acentuada — daí os dois coeficientes:
+          </p>
+          <div class="formula">penalidade = |idade − 30| × (idade &lt; 30 ? 2,2 : 0,9)
 
 f_max = limitar( arredondar5(88 − penalidade), 25, 90 )</div>
 
-        <div class="tabela-envoltorio">
-          <table>
-            <thead>
-              <tr><th>Idade</th><th>Penalidade</th><th>f_max</th><th>Leitura prática</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>14</td><td>35,2</td><td>55 min</td><td>Blocos curtos, pausas frequentes</td></tr>
-              <tr><td>22</td><td>17,6</td><td>70 min</td><td>Boa resistência, já perto do topo</td></tr>
-              <tr><td>30</td><td>0</td><td>90 min</td><td>Faixa de maior resistência atencional</td></tr>
-              <tr><td>50</td><td>18</td><td>70 min</td><td>Declínio suave</td></tr>
-              <tr><td>70</td><td>36</td><td>50 min</td><td>Blocos mais curtos preservam a qualidade</td></tr>
-            </tbody>
-          </table>
-        </div>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead><tr><th>Idade</th><th>f_max</th><th>Leitura prática</th></tr></thead>
+              <tbody>
+                <tr><td>14</td><td>55 min</td><td>Blocos curtos, pausas frequentes</td></tr>
+                <tr><td>22</td><td>70 min</td><td>Boa resistência</td></tr>
+                <tr><td>30</td><td>90 min</td><td>Faixa de maior resistência atencional</td></tr>
+                <tr><td>50</td><td>70 min</td><td>Declínio suave</td></tr>
+                <tr><td>70</td><td>50 min</td><td>Blocos menores preservam a qualidade</td></tr>
+              </tbody>
+            </table>
+          </div>
 
-        <h3>Hora do pico</h3>
-        <p>
-          O pico vem do cronotipo declarado — muito mais preciso do que deduzir da idade — com um
-          ajuste pequeno: a maturidade tende a antecipar o horário de melhor rendimento.
-        </p>
-        <div class="formula">base = { matutino: 9,5 · intermediário: 11,5 · vespertino: 15 · noturno: 19 }
+          <h3>Hora do pico</h3>
+          <div class="formula">base = { matutino: 9,5 · intermediário: 11,5 · vespertino: 15 · noturno: 19 }
 
 ajuste = limitar( (idade − 30) × 0,03 , −0,7 , 1,2 )
 p      = limitar( base − ajuste , 6 , 21 )</div>
 
-        <h3>Pausa curta de referência</h3>
-        <div class="formula">pausa_curta = limitar( arredondar5(f_max ÷ 5), 5, 15 )</div>
-        <p>
-          A proporção ~5:1 entre foco e descanso é a mesma lógica do Pomodoro, mas calibrada pelo
-          seu <code>f_max</code> em vez de um número fixo para todo mundo.
-        </p>
-      </section>
+          <h3>Pausa curta de referência</h3>
+          <div class="formula">pausa_curta = limitar( arredondar5(f_max ÷ 5), 5, 15 )</div>
+          <p>
+            A proporção de cerca de 5:1 entre foco e descanso é a mesma lógica do Pomodoro, mas
+            calibrada pelo seu <code>f_max</code> em vez de um número fixo para todo mundo.
+          </p>
+        </section>
 
-      <!-- ============================================================= -->
-      <section id="energia">
-        <h2><span class="num">4</span> Curva de energia</h2>
-        <p>
-          A curva combina três componentes que aparecem de forma consistente na literatura de
-          cronobiologia aplicada: a oscilação circadiana principal, o vale pós-almoço e a
-          recuperação do fim da tarde.
-        </p>
-
-        <div class="formula">fase = ((h − p + 12) mod 24) − 12        // distância em horas até o pico
+        <section id="energia-tec">
+          <h2><span class="num">20</span> Curva de energia</h2>
+          <p>
+            Três componentes: a oscilação circadiana principal, o vale pós-almoço e a recuperação do
+            fim da tarde.
+          </p>
+          <div class="formula">fase = ((h − p + 12) mod 24) − 12        // distância em horas até o pico
 
 circadiano = 40 × cos( fase × π ÷ 12 )
 vale       = −18 × e^( −(fase − 3,4)² ÷ 2 )
@@ -574,68 +1887,49 @@ rebote     = +12 × e^( −(fase − 5,5)² ÷ 1,5 )
 
 E(h) = limitar( 50 + circadiano + vale + rebote , 3 , 100 )</div>
 
-        <h3>Exemplo — perfil intermediário, pico às 11h30</h3>
-        <div class="tabela-envoltorio">
-          <table>
-            <thead>
-              <tr><th>Hora</th><th>Energia</th><th>O que o motor faz</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>07h30</td><td>≈ 22%</td><td>Ainda subindo — bom para tarefas leves</td></tr>
-              <tr><td>11h30</td><td><strong>90%</strong></td><td>Pico: reservado para as tarefas mais exigentes</td></tr>
-              <tr><td>15h00</td><td>≈ 58%</td><td>Vale pós-almoço: rotina e administrativo</td></tr>
-              <tr><td>17h00</td><td>≈ 65%</td><td>Rebote: ainda dá para uma tarefa de peso médio</td></tr>
-              <tr><td>21h00</td><td>≈ 25%</td><td>Fim de expediente cognitivo</td></tr>
-            </tbody>
-          </table>
-        </div>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead><tr><th>Hora (pico 11h30)</th><th>Energia</th><th>O que o motor faz</th></tr></thead>
+              <tbody>
+                <tr><td>07h30</td><td>≈ 22%</td><td>Ainda subindo — tarefas leves</td></tr>
+                <tr><td>11h30</td><td><strong>90%</strong></td><td>Pico: tarefas mais exigentes</td></tr>
+                <tr><td>15h00</td><td>≈ 58%</td><td>Vale pós-almoço: rotina e administrativo</td></tr>
+                <tr><td>17h00</td><td>≈ 65%</td><td>Rebote: cabe uma tarefa de peso médio</td></tr>
+                <tr><td>21h00</td><td>≈ 25%</td><td>Fim do expediente cognitivo</td></tr>
+              </tbody>
+            </table>
+          </div>
 
-        <div class="nota">
-          <strong>Por que não uma senoide simples?</strong> A versão anterior usava
-          <code>sen((h − c)·π/12) × 40 + 60</code>, que produz uma subida e uma descida simétricas
-          e ignora o vale da tarde — justamente o fenômeno mais relevante para quem planeja o dia.
-        </div>
-      </section>
+          <div class="nota">
+            <strong>Por que não uma senoide simples?</strong> Uma senoide produz subida e descida
+            simétricas e ignora o vale da tarde — justamente o fenômeno mais relevante para quem
+            planeja o dia.
+          </div>
+        </section>
 
-      <!-- ============================================================= -->
-      <section id="janela">
-        <h2><span class="num">5</span> Janela e compromissos</h2>
-        <p>
-          A janela é o intervalo em que você <em>pode</em> trabalhar. Compromissos fixos (almoço,
-          reuniões, deslocamentos) são recortados dela antes de qualquer alocação.
-        </p>
-
-        <ol>
-          <li>Converte início e fim para minutos desde a meia-noite.</li>
-          <li>Se o fim for menor ou igual ao início, soma 24h — <strong>turnos noturnos funcionam</strong>.</li>
-          <li>Recorta cada compromisso aos limites da janela.</li>
-          <li>Ordena e <strong>funde compromissos sobrepostos</strong> num único bloqueio.</li>
-          <li>Calcula os minutos realmente livres.</li>
-        </ol>
-
-        <div class="formula">total      = fim − início
+        <section id="janela-tec">
+          <h2><span class="num">21</span> Janela e recortes</h2>
+          <ol>
+            <li>Converte início e fim para minutos desde a meia-noite.</li>
+            <li>Se o fim for menor ou igual ao início, soma 24h — turnos noturnos funcionam.</li>
+            <li>Recorta cada compromisso aos limites da janela.</li>
+            <li>Ordena e funde compromissos sobrepostos num único bloqueio.</li>
+            <li>Calcula os minutos realmente livres.</li>
+          </ol>
+          <div class="formula">total      = fim − início
 bloqueado  = Σ (fim_i − início_i)   dos compromissos já fundidos
 disponível = max(0, total − bloqueado)
 
 O = min( limite_diário × 60 , disponível )</div>
+        </section>
 
-        <div class="nota nota--atencao">
-          <strong>Atenção:</strong> se você reservar 10h de janela mas definir 6h de limite, o motor
-          usa 6h. O limite existe para você não encher todo o intervalo disponível — ele é o
-          instrumento que devolve o tempo livre.
-        </div>
-      </section>
-
-      <!-- ============================================================= -->
-      <section id="prioridade">
-        <h2><span class="num">6</span> Priorização</h2>
-        <p>
-          A cada decisão o motor pergunta: <em>qual tarefa faz mais sentido agora?</em> A nota é
-          recalculada para o instante avaliado, então a mesma tarefa vale coisas diferentes às 9h e
-          às 15h.
-        </p>
-
-        <div class="formula">peso_norm = (w − 1) ÷ 9                          // 0 … 1
+        <section id="prioridade-tec">
+          <h2><span class="num">22</span> Priorização</h2>
+          <p>
+            A nota é recalculada para o instante avaliado — a mesma tarefa vale coisas diferentes às
+            9h e às 15h.
+          </p>
+          <div class="formula">peso_norm = (w − 1) ÷ 9                          // 0 … 1
 x         = peso_norm × 0,65 + exigência_categoria × 0,35
 energia   = E(hora_atual) ÷ 100
 afinidade = 1 − |x − energia|                     // casamento tarefa ↔ momento
@@ -647,171 +1941,98 @@ S = 0,40 × peso_norm
   + 0,26 × u
   + 0,12 × encaixe</div>
 
-        <h3>Urgência por prazo</h3>
-        <div class="tabela-envoltorio">
-          <table>
-            <thead><tr><th>Prazo</th><th>u</th></tr></thead>
-            <tbody>
-              <tr><td>Hoje ou atrasado</td><td>1,00</td></tr>
-              <tr><td>Amanhã</td><td>0,80</td></tr>
-              <tr><td>Em até 3 dias</td><td>0,60</td></tr>
-              <tr><td>Em até 7 dias</td><td>0,45</td></tr>
-              <tr><td>Mais de 7 dias</td><td>0,30</td></tr>
-              <tr><td>Sem prazo</td><td>0,35 (neutro)</td></tr>
-            </tbody>
-          </table>
-        </div>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead><tr><th>Prazo</th><th>u</th><th></th><th>Categoria</th><th>Exigência</th></tr></thead>
+              <tbody>
+                <tr><td>Hoje ou atrasado</td><td>1,00</td><td></td><td>🧠 Foco profundo</td><td>1,00</td></tr>
+                <tr><td>Amanhã</td><td>0,80</td><td></td><td>📚 Estudo</td><td>0,90</td></tr>
+                <tr><td>Em até 3 dias</td><td>0,60</td><td></td><td>🎨 Criativa</td><td>0,85</td></tr>
+                <tr><td>Em até 7 dias</td><td>0,45</td><td></td><td>🗂️ Administrativa</td><td>0,50</td></tr>
+                <tr><td>Mais de 7 dias</td><td>0,30</td><td></td><td>🌱 Pessoal</td><td>0,45</td></tr>
+                <tr><td>Sem prazo</td><td>0,35</td><td></td><td>🔁 Rotina</td><td>0,35</td></tr>
+              </tbody>
+            </table>
+          </div>
 
-        <h3>Exigência por categoria</h3>
-        <div class="tabela-envoltorio">
-          <table>
-            <thead><tr><th>Categoria</th><th>Fator</th><th>Consequência</th></tr></thead>
-            <tbody>
-              <tr><td>🧠 Foco profundo</td><td>1,00</td><td>Puxada para os picos de energia</td></tr>
-              <tr><td>📚 Estudo</td><td>0,90</td><td>Também prefere alta energia</td></tr>
-              <tr><td>🎨 Criativa</td><td>0,85</td><td>Alta, com alguma tolerância</td></tr>
-              <tr><td>🗂️ Administrativa</td><td>0,50</td><td>Confortável em energia média</td></tr>
-              <tr><td>🌱 Pessoal</td><td>0,45</td><td>Boa para os vales</td></tr>
-              <tr><td>🔁 Rotina</td><td>0,35</td><td>Aproveita os momentos de baixa</td></tr>
-            </tbody>
-          </table>
-        </div>
+          <div class="nota nota--atencao">
+            <strong>Bug corrigido nesta versão.</strong> A priorização antiga era
+            <code>peso ÷ tempo</code>. Uma tarefa de peso 1 e 5 min tinha nota 0,20, enquanto uma de
+            peso 10 e 120 min tinha 0,083 — o crítico perdia sistematicamente para o rápido. A
+            normalização por faixa acaba com a inversão, e o termo <code>encaixe</code> preserva a
+            vantagem legítima das tarefas curtas quando sobra pouco espaço.
+          </div>
+        </section>
 
-        <div class="nota nota--atencao">
-          <strong>Bug corrigido nesta versão.</strong> A priorização antiga era
-          <code>peso ÷ tempo</code>. Uma tarefa de peso 1 e 5 min tinha nota 0,20, enquanto uma de
-          peso 10 e 120 min tinha 0,083 — ou seja, o que era <em>crítico</em> perdia
-          sistematicamente para o que era <em>rápido</em>. A normalização por faixa acaba com essa
-          inversão, e o termo <code>encaixe</code> preserva a vantagem legítima das tarefas curtas
-          quando sobra pouco espaço.
-        </div>
-      </section>
-
-      <!-- ============================================================= -->
-      <section id="motor">
-        <h2><span class="num">7</span> Montagem da agenda</h2>
-        <p>
-          O motor percorre a linha do tempo uma única vez. Todas as saídas do app — tela, WhatsApp,
-          arquivo <code>.ics</code> e calendário — leem o mesmo resultado, então nunca divergem
-          entre si.
-        </p>
-
-        <ol>
-          <li>Monta a linha do tempo alternando blocos livres e compromissos.</li>
-          <li>Em cada bloco livre, repete enquanto houver espaço, orçamento e tarefas pendentes:</li>
-          <li>Se há tarefa em andamento, <strong>continua nela</strong> (evita fragmentar o raciocínio).</li>
-          <li>Senão, escolhe a de maior <code>S</code> para aquele minuto exato.</li>
-          <li>Define a duração do bloco de foco:</li>
-        </ol>
-
-        <div class="formula">duração = min( f_max , restante_da_tarefa , espaço_no_bloco , orçamento_restante )
+        <section id="motor-tec">
+          <h2><span class="num">23</span> Montagem da agenda</h2>
+          <p>
+            O motor percorre a linha do tempo uma única vez. Tela, WhatsApp, <code>.ics</code> e
+            calendário leem o mesmo resultado, então nunca divergem entre si.
+          </p>
+          <ol>
+            <li>Monta a linha do tempo alternando blocos livres e compromissos.</li>
+            <li>Em cada bloco livre, repete enquanto houver espaço, orçamento e tarefas pendentes.</li>
+            <li>Se há tarefa em andamento, continua nela — evita fragmentar o raciocínio.</li>
+            <li>Senão, escolhe a de maior <code>S</code> para aquele minuto exato.</li>
+            <li>Define a duração do bloco de foco:</li>
+          </ol>
+          <div class="formula">duração = min( f_max , restante_da_tarefa , espaço_no_bloco , orçamento_restante )
 
 se duração &lt; 10 min e a tarefa não termina aí → encerra o bloco
                                                   (não vale a pena picotar)</div>
+          <ol start="6">
+            <li>Registra o bloco com hora, energia do momento e a justificativa da escolha.</li>
+            <li>Se ainda há trabalho a fazer, insere a pausa adequada.</li>
+            <li>O que não coube vira lista de pendências com o motivo.</li>
+          </ol>
+        </section>
 
-        <ol start="6">
-          <li>Registra o bloco com hora, energia do momento e a justificativa da escolha.</li>
-          <li>Se ainda há trabalho a fazer, insere a pausa adequada (seção 8).</li>
-          <li>O que não coube vira lista de pendências com o motivo.</li>
-        </ol>
+        <section id="pausas-tec">
+          <h2><span class="num">24</span> Política de pausas</h2>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead><tr><th>Condição</th><th>Pausa</th><th>Duração</th></tr></thead>
+              <tbody>
+                <tr><td><code>contínuos ≥ 2,5 × f_max</code></td><td>🛌 Descanso profundo</td><td><code>max(30, pausa_curta × 3)</code></td></tr>
+                <tr><td><code>contínuos ≥ 1,5 × f_max</code></td><td>🌿 Descanso recuperador</td><td><code>max(20, pausa_curta × 2)</code></td></tr>
+                <tr><td>Tarefa concluída, outra na fila</td><td>☕ Troca de contexto</td><td><code>pausa_curta + 5</code></td></tr>
+                <tr><td>Demais casos</td><td>💧 Pausa de foco</td><td><code>pausa_curta</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Regras que evitam desperdício</h3>
+          <ul>
+            <li>Nenhuma pausa é criada se <strong>não houver mais trabalho</strong> depois dela.</li>
+            <li>Nenhuma pausa é criada se ela <strong>não couber</strong> no bloco livre atual.</li>
+            <li>Compromissos fixos <strong>zeram o contador</strong> — o almoço já é o descanso.</li>
+            <li>A pausa curta não zera o contador, então o cansaço acumulado ainda escala para uma pausa maior.</li>
+          </ul>
+        </section>
 
-        <div class="nota">
-          <strong>Justificativa por bloco:</strong> cada tarefa agendada mostra por que caiu naquele
-          horário — “tarefa exigente alocada no seu pico de energia (90%)”, “prazo apertado”, “tarefa
-          leve aproveitando um vale”. Planejamento que você não entende, você não segue.
-        </div>
-      </section>
-
-      <!-- ============================================================= -->
-      <section id="pausas">
-        <h2><span class="num">8</span> Política de pausas</h2>
-        <p>
-          O tamanho da pausa é proporcional ao esforço acumulado desde o último descanso real
-          (<code>contínuos</code>), e todas escalam com o seu <code>f_max</code>.
-        </p>
-
-        <div class="tabela-envoltorio">
-          <table>
-            <thead>
-              <tr><th>Condição</th><th>Pausa</th><th>Duração</th></tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><code>contínuos ≥ 2,5 × f_max</code></td>
-                <td>🛌 Descanso profundo</td>
-                <td><code>max(30, pausa_curta × 3)</code></td>
-              </tr>
-              <tr>
-                <td><code>contínuos ≥ 1,5 × f_max</code></td>
-                <td>🌿 Descanso recuperador</td>
-                <td><code>max(20, pausa_curta × 2)</code></td>
-              </tr>
-              <tr>
-                <td>Tarefa concluída, outra na fila</td>
-                <td>☕ Troca de contexto</td>
-                <td><code>pausa_curta + 5</code></td>
-              </tr>
-              <tr>
-                <td>Demais casos</td>
-                <td>💧 Pausa de foco</td>
-                <td><code>pausa_curta</code></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <h3>Regras que evitam desperdício</h3>
-        <ul>
-          <li>Nenhuma pausa é criada se <strong>não houver mais trabalho</strong> depois dela.</li>
-          <li>Nenhuma pausa é criada se ela <strong>não couber</strong> no bloco livre atual.</li>
-          <li>Compromissos fixos <strong>zeram o contador</strong> — o almoço já é o descanso.</li>
-          <li>A pausa curta não zera o contador, então o cansaço acumulado ainda escala para uma pausa maior.</li>
-        </ul>
-      </section>
-
-      <!-- ============================================================= -->
-      <section id="indicadores">
-        <h2><span class="num">9</span> Indicadores</h2>
-        <div class="formula">trabalhados  = Σ duração dos blocos de tarefa
+        <section id="indicadores-tec">
+          <h2><span class="num">25</span> Indicadores</h2>
+          <div class="formula">trabalhados  = Σ duração dos blocos de tarefa
 minutosPausa = Σ duração das pausas
 fim_agenda   = maior horário de término entre os eventos
 
 minutosLivres = fim_da_janela − fim_agenda
 ocupação      = trabalhados ÷ total_da_janela × 100
 eficiência    = trabalhados ÷ (trabalhados + pausas) × 100</div>
+          <p>
+            <strong>Tempo livre</strong> é o indicador que dá nome ao produto. <strong>Eficiência</strong>
+            mostra a densidade do esforço — valores muito altos indicam um dia sem respiro, não um dia
+            melhor.
+          </p>
+        </section>
 
-        <p>
-          <strong>Tempo livre</strong> é o indicador que dá nome ao produto: o quanto do seu dia
-          volta para você depois de tudo planejado. <strong>Eficiência</strong> mostra a densidade do
-          esforço — valores muito altos indicam um dia sem respiro, não um dia melhor.
-        </p>
-      </section>
-
-      <!-- ============================================================= -->
-      <section id="sugestoes">
-        <h2><span class="num">10</span> Sugestões automáticas</h2>
-        <p>
-          Ao sair do campo de nome, o app procura tarefas parecidas no inventário atual e no
-          histórico do perfil. Correspondências exatas de nome têm prioridade sobre parciais.
-        </p>
-        <div class="formula">peso_sugerido  = arredondar1( média dos pesos das correspondentes )
-tempo_sugerido = arredondar5( média das durações )
-categoria      = a mais frequente entre as correspondentes</div>
-        <p>
-          O histórico guarda as 60 tarefas distintas mais recentes. Quanto mais você usa, melhor
-          fica a estimativa — sem enviar nada para lugar nenhum.
-        </p>
-      </section>
-
-      <!-- ============================================================= -->
-      <section id="persistencia">
-        <h2><span class="num">11</span> Persistência</h2>
-        <p>
-          Tudo vive no <code>localStorage</code> do navegador, um documento por perfil, sob a chave
-          <code>chronos:perfil:&lt;slug&gt;</code>.
-        </p>
-
-        <div class="formula">{
+        <section id="persistencia-tec">
+          <h2><span class="num">26</span> Persistência</h2>
+          <p>
+            Um documento por perfil, sob a chave <code>chronos:perfil:&lt;slug&gt;</code> no
+            <code>localStorage</code>.
+          </p>
+          <div class="formula">{
   versao: 3,
   perfil:        { nome, idade, cronotipo, focoMaximo },
   configuracoes: { limiteHoras, inicioDisponivel, fimDisponivel, interrupcoes[] },
@@ -820,42 +2041,17 @@ categoria      = a mais frequente entre as correspondentes</div>
   historico:     [ { nome, peso, tempo, categoria } ],
   atualizadoEm:  "ISO-8601"
 }</div>
+          <ul>
+            <li>Documentos de versões antigas são <strong>migrados na primeira leitura</strong>.</li>
+            <li>São mantidas as <strong>90 agendas mais recentes</strong>.</li>
+            <li>Em modo privativo ou com a cota esgotada, o app cai para memória e continua funcionando.</li>
+            <li>Gravação com <em>debounce</em> de 400 ms evita escrever a cada tecla.</li>
+          </ul>
+        </section>
 
-        <ul>
-          <li>Documentos gravados por versões antigas são <strong>migrados na primeira leitura</strong>.</li>
-          <li>São mantidas as <strong>90 agendas mais recentes</strong>, para não inflar o armazenamento.</li>
-          <li>Em modo privativo ou com a cota esgotada, o app cai para memória e continua funcionando.</li>
-          <li>Gravação com <em>debounce</em> de 400 ms evita escrever a cada tecla.</li>
-        </ul>
-      </section>
-
-      <!-- ============================================================= -->
-      <section id="exportacao">
-        <h2><span class="num">12</span> Exportações</h2>
-        <div class="cartoes">
-          <div class="cartao">
-            <strong>📱 WhatsApp</strong>
-            <span>Mensagem formatada com faixas de horário, pendências e o total de tempo livre.</span>
-          </div>
-          <div class="cartao">
-            <strong>📋 Copiar</strong>
-            <span>Mesmo texto na área de transferência, com fallback para navegadores antigos.</span>
-          </div>
-          <div class="cartao">
-            <strong>📅 Arquivo .ics</strong>
-            <span>Um <code>VEVENT</code> por bloco, importável no Google, Outlook e Apple Calendar.</span>
-          </div>
-          <div class="cartao">
-            <strong>🖨️ Impressão</strong>
-            <span>A folha de estilo esconde formulários e imprime apenas a linha do tempo.</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- ============================================================= -->
-      <section id="formulas">
-        <h2><span class="num">13</span> Resumo das fórmulas</h2>
-        <div class="formula">— Perfil ————————————————————————————————————
+        <section id="formulas">
+          <h2><span class="num">27</span> Resumo das fórmulas</h2>
+          <div class="formula">— Perfil ————————————————————————————————————
 f_max       = limitar(arredondar5(88 − |idade−30|×(idade&lt;30 ? 2,2 : 0,9)), 25, 90)
 p           = limitar(base_cronotipo − limitar((idade−30)×0,03, −0,7, 1,2), 6, 21)
 pausa_curta = limitar(arredondar5(f_max ÷ 5), 5, 15)
@@ -878,31 +2074,75 @@ duração = min(f_max, restante, espaço_no_bloco, orçamento_restante)
 — Indicadores ————————————————————————————————
 minutosLivres = fim_da_janela − fim_agenda
 eficiência    = trabalhados ÷ (trabalhados + pausas) × 100</div>
-      </section>
+        </section>
+      </main>
 
       <p class="rodape">
         Chronos Ultra · criado por
         <a href="https://github.com/SchwanckB" target="_blank" rel="noopener">Bernardo Schwanck</a><br />
-        Este manual descreve a implementação em <code>js/algoritmo.js</code>.
+        A Parte 2 descreve a implementação em <code>js/algoritmo.js</code>.
       </p>
-    </main>
+    </div>
+
+    <button type="button" class="topo" id="btn-topo" aria-label="Voltar ao topo">↑</button>
 
     <script>
       const raiz = document.documentElement
-      const botao = document.getElementById('btn-tema')
-      const salvo = localStorage.getItem('chronos:tema')
 
-      const aplicar = tema => {
-        raiz.dataset.tema = tema.replace(/"/g, '')
-        botao.textContent = raiz.dataset.tema === 'escuro' ? '🌙 Tema' : '☀️ Tema'
+      /* ---------------------------------------------------------- tema -- */
+      const btnTema = document.getElementById('btn-tema')
+      const aplicarTema = tema => {
+        const limpo = String(tema).replace(/"/g, '')
+        raiz.dataset.tema = limpo === 'claro' ? 'claro' : 'escuro'
+        btnTema.textContent = raiz.dataset.tema === 'escuro' ? '🌙 Tema' : '☀️ Tema'
       }
 
-      aplicar(salvo || 'escuro')
-      botao.addEventListener('click', () => {
+      aplicarTema(localStorage.getItem('chronos:tema') || 'escuro')
+      btnTema.addEventListener('click', () => {
         const proximo = raiz.dataset.tema === 'escuro' ? 'claro' : 'escuro'
-        aplicar(proximo)
+        aplicarTema(proximo)
         localStorage.setItem('chronos:tema', JSON.stringify(proximo))
       })
+
+      document.getElementById('btn-imprimir').addEventListener('click', () => window.print())
+
+      /* ------------------------------------------- progresso e topo ----- */
+      const barraProgresso = document.getElementById('progresso')
+      const btnTopo = document.getElementById('btn-topo')
+
+      const aoRolar = () => {
+        const total = document.documentElement.scrollHeight - window.innerHeight
+        const razao = total > 0 ? window.scrollY / total : 0
+        barraProgresso.style.transform = `scaleX(${razao})`
+        btnTopo.classList.toggle('visivel', window.scrollY > 600)
+      }
+
+      window.addEventListener('scroll', aoRolar, { passive: true })
+      aoRolar()
+
+      btnTopo.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }))
+
+      /* ------------------------------------------------ índice ativo ---- */
+      const links = new Map(
+        Array.from(document.querySelectorAll('.indice a')).map(a => [a.getAttribute('href').slice(1), a])
+      )
+
+      if ('IntersectionObserver' in window) {
+        const observador = new IntersectionObserver(
+          entradas => {
+            entradas.forEach(entrada => {
+              const link = links.get(entrada.target.id)
+              if (!link) return
+              if (entrada.isIntersecting) {
+                links.forEach(l => l.classList.remove('ativo'))
+                link.classList.add('ativo')
+              }
+            })
+          },
+          { rootMargin: '-20% 0px -70% 0px' }
+        )
+        document.querySelectorAll('section[id]').forEach(secao => observador.observe(secao))
+      }
     </script>
   </body>
 </html>

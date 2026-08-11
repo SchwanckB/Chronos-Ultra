@@ -317,8 +317,10 @@ function adicionarTarefa(evento) {
     )
   }
 
+  // mantém a categoria escolhida: normalmente se cadastra várias do mesmo tipo
   $('#form-tarefa')?.reset()
-  $('#categoria-tarefa').value = categoria
+  const seletorCategoria = $('#categoria-tarefa')
+  if (seletorCategoria) seletorCategoria.value = categoria
   ui.mostrarSugestao(null)
   $('#nome-tarefa')?.focus()
 
@@ -824,6 +826,12 @@ function ligarEventosInventario() {
   ligarFiltros()
   ligarBackup()
 
+  // a sugestão só preenche o que o usuário ainda não decidiu
+  const campoCategoria = $('#categoria-tarefa')
+  campoCategoria?.addEventListener('change', () => {
+    campoCategoria.dataset.escolhida = 'sim'
+  })
+
   const campoNome = $('#nome-tarefa')
   campoNome?.addEventListener('blur', () => {
     const sugestao = tarefas.obterSugestaoPorNome(campoNome.value, estado.historico)
@@ -831,7 +839,9 @@ function ligarEventosInventario() {
     if (!sugestao) return
     if (!$('#peso-tarefa').value) $('#peso-tarefa').value = sugestao.peso
     if (!$('#tempo-tarefa').value) $('#tempo-tarefa').value = sugestao.tempo
-    if ($('#categoria-tarefa') && sugestao.categoria) $('#categoria-tarefa').value = sugestao.categoria
+    if (campoCategoria && sugestao.categoria && !campoCategoria.dataset.escolhida) {
+      campoCategoria.value = sugestao.categoria
+    }
   })
   campoNome?.addEventListener('input', () => ui.mostrarSugestao(null))
 }
