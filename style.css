@@ -2186,6 +2186,10 @@ body::before {
   background: color-mix(in srgb, var(--cor-fundo) 92%, transparent);
 }
 
+.botao__texto {
+  display: inline;
+}
+
 /* cartões e itens respondem ao ponteiro ----------------------------------- */
 .cartao {
   transition: border-color var(--transicao), box-shadow var(--transicao), transform var(--transicao);
@@ -2592,6 +2596,115 @@ body::before {
   .agora .botao {
     justify-self: stretch;
     width: 100%;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Cabeçalho compacto no mobile: encolhe ao descer e devolve a tela ao conteúdo
+   -------------------------------------------------------------------------- */
+@media (max-width: 48rem) {
+  /* atalhos de teclado não fazem sentido em tela de toque */
+  .botao--so-desktop {
+    display: none;
+  }
+
+  .cabecalho__interno,
+  .cabecalho__identidade,
+  .cabecalho__acoes,
+  .avatar,
+  .cabecalho__titulo,
+  .chips {
+    transition:
+      padding var(--transicao),
+      gap var(--transicao),
+      width var(--transicao),
+      height var(--transicao),
+      font-size var(--transicao),
+      max-height var(--transicao),
+      opacity var(--transicao),
+      margin var(--transicao);
+  }
+
+  .chips {
+    max-height: 10rem;
+    opacity: 1;
+    overflow: hidden;
+  }
+
+  .compacto .cabecalho__interno {
+    flex-wrap: nowrap;
+    gap: var(--e2);
+    padding-block: 0.3rem;
+  }
+
+  .compacto .cabecalho__identidade {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: var(--e2);
+  }
+
+  .compacto .avatar {
+    width: 2.1rem;
+    height: 2.1rem;
+    font-size: var(--txt-sm);
+    border-radius: var(--raio-md);
+  }
+
+  .compacto .cabecalho__titulo {
+    font-size: var(--txt-md);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .compacto .cabecalho__legenda {
+    display: none;
+  }
+
+  /* zera nos dois eixos: com `nowrap` um chip invisível ainda roubaria largura */
+  .compacto .chips {
+    flex: 0 0 0;
+    width: 0;
+    max-height: 0;
+    margin: 0;
+    opacity: 0;
+  }
+
+  /* as ações viram uma fileira de ícones à direita */
+  .compacto .cabecalho__acoes {
+    flex: 0 0 auto;
+    width: auto;
+    margin-left: auto;
+    flex-wrap: nowrap;
+    gap: var(--e1);
+  }
+
+  .compacto .cabecalho__acoes .botao {
+    flex: 0 0 auto;
+    gap: 0;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    padding: 0.4rem;
+  }
+
+  /* some da tela, mas continua sendo o nome acessível do botão —
+     o emoji é aria-hidden, então `display:none` deixaria o botão sem rótulo */
+  .compacto .cabecalho__acoes .botao__texto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* o conteúdo sobe junto para aproveitar o espaço liberado */
+  .compacto .painel,
+  .compacto .calendario {
+    padding-top: var(--e3);
   }
 }
 

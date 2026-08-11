@@ -167,11 +167,49 @@ export function transicionar(mudanca) {
   document.startViewTransition(mudanca)
 }
 
-/** Sombra no cabeçalho assim que a página sai do topo. */
-export function ligarCabecalhoElevado() {
-  const alternar = () => {
-    document.body.classList.toggle('rolado', window.scrollY > 8)
+/**
+ * Estados do cabeçalho conforme a rolagem:
+ *  · `rolado`   — a página saiu do topo, então o cabeçalho ganha sombra;
+ *  · `compacto` — o usuário está descendo, então ele encolhe e libera a tela.
+ *
+ * O modo compacto volta ao normal assim que a rolagem sobe, como nos apps
+ * nativos. A leitura é agrupada em `requestAnimationFrame` para não disparar
+ * layout a cada evento de scroll.
+ *
+ * @param {object} [opcoes]
+ * @param {number} [opcoes.limiteCompacto] altura mínima de rolagem para encolher
+ * @param {number} [opcoes.limiteTopo] abaixo disso o cabeçalho sempre volta inteiro
+ */
+export function ligarCabecalhoElevado({ limiteCompacto = 90, limiteTopo = 40 } = {}) {
+  let ultimoY = window.scrollY
+  let agendado = false
+
+  const avaliar = () => {
+    agendado = false
+    const y = Math.max(0, window.scrollY)
+    const delta = y - ultimoY
+
+    document.body.classList.toggle('rolado', y > 8)
+
+    if (y <= limiteTopo) {
+      document.body.classList.remove('compacto')
+    } else if (delta > 4 && y > limiteCompacto) {
+      document.body.classList.add('compacto')
+    } else if (delta < -12) {
+      // subir só reexpande com um gesto claro, evitando piscar quando o
+      // próprio encolhimento reduz a altura da página
+      document.body.classList.remove('compacto')
+    }
+
+    ultimoY = y
   }
-  alternar()
-  window.addEventListener('scroll', alternar, { passive: true })
+
+  const aoRolar = () => {
+    if (agendado) return
+    agendado = true
+    requestAnimationFrame(avaliar)
+  }
+
+  avaliar()
+  window.addEventListener('scroll', aoRolar, { passive: true })
 }

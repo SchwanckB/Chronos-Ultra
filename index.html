@@ -109,23 +109,27 @@
           <div id="chips-bio" class="chips" aria-label="Seu perfil biológico"></div>
 
           <nav class="cabecalho__acoes" aria-label="Ações principais">
-            <button type="button" id="btn-instalar" class="botao botao--secundario" hidden>
-              <span aria-hidden="true">⬇️</span> Instalar app
+            <button type="button" id="btn-instalar" class="botao botao--secundario" title="Instalar app" hidden>
+              <span aria-hidden="true">⬇️</span>
+              <span class="botao__texto">Instalar app</span>
             </button>
-            <button type="button" id="btn-ver-calendario" class="botao botao--secundario">
-              <span aria-hidden="true">🗓️</span> Calendário
+            <button type="button" id="btn-ver-calendario" class="botao botao--secundario" title="Abrir calendário">
+              <span aria-hidden="true">🗓️</span>
+              <span class="botao__texto">Calendário</span>
             </button>
-            <a class="botao botao--fantasma" href="texto/texto.html" target="_blank" rel="noopener">
-              <span aria-hidden="true">📘</span> Manual
+            <a class="botao botao--fantasma" href="texto/texto.html" target="_blank" rel="noopener" title="Abrir o manual">
+              <span aria-hidden="true">📘</span>
+              <span class="botao__texto">Manual</span>
             </a>
-            <button type="button" id="btn-atalhos" class="botao botao--icone botao--fantasma" aria-label="Ver atalhos de teclado" title="Atalhos de teclado">
+            <button type="button" id="btn-atalhos" class="botao botao--icone botao--fantasma botao--so-desktop" aria-label="Ver atalhos de teclado" title="Atalhos de teclado">
               ⌨️
             </button>
             <button type="button" id="btn-tema" class="botao botao--icone botao--fantasma" aria-label="Alternar tema">
               🌙
             </button>
-            <button type="button" id="btn-trocar-perfil" class="botao botao--fantasma botao--perigo-suave">
-              Trocar perfil
+            <button type="button" id="btn-trocar-perfil" class="botao botao--fantasma botao--perigo-suave" title="Trocar de perfil">
+              <span aria-hidden="true">👤</span>
+              <span class="botao__texto">Trocar perfil</span>
             </button>
           </nav>
         </div>
@@ -432,9 +436,13 @@
             </div>
           </div>
           <nav class="cabecalho__acoes" aria-label="Navegação do calendário">
-            <button type="button" id="btn-hoje" class="botao botao--fantasma">Hoje</button>
-            <button type="button" id="btn-voltar-painel" class="botao botao--secundario">
-              <span aria-hidden="true">←</span> Voltar ao painel
+            <button type="button" id="btn-hoje" class="botao botao--fantasma" title="Ir para hoje">
+              <span aria-hidden="true">📍</span>
+              <span class="botao__texto">Hoje</span>
+            </button>
+            <button type="button" id="btn-voltar-painel" class="botao botao--secundario" title="Voltar ao painel">
+              <span aria-hidden="true">←</span>
+              <span class="botao__texto">Voltar ao painel</span>
             </button>
           </nav>
         </div>
