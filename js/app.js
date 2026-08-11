@@ -1,1073 +1,777 @@
+/**
+ * Chronos Ultra — orquestrador da aplicação.
+ *
+ * Mantém o estado em memória, reage aos eventos da interface e delega:
+ *  · regras de agendamento .......... algoritmo.js
+ *  · desenho da tela ................ ui.js / calendario.js / graficos.js
+ *  · persistência ................... storage.js
+ */
+
 import * as storage from './storage.js'
 import * as tarefas from './tarefas.js'
 import * as ui from './ui.js'
 import * as alg from './algoritmo.js'
+import * as calendario from './calendario.js'
+import * as graficos from './graficos.js'
+import * as foco from './foco.js'
+import {
+  notificar,
+  confirmar,
+  abrirFormulario,
+  copiarTexto,
+  baixarArquivo
+} from './componentes.js'
 
-console.log('app.js carregado')
+const $ = seletor => document.querySelector(seletor)
+const $$ = seletor => Array.from(document.querySelectorAll(seletor))
 
-// estado da aplicação
-let dadosUsuario = { nome: '', idade: 0, focoMaximo: 0 }
-let configuracoes = {
+const CONFIG_PADRAO = {
   limiteHoras: 6,
   inicioDisponivel: '08:00',
   fimDisponivel: '18:00',
   interrupcoes: []
 }
 
-function calcularCompensacaoPorIdade(idade) {
-  const idadeLimpa = Math.min(Math.max(idade, 10), 70)
-  return 3 + Math.round(((idadeLimpa - 10) / 60) * 12)
+const estado = {
+  perfil: { nome: '', idade: 0, cronotipo: 'intermediario' },
+  bio: alg.montarPerfilBiologico({ idade: 25, cronotipo: 'intermediario' }),
+  configuracoes: { ...CONFIG_PADRAO },
+  agendas: {},
+  historico: [],
+  agendaAtual: null,
+  dataAgenda: calendario.chaveData(new Date()),
+  tema: 'escuro',
+  autenticado: false
 }
 
-function parseHorario(horario) {
-  if (!horario) return null
-  const partes = horario.split(':').map(Number)
-  if (partes.length !== 2 || partes.some(Number.isNaN)) return null
-  return partes[0] * 60 + partes[1]
-}
+/* =========================================================================
+   Persistência
+   ========================================================================= */
 
-function criarItemInterrupcaoDOM(interrupcao = {}) {
-  const nome = interrupcao.nome || 'Interrupção'
-  const inicio = interrupcao.inicio || '12:00'
-  const fim = interrupcao.fim || '13:00'
-  const tipo = interrupcao.tipo || 'Almoço'
+let timerSalvar = null
 
-  const container = document.createElement('div')
-  container.className = 'item-interrupcao'
+const MAX_AGENDAS_GUARDADAS = 90
 
-  container.innerHTML = `
-    <div class="item-interrupcao-info">
-      <strong>${tipo}</strong>
-      <span>${nome}</span>
-      <small>${inicio} - ${fim}</small>
-    </div>
-    <button type="button" class="botao-remover-interrupcao">
-      Remover
-    </button>
-    <input type="hidden" class="interrupcao-nome" value="${nome}" />
-    <input type="hidden" class="interrupcao-inicio" value="${inicio}" />
-    <input type="hidden" class="interrupcao-fim" value="${fim}" />
-    <input type="hidden" class="interrupcao-tipo" value="${tipo}" />
-  `
-  return container
-}
-
-function carregarInterrupcoesNaTela(interrupcoes = []) {
-  const checkbox = document.getElementById('tem-interrupcoes')
-  const detalhes = document.getElementById('interrupcoes-detalhes')
-  const lista = document.getElementById('lista-interrupcoes')
-  if (!checkbox || !detalhes || !lista) return
-
-  checkbox.checked = interrupcoes.length > 0
-  detalhes.classList.toggle('ativa', checkbox.checked)
-  lista.innerHTML = ''
-
-  if (checkbox.checked) {
-    interrupcoes.forEach(item => adicionarInterrupcaoNaTela(item))
-  }
-}
-
-function adicionarInterrupcaoNaTela(interrupcao = {}) {
-  const lista = document.getElementById('lista-interrupcoes')
-  if (!lista) return
-  lista.appendChild(criarItemInterrupcaoDOM(interrupcao))
-}
-
-function adicionarInterrupcaoDoFormulario(event) {
-  event.preventDefault()
-  const nome = document.getElementById('nome-interrupcao')?.value.trim() || ''
-  const inicio = document.getElementById('inicio-interrupcao')?.value
-  const fim = document.getElementById('fim-interrupcao')?.value
-  const tipo = document.getElementById('tipo-interrupcao')?.value || 'Outra'
-
-  if (!inicio || !fim) {
-    return alert('Informe horário de início e fim para a interrupção.')
-  }
-  const inicioMinutos = parseHorario(inicio)
-  const fimMinutos = parseHorario(fim)
-  if (
-    inicioMinutos === null ||
-    fimMinutos === null ||
-    fimMinutos <= inicioMinutos
-  ) {
-    return alert('Informe um intervalo válido para a interrupção.')
-  }
-
-  adicionarInterrupcaoNaTela({ nome, inicio, fim, tipo })
-  renderizarGrafico()
-
-  const inputNome = document.getElementById('nome-interrupcao')
-  const inputInicio = document.getElementById('inicio-interrupcao')
-  const inputFim = document.getElementById('fim-interrupcao')
-  if (inputNome) inputNome.value = ''
-  if (inputInicio) inputInicio.value = '12:00'
-  if (inputFim) inputFim.value = '13:00'
-}
-
-function toggleInterrupcoesVisibilidade() {
-  const checkbox = document.getElementById('tem-interrupcoes')
-  const detalhes = document.getElementById('interrupcoes-detalhes')
-  if (!checkbox || !detalhes) return
-
-  detalhes.classList.toggle('ativa', checkbox.checked)
-  if (checkbox.checked && !document.querySelector('.item-interrupcao')) {
-    adicionarInterrupcaoNaTela()
-  }
-}
-
-function obterInterrupcoesDoDOM() {
-  const checkbox = document.getElementById('tem-interrupcoes')
-  if (!checkbox || !checkbox.checked) return []
-  const itens = Array.from(document.querySelectorAll('.item-interrupcao'))
-  return itens
-    .map(item => {
-      const nome = item.querySelector('.interrupcao-nome')?.value.trim() || ''
-      const inicio = item.querySelector('.interrupcao-inicio')?.value
-      const fim = item.querySelector('.interrupcao-fim')?.value
-      const tipo = item.querySelector('.interrupcao-tipo')?.value || 'Outra'
-      const inicioMinutos = parseHorario(inicio)
-      const fimMinutos = parseHorario(fim)
-      if (
-        inicioMinutos === null ||
-        fimMinutos === null ||
-        fimMinutos <= inicioMinutos
-      )
-        return null
-      return {
-        nome,
-        tipo,
-        inicio,
-        fim,
-        inicioMinutos,
-        fimMinutos
-      }
-    })
-    .filter(Boolean)
-}
-
-function normalizarInterrupcoes(interrupcoes, inicioMinutos, fimMinutos) {
-  const ordenadas = (interrupcoes || [])
-    .map(item => ({
-      inicioMinutos: Math.max(inicioMinutos, item.inicioMinutos),
-      fimMinutos: Math.min(fimMinutos, item.fimMinutos),
-      descricao: item.tipo
-        ? `${item.tipo}: ${item.nome || ''}`.trim()
-        : item.nome
-    }))
-    .filter(item => item.fimMinutos > item.inicioMinutos)
-    .sort((a, b) => a.inicioMinutos - b.inicioMinutos)
-
-  const resultado = []
-  let atual = null
-
-  ordenadas.forEach(item => {
-    if (!atual) {
-      atual = { ...item }
-      return
-    }
-    if (item.inicioMinutos <= atual.fimMinutos) {
-      atual.fimMinutos = Math.max(atual.fimMinutos, item.fimMinutos)
-      atual.descricao = atual.descricao
-        ? `${atual.descricao} / ${item.descricao}`
-        : item.descricao
-    } else {
-      resultado.push(atual)
-      atual = { ...item }
-    }
+/** Mantém apenas as agendas mais recentes para não inflar o localStorage. */
+function podarAgendas() {
+  const chaves = Object.keys(estado.agendas).sort()
+  chaves.slice(0, Math.max(0, chaves.length - MAX_AGENDAS_GUARDADAS)).forEach(chave => {
+    delete estado.agendas[chave]
   })
-  if (atual) resultado.push(atual)
-  return resultado
 }
 
-function obterDisponibilidade() {
-  const inicio = document.getElementById('inicio-disponivel')?.value
-  const fim = document.getElementById('fim-disponivel')?.value
-  const inicioMinutos = parseHorario(inicio)
-  const fimMinutos = parseHorario(fim)
-  if (
-    inicioMinutos === null ||
-    fimMinutos === null ||
-    fimMinutos <= inicioMinutos
-  )
-    return null
-
-  const interrupcoes = obterInterrupcoesDoDOM()
-  const interrupcoesNormalizadas = normalizarInterrupcoes(
-    interrupcoes,
-    inicioMinutos,
-    fimMinutos
-  )
-  const bloqueado = interrupcoesNormalizadas.reduce(
-    (sum, item) => sum + (item.fimMinutos - item.inicioMinutos),
-    0
-  )
-  const disponivel = Math.max(0, fimMinutos - inicioMinutos - bloqueado)
-
-  return {
-    inicio,
-    fim,
-    inicioMinutos,
-    fimMinutos,
-    disponivel,
-    interrupcoes,
-    interrupcoesNormalizadas
+function salvar({ imediato = false } = {}) {
+  if (!estado.autenticado || !estado.perfil.nome) return
+  clearTimeout(timerSalvar)
+  const gravar = () => {
+    podarAgendas()
+    estado.historico = tarefas.montarHistorico(estado.historico)
+    storage.salvarDocumento(estado.perfil.nome, {
+      perfil: { ...estado.perfil, focoMaximo: estado.bio.focoMaximo },
+      configuracoes: estado.configuracoes,
+      tarefas: tarefas.listaTarefas,
+      agendas: estado.agendas,
+      historico: estado.historico
+    })
   }
+  if (imediato) gravar()
+  else timerSalvar = setTimeout(gravar, 400)
 }
 
-function calcularLimiteDeTempo() {
-  const limiteInput = document.getElementById('limite-horas')
-  const limiteHoras = limiteInput
-    ? parseInt(limiteInput.value) || configuracoes.limiteHoras || 6
-    : configuracoes.limiteHoras || 6
-  const limiteMinutos = (isNaN(limiteHoras) ? 6 : limiteHoras) * 60
-  const disponibilidade = obterDisponibilidade()
-  if (!disponibilidade) return limiteMinutos
-  return Math.min(limiteMinutos, disponibilidade.disponivel)
+/* =========================================================================
+   Leitura da configuração
+   ========================================================================= */
+
+function lerConfiguracaoDaTela() {
+  const inicio = $('#inicio-disponivel')?.value || CONFIG_PADRAO.inicioDisponivel
+  const fim = $('#fim-disponivel')?.value || CONFIG_PADRAO.fimDisponivel
+  const limite = Number($('#limite-horas')?.value)
+
+  estado.configuracoes.inicioDisponivel = inicio
+  estado.configuracoes.fimDisponivel = fim
+  estado.configuracoes.limiteHoras = Number.isFinite(limite)
+    ? Math.min(Math.max(limite, 0.5), 16)
+    : CONFIG_PADRAO.limiteHoras
+
+  return estado.configuracoes
 }
 
-let agendaAtual = { eventos: [], stats: {} }
-let visaoCalendario = 'mes'
-let dataSelecionada = new Date()
-let mesCalendario = new Date(
-  dataSelecionada.getFullYear(),
-  dataSelecionada.getMonth(),
-  1
-)
-
-function calcularPascoa(ano) {
-  const a = ano % 19
-  const b = Math.floor(ano / 100)
-  const c = ano % 100
-  const d = Math.floor(b / 4)
-  const e = b % 4
-  const f = Math.floor((b + 8) / 25)
-  const g = Math.floor((b - f + 1) / 3)
-  const h = (19 * a + b - d - g + 15) % 30
-  const i = Math.floor(c / 4)
-  const k = c % 4
-  const l = (32 + 2 * e + 2 * i - h - k) % 7
-  const m = Math.floor((a + 11 * h + 22 * l) / 451)
-  const mes = Math.floor((h + l - 7 * m + 114) / 31) - 1
-  const dia = ((h + l - 7 * m + 114) % 31) + 1
-  return new Date(ano, mes, dia)
+function aplicarConfiguracaoNaTela() {
+  const { limiteHoras, inicioDisponivel, fimDisponivel } = estado.configuracoes
+  if ($('#inicio-disponivel')) $('#inicio-disponivel').value = inicioDisponivel
+  if ($('#fim-disponivel')) $('#fim-disponivel').value = fimDisponivel
+  if ($('#limite-horas')) $('#limite-horas').value = limiteHoras
+  ui.renderizarInterrupcoes(estado.configuracoes.interrupcoes)
 }
 
-function criarFeriado(nome, mes, dia) {
-  return { nome, mes, dia }
+function montarJanelaAtual() {
+  const config = lerConfiguracaoDaTela()
+  return alg.montarJanela({
+    inicio: config.inicioDisponivel,
+    fim: config.fimDisponivel,
+    interrupcoes: config.interrupcoes
+  })
 }
 
-function obterFeriadosNacionais(ano) {
-  const pascoa = calcularPascoa(ano)
-  const pascoaTempo = pascoa.getTime()
-  const feriados = [
-    criarFeriado('Confraternização Universal', 0, 1),
-    criarFeriado('Tiradentes', 3, 21),
-    criarFeriado('Dia do Trabalho', 4, 1),
-    criarFeriado('Independência do Brasil', 8, 7),
-    criarFeriado('Nossa Senhora Aparecida', 9, 12),
-    criarFeriado('Finados', 10, 2),
-    criarFeriado('Proclamação da República', 10, 15),
-    criarFeriado('Natal', 11, 25)
-  ]
-
-  const criarMovel = (nome, offset) => {
-    const data = new Date(pascoaTempo)
-    data.setDate(data.getDate() + offset)
-    return criarFeriado(nome, data.getMonth(), data.getDate())
-  }
-
-  feriados.push(criarMovel('Carnaval', -47))
-  feriados.push(criarMovel('Sexta-feira Santa', -2))
-  feriados.push(criarMovel('Corpus Christi', 60))
-
-  return feriados.sort((a, b) => a.mes - b.mes || a.dia - b.dia)
+function limiteMinutos(janela) {
+  const teto = estado.configuracoes.limiteHoras * 60
+  return janela ? Math.min(teto, janela.disponivel) : teto
 }
 
-function formatarDataCompleta(data) {
-  return `${data.getDate().toString().padStart(2, '0')}/${(data.getMonth() + 1)
-    .toString()
-    .padStart(2, '0')}/${data.getFullYear()}`
+function dataReferencia() {
+  const [ano, mes, dia] = estado.dataAgenda.split('-').map(Number)
+  return new Date(ano, mes - 1, dia)
 }
 
-function getLimiteHoras() {
-  const limiteInput = document.getElementById('limite-horas')
-  const limite = limiteInput
-    ? parseInt(limiteInput.value)
-    : configuracoes.limiteHoras
-  return Number.isNaN(limite) ? configuracoes.limiteHoras || 6 : limite
+/* =========================================================================
+   Atualização do painel
+   ========================================================================= */
+
+function atualizarPainel({ regerar = false } = {}) {
+  const janela = montarJanelaAtual()
+  const teto = limiteMinutos(janela)
+
+  atualizarAvisoJanela(janela)
+  ui.renderizarResumoInventario(tarefas.estatisticas(), teto)
+
+  if (regerar && estado.agendaAtual) gerarAgenda({ silencioso: true })
+
+  const agenda = estado.agendaAtual
+  graficos.renderizarEnergia(estado.bio, janela, agenda?.eventos || [])
+  graficos.renderizarDistribuicao(
+    agenda?.stats || {
+      trabalhados: 0,
+      minutosPausa: 0,
+      minutosInterrupcao: janela?.bloqueado || 0,
+      minutosLivres: janela?.disponivel || 0
+    }
+  )
+  ui.renderizarIndicadores(agenda)
+  ui.definirEstadoAcoesAgenda(Boolean(agenda?.eventos?.length))
 }
 
-function atualizarAgendaAtual() {
-  const disponibilidade = obterDisponibilidade()
-  if (!disponibilidade) {
-    agendaAtual = { eventos: [], stats: {} }
+function atualizarAvisoJanela(janela) {
+  const aviso = $('#aviso-janela')
+  if (!aviso) return
+
+  if (!janela) {
+    aviso.hidden = false
+    aviso.className = 'aviso-inline aviso-inline--erro'
+    aviso.textContent = 'Janela inválida: revise os horários de início e fim.'
     return
   }
 
-  const limiteHoras = getLimiteHoras()
-  const limiteMinutos = Math.min(limiteHoras * 60, disponibilidade.disponivel)
-  const tarefasOrdenadas = tarefas
-    .filtrarAtivas()
-    .sort((a, b) => b.peso - a.peso)
-  const compensacao = calcularCompensacaoPorIdade(dadosUsuario.idade || 25)
-  agendaAtual = alg.gerarAgendaDados(
-    tarefasOrdenadas,
-    limiteMinutos,
-    disponibilidade,
-    compensacao
-  )
+  const teto = limiteMinutos(janela)
+  const partes = [
+    `Janela de ${alg.formatarDuracao(janela.total)}`,
+    janela.bloqueado ? `${alg.formatarDuracao(janela.bloqueado)} em compromissos` : null,
+    `${alg.formatarDuracao(teto)} de trabalho no máximo`
+  ].filter(Boolean)
+
+  aviso.hidden = false
+  aviso.className = 'aviso-inline'
+  aviso.textContent = partes.join(' • ') + (janela.cruzaMeiaNoite ? ' • turno cruza a meia-noite' : '')
 }
 
-function obterFeriadoDoDia(data) {
-  return obterFeriadosNacionais(data.getFullYear()).find(
-    f => f.mes === data.getMonth() && f.dia === data.getDate()
-  )
+/* =========================================================================
+   Entrada no sistema
+   ========================================================================= */
+
+function entrarNoSistema(evento) {
+  evento?.preventDefault()
+
+  const nome = $('#seu-nome')?.value.trim() || ''
+  const idade = Number($('#sua-idade')?.value)
+  const cronotipo = $('input[name="cronotipo"]:checked')?.value || 'intermediario'
+
+  if (nome.length < 2) {
+    notificar('Digite seu primeiro nome para continuar.', { tipo: 'erro' })
+    $('#seu-nome')?.focus()
+    return
+  }
+  if (!Number.isFinite(idade) || idade < 8 || idade > 100) {
+    notificar('Informe uma idade entre 8 e 100 anos.', { tipo: 'erro' })
+    $('#sua-idade')?.focus()
+    return
+  }
+
+  const documento = storage.carregarDocumento(nome) || storage.documentoVazio(nome)
+
+  estado.perfil = { nome, idade, cronotipo }
+  estado.bio = alg.montarPerfilBiologico({ idade, cronotipo })
+  estado.configuracoes = { ...CONFIG_PADRAO, ...documento.configuracoes }
+  estado.configuracoes.interrupcoes = Array.isArray(documento.configuracoes?.interrupcoes)
+    ? documento.configuracoes.interrupcoes
+    : []
+  estado.agendas = documento.agendas || {}
+  estado.historico = documento.historico || []
+  estado.agendaAtual = null
+  estado.autenticado = true
+
+  tarefas.definirLista(documento.tarefas || [])
+
+  ui.atualizarCabecalho(estado.perfil, estado.bio)
+  aplicarConfiguracaoNaTela()
+  ui.renderizarListaTarefas(tarefas.listaTarefas)
+  ui.renderizarAgenda(null)
+  definirDataAgenda(calendario.chaveData(new Date()))
+  ui.mostrarTela('tela-painel')
+  atualizarPainel()
+  salvar({ imediato: true })
+
+  const recuperada = estado.agendas[estado.dataAgenda]
+  if (recuperada) {
+    estado.agendaAtual = recuperada
+    ui.renderizarAgenda(recuperada)
+    atualizarPainel()
+    notificar('Recuperamos a agenda que você já tinha gerado hoje.', { tipo: 'info' })
+  } else {
+    notificar(
+      `Bem-vindo, ${nome}! Seu foco contínuo ideal é de ${estado.bio.focoMaximo} minutos.`,
+      { tipo: 'sucesso' }
+    )
+  }
 }
 
-function eMesmoDia(dataA, dataB) {
-  return (
-    dataA &&
-    dataB &&
-    dataA.getFullYear() === dataB.getFullYear() &&
-    dataA.getMonth() === dataB.getMonth() &&
-    dataA.getDate() === dataB.getDate()
-  )
+async function trocarPerfil() {
+  const ok = await confirmar({
+    titulo: 'Trocar de perfil?',
+    mensagem: 'Seus dados ficam salvos neste navegador e voltam quando você entrar com o mesmo nome.',
+    rotuloConfirmar: 'Trocar perfil'
+  })
+  if (!ok) return
+
+  salvar({ imediato: true })
+  foco.pararFoco()
+  tarefas.limparTodas()
+  estado.perfil = { nome: '', idade: 0, cronotipo: 'intermediario' }
+  estado.configuracoes = { ...CONFIG_PADRAO, interrupcoes: [] }
+  estado.agendas = {}
+  estado.agendaAtual = null
+  estado.autenticado = false
+
+  ui.limparPainel()
+  if ($('#seu-nome')) $('#seu-nome').value = ''
+  if ($('#sua-idade')) $('#sua-idade').value = ''
+  ui.mostrarTela('tela-boas-vindas')
+  $('#seu-nome')?.focus()
 }
 
-function atualizarPainelCalendario() {
-  const rotulo = document.getElementById('mes-ano-rotulo')
-  const listaFeriados = document.getElementById('lista-feriados')
-  if (rotulo) {
-    rotulo.innerText = mesCalendario.toLocaleDateString('pt-BR', {
-      month: 'long',
-      year: 'numeric'
+/* =========================================================================
+   Tarefas
+   ========================================================================= */
+
+function adicionarTarefa(evento) {
+  evento?.preventDefault()
+
+  const nome = $('#nome-tarefa')?.value.trim() || ''
+  const peso = Number($('#peso-tarefa')?.value)
+  const tempo = Number($('#tempo-tarefa')?.value)
+  const categoria = $('#categoria-tarefa')?.value
+  const prazo = $('#prazo-tarefa')?.value || null
+
+  if (nome.length < 2) {
+    notificar('Dê um nome à tarefa (mínimo 2 letras).', { tipo: 'erro' })
+    $('#nome-tarefa')?.focus()
+    return
+  }
+  if (!Number.isFinite(peso) || peso < 1 || peso > 10) {
+    notificar('O peso deve ficar entre 1 e 10.', { tipo: 'erro' })
+    $('#peso-tarefa')?.focus()
+    return
+  }
+  if (!Number.isFinite(tempo) || tempo < 1) {
+    notificar('Informe a duração da tarefa em minutos.', { tipo: 'erro' })
+    $('#tempo-tarefa')?.focus()
+    return
+  }
+
+  const criada = tarefas.adicionar({ nome, peso, tempo, categoria, prazo })
+
+  if (criada.tempo > estado.bio.focoMaximo) {
+    notificar(
+      `"${criada.nome}" passa do seu foco contínuo (${estado.bio.focoMaximo} min). Vamos dividir em blocos com pausas.`,
+      { tipo: 'info', duracao: 6000 }
+    )
+  }
+
+  $('#form-tarefa')?.reset()
+  $('#categoria-tarefa').value = categoria
+  ui.mostrarSugestao(null)
+  $('#nome-tarefa')?.focus()
+
+  ui.renderizarListaTarefas(tarefas.listaTarefas)
+  atualizarPainel({ regerar: true })
+  salvar()
+}
+
+async function editarTarefa(id) {
+  const tarefa = tarefas.obter(id)
+  if (!tarefa) return
+
+  const dados = await abrirFormulario({
+    titulo: 'Editar tarefa',
+    descricao: 'Ajuste os dados e o planejamento é recalculado na hora.',
+    rotuloConfirmar: 'Salvar alterações',
+    campos: [
+      { id: 'nome', rotulo: 'Nome da tarefa', valor: tarefa.nome },
+      {
+        id: 'categoria',
+        rotulo: 'Categoria',
+        tipo: 'select',
+        valor: tarefa.categoria,
+        opcoes: tarefas.CATEGORIAS.map(c => ({ valor: c.id, rotulo: `${c.icone} ${c.rotulo}` }))
+      },
+      { id: 'peso', rotulo: 'Peso (1 a 10)', tipo: 'number', min: 1, max: 10, step: 1, valor: tarefa.peso, largura: 'metade' },
+      { id: 'tempo', rotulo: 'Minutos', tipo: 'number', min: 1, max: 1440, step: 5, valor: tarefa.tempo, largura: 'metade' },
+      { id: 'prazo', rotulo: 'Prazo (opcional)', tipo: 'date', valor: tarefa.prazo || '' }
+    ],
+    validar: valores => {
+      if (!valores.nome || valores.nome.trim().length < 2) return 'Informe um nome válido.'
+      if (!(valores.peso >= 1 && valores.peso <= 10)) return 'O peso precisa ficar entre 1 e 10.'
+      if (!(valores.tempo >= 1)) return 'A duração precisa ser de pelo menos 1 minuto.'
+      return null
+    }
+  })
+  if (!dados) return
+
+  tarefas.editar(id, { ...dados, prazo: dados.prazo || null })
+  ui.renderizarListaTarefas(tarefas.listaTarefas)
+  atualizarPainel({ regerar: true })
+  salvar()
+  notificar('Tarefa atualizada.', { tipo: 'sucesso' })
+}
+
+function excluirTarefa(id) {
+  const removida = tarefas.excluir(id)
+  if (!removida) return
+
+  ui.renderizarListaTarefas(tarefas.listaTarefas)
+  atualizarPainel({ regerar: true })
+  salvar()
+
+  notificar(`"${removida.tarefa.nome}" foi removida.`, {
+    tipo: 'info',
+    acao: {
+      rotulo: 'Desfazer',
+      aoClicar: () => {
+        tarefas.reinserir(removida.tarefa, removida.indice)
+        ui.renderizarListaTarefas(tarefas.listaTarefas)
+        atualizarPainel({ regerar: true })
+        salvar()
+      }
+    }
+  })
+}
+
+function alternarConcluida(id) {
+  const tarefa = tarefas.toggleConcluida(id)
+  if (!tarefa) return
+  ui.renderizarListaTarefas(tarefas.listaTarefas)
+  atualizarPainel({ regerar: true })
+  salvar()
+  if (tarefa.concluida) notificar(`"${tarefa.nome}" concluída. 🎉`, { tipo: 'sucesso', duracao: 2600 })
+}
+
+async function limparConcluidas() {
+  const concluidas = tarefas.listaTarefas.filter(t => t.concluida)
+  if (!concluidas.length) {
+    notificar('Não há tarefas concluídas para limpar.', { tipo: 'info' })
+    return
+  }
+  const ok = await confirmar({
+    titulo: 'Limpar concluídas?',
+    mensagem: `${concluidas.length} tarefa(s) serão removidas do inventário.`,
+    rotuloConfirmar: 'Limpar'
+  })
+  if (!ok) return
+
+  const removidas = tarefas.limparConcluidas()
+  ui.renderizarListaTarefas(tarefas.listaTarefas)
+  atualizarPainel({ regerar: true })
+  salvar()
+  notificar(`${removidas.length} tarefa(s) concluída(s) removida(s).`, {
+    tipo: 'sucesso',
+    acao: {
+      rotulo: 'Desfazer',
+      aoClicar: () => {
+        removidas.forEach(t => tarefas.reinserir(t))
+        ui.renderizarListaTarefas(tarefas.listaTarefas)
+        atualizarPainel({ regerar: true })
+        salvar()
+      }
+    }
+  })
+}
+
+async function limparTodas() {
+  if (!tarefas.listaTarefas.length) {
+    notificar('O inventário já está vazio.', { tipo: 'info' })
+    return
+  }
+  const ok = await confirmar({
+    titulo: 'Apagar todas as tarefas?',
+    mensagem: 'Esta ação remove o inventário inteiro. Você poderá desfazer logo em seguida.',
+    rotuloConfirmar: 'Apagar tudo',
+    perigo: true
+  })
+  if (!ok) return
+
+  const removidas = tarefas.limparTodas()
+  estado.agendaAtual = null
+  ui.renderizarListaTarefas(tarefas.listaTarefas)
+  ui.renderizarAgenda(null)
+  atualizarPainel()
+  salvar()
+  notificar('Inventário apagado.', {
+    tipo: 'info',
+    duracao: 8000,
+    acao: {
+      rotulo: 'Desfazer',
+      aoClicar: () => {
+        tarefas.definirLista(removidas)
+        ui.renderizarListaTarefas(tarefas.listaTarefas)
+        atualizarPainel()
+        salvar()
+      }
+    }
+  })
+}
+
+/* =========================================================================
+   Compromissos fixos (interrupções)
+   ========================================================================= */
+
+function adicionarInterrupcao(evento) {
+  evento?.preventDefault()
+
+  const tipo = $('#tipo-interrupcao')?.value || 'Outro'
+  const nome = $('#nome-interrupcao')?.value.trim() || ''
+  const inicio = $('#inicio-interrupcao')?.value
+  const fim = $('#fim-interrupcao')?.value
+
+  const inicioMin = alg.parseHorario(inicio)
+  const fimMin = alg.parseHorario(fim)
+  if (inicioMin === null || fimMin === null) {
+    notificar('Informe início e fim do compromisso.', { tipo: 'erro' })
+    return
+  }
+  if (inicioMin === fimMin) {
+    notificar('O compromisso precisa ter duração maior que zero.', { tipo: 'erro' })
+    return
+  }
+
+  estado.configuracoes.interrupcoes.push({ tipo, nome, inicio, fim })
+  ui.renderizarInterrupcoes(estado.configuracoes.interrupcoes)
+  if ($('#nome-interrupcao')) $('#nome-interrupcao').value = ''
+  atualizarPainel({ regerar: true })
+  salvar()
+  notificar(`${tipo} adicionado à sua janela.`, { tipo: 'sucesso', duracao: 2600 })
+}
+
+function removerInterrupcao(indice) {
+  const [removida] = estado.configuracoes.interrupcoes.splice(indice, 1)
+  ui.renderizarInterrupcoes(estado.configuracoes.interrupcoes)
+  atualizarPainel({ regerar: true })
+  salvar()
+  if (removida) {
+    notificar('Compromisso removido.', {
+      tipo: 'info',
+      acao: {
+        rotulo: 'Desfazer',
+        aoClicar: () => {
+          estado.configuracoes.interrupcoes.splice(indice, 0, removida)
+          ui.renderizarInterrupcoes(estado.configuracoes.interrupcoes)
+          atualizarPainel({ regerar: true })
+          salvar()
+        }
+      }
     })
   }
-  if (listaFeriados) {
-    const feriados = obterFeriadosNacionais(mesCalendario.getFullYear()).filter(
-      f => f.mes === mesCalendario.getMonth()
-    )
-    if (feriados.length === 0) {
-      listaFeriados.innerHTML =
-        '<div class="feriado-item">Nenhum feriado nacional neste mês.</div>'
-      return
-    }
-    listaFeriados.innerHTML = feriados
-      .map(
-        f =>
-          `<div class="feriado-item"><span>${f.dia.toString().padStart(2, '0')}/${(
-            f.mes + 1
-          )
-            .toString()
-            .padStart(2, '0')}</span>${f.nome}</div>`
-      )
-      .join('')
-  }
 }
 
-function renderizarCalendario() {
-  const container = document.getElementById('calendario-conteudo')
-  if (!container) return
+/* =========================================================================
+   Agenda
+   ========================================================================= */
 
-  atualizarAgendaAtual()
-  atualizarPainelCalendario()
-
-  if (visaoCalendario === 'mes') {
-    container.innerHTML = renderizarVisaoMes()
-  } else if (visaoCalendario === 'dia') {
-    container.innerHTML = renderizarVisaoDia()
-  } else if (visaoCalendario === 'hora') {
-    container.innerHTML = renderizarVisaoHora()
-  }
+function definirDataAgenda(chave) {
+  estado.dataAgenda = chave
+  const campo = $('#data-agenda')
+  if (campo) campo.value = chave
 }
 
-function renderizarVisaoMes() {
-  const ano = mesCalendario.getFullYear()
-  const mes = mesCalendario.getMonth()
-  const primeiroDia = new Date(ano, mes, 1)
-  let primeiroIndice = (primeiroDia.getDay() + 6) % 7
-  const diasDoMes = new Date(ano, mes + 1, 0).getDate()
-  const feriadosMes = obterFeriadosNacionais(ano).filter(f => f.mes === mes)
-  const hoje = new Date()
-  const diaAtualSelecionado = eMesmoDia(dataSelecionada, hoje)
-  const temTarefasHoje =
-    diaAtualSelecionado && agendaAtual.eventos.some(e => e.tipo === 'tarefa')
-  const temTarefas = agendaAtual.eventos.some(e => e.tipo === 'tarefa')
+function gerarAgenda({ silencioso = false } = {}) {
+  const ativas = tarefas.filtrarAtivas()
+  if (!ativas.length) {
+    // ao recalcular em segundo plano, preserva o plano já visível na tela
+    if (silencioso) return estado.agendaAtual
+    notificar('Adicione ao menos uma tarefa pendente antes de gerar a agenda.', { tipo: 'erro' })
+    estado.agendaAtual = null
+    ui.renderizarAgenda(null)
+    return null
+  }
 
-  let html = '<div class="calendario-mes">'
-  const nomesDias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
-  nomesDias.forEach(nome => {
-    html += `<div class="dia-semana">${nome}</div>`
+  const janela = montarJanelaAtual()
+  if (!janela) {
+    if (!silencioso) notificar('A janela de trabalho está inválida. Confira os horários.', { tipo: 'erro' })
+    return null
+  }
+
+  const agenda = alg.gerarAgenda({
+    tarefas: ativas,
+    janela,
+    limiteMinutos: limiteMinutos(janela),
+    perfil: estado.bio,
+    referencia: dataReferencia()
   })
 
-  for (let i = 0; i < primeiroIndice; i += 1) {
-    html += '<div class="dia-celula"></div>'
+  estado.agendaAtual = agenda
+  estado.agendas[estado.dataAgenda] = {
+    eventos: agenda.eventos,
+    stats: agenda.stats,
+    geradoEm: new Date().toISOString()
   }
 
-  for (let dia = 1; dia <= diasDoMes; dia += 1) {
-    const dataDia = new Date(ano, mes, dia)
-    const ehSelecionado = eMesmoDia(dataSelecionada, dataDia)
-    const ehHoje = eMesmoDia(dataDia, new Date())
-    const feriado = feriadosMes.find(f => f.dia === dia)
-    const label = feriado
-      ? `<span class="feriado-label">${feriado.nome}</span>`
-      : ehHoje && temTarefasHoje
-        ? `<span class="feriado-label">Tarefas</span>`
-        : ''
+  ui.renderizarAgenda(agenda)
+  ui.renderizarIndicadores(agenda)
+  ui.definirEstadoAcoesAgenda(true)
+  graficos.renderizarEnergia(estado.bio, janela, agenda.eventos)
+  graficos.renderizarDistribuicao(agenda.stats)
+  salvar()
 
-    html += `
-      <div class="dia-celula ${ehSelecionado ? 'ativo' : ''} ${
-        feriado ? 'feriado' : ''
-      } ${ehHoje ? 'hoje' : ''}" onclick="selecionarDiaCalendario(${dia})">
-        <span class="numero">${dia}</span>
-        ${label}
-        ${ehSelecionado && temTarefasHoje ? '<span class="marcador"></span>' : ''}
-      </div>`
+  if (!silencioso) {
+    const { stats } = agenda
+    notificar(
+      stats.naoAgendadas
+        ? `Agenda pronta. ${stats.naoAgendadas} tarefa(s) não couberam — veja as sugestões no fim da lista.`
+        : `Agenda pronta! ${alg.formatarDuracao(stats.minutosLivres)} de tempo livre preservados.`,
+      { tipo: stats.naoAgendadas ? 'info' : 'sucesso', duracao: 6000 }
+    )
+    $('#resultado-agenda')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
-
-  while ((primeiroIndice + diasDoMes) % 7 !== 0) {
-    html += '<div class="dia-celula"></div>'
-    primeiroIndice += 1
-  }
-
-  html += '</div>'
-  html += `
-    <div class="calendario-resumo">
-      <strong>${mesCalendario.toLocaleDateString('pt-BR', {
-        month: 'long',
-        year: 'numeric'
-      })}</strong>
-      <p>${feriadosMes.length} feriado(s) neste mês.</p>
-      <p>${
-        temTarefas
-          ? 'Clique em um dia para ver as tarefas geradas para esse dia.'
-          : 'Adicione tarefas para gerar uma agenda e ver os horários.'
-      }</p>
-    </div>`
-  return html
+  return agenda
 }
 
-function renderizarVisaoDia() {
-  const hoje = new Date()
-  const mostrarEventos = eMesmoDia(dataSelecionada, hoje)
-  const feriado = obterFeriadoDoDia(dataSelecionada)
-  const eventos = mostrarEventos
-    ? agendaAtual.eventos.filter(e => e.tipo !== 'nao-agendada')
-    : []
-
-  if (eventos.length === 0)
-    return `
-      <div class="calendario-resumo">
-        <strong>Agenda do Dia — ${formatarDataCompleta(dataSelecionada)}</strong>
-        <p>${
-          feriado
-            ? `Feriado: ${feriado.nome}. Nenhuma tarefa agendada.`
-            : 'Nenhuma tarefa agendada para este dia.'
-        }</p>
-      </div>`
-
-  const linhas = eventos
-    .sort((a, b) => a.inicioMinutos - b.inicioMinutos)
-    .map(evento => {
-      const horario = alg.formatarHoraTrabalho(evento.inicioMinutos)
-      const horaFim = evento.fimMinutos
-        ? alg.formatarHoraTrabalho(evento.fimMinutos)
-        : ''
-      const titulo =
-        evento.tipo === 'tarefa'
-          ? evento.nome
-          : evento.tipo === 'interrupcao'
-            ? evento.descricao
-            : evento.descricao
-      const descricao =
-        evento.tipo === 'tarefa'
-          ? `${evento.duracao} min`
-          : `${horario} - ${horaFim}`
-      return `
-        <div class="evento-calendario">
-          <div class="evento-horario">${horario}${horaFim ? ` → ${horaFim}` : ''}</div>
-          <div class="evento-titulo">${titulo}</div>
-          <div class="evento-texto">${descricao}</div>
-        </div>`
-    })
-    .join('')
-
-  return `
-    <div class="calendario-resumo">
-      <strong>Agenda do Dia — ${formatarDataCompleta(dataSelecionada)}</strong>
-      <p>${
-        feriado
-          ? `Feriado: ${feriado.nome}. Veja os horários, se houver tarefas.`
-          : 'Veja os horários gerados para este dia.'
-      }</p>
-    </div>
-    ${linhas}`
+function enviarParaWhatsApp() {
+  if (!estado.agendaAtual) return
+  const texto = alg.gerarMensagemWhatsApp(estado.agendaAtual, estado.perfil.nome)
+  window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank', 'noopener')
 }
 
-function renderizarVisaoHora() {
-  const hoje = new Date()
-  const mostrarEventos = eMesmoDia(dataSelecionada, hoje)
-  const disponibilidade = obterDisponibilidade()
-  const inicioMinutos = disponibilidade?.inicioMinutos || 6 * 60
-  const fimMinutos = disponibilidade?.fimMinutos || 22 * 60
-  const eventos = mostrarEventos
-    ? agendaAtual.eventos
-        .filter(e => e.tipo !== 'nao-agendada')
-        .sort((a, b) => a.inicioMinutos - b.inicioMinutos)
-    : []
-
-  if (eventos.length === 0)
-    return `
-      <div class="calendario-resumo">
-        <strong>Visão por Hora — ${formatarDataCompleta(dataSelecionada)}</strong>
-        <p>Sem tarefas agendadas para este dia.</p>
-      </div>`
-
-  const horas = []
-  for (let h = inicioMinutos; h < fimMinutos; h += 60) {
-    horas.push(h)
-  }
-
-  const linhas = horas
-    .map(hora => {
-      const blocos = eventos.filter(
-        e => e.inicioMinutos < hora + 60 && e.fimMinutos > hora
-      )
-      const blocosHtml = blocos.length
-        ? blocos
-            .map(e => {
-              const titulo =
-                e.tipo === 'tarefa' ? e.nome : e.descricao || 'Intervalo'
-              return `
-                <div class="evento-calendario">
-                  <div class="evento-horario">${alg.formatarHoraTrabalho(
-                    e.inicioMinutos
-                  )}${e.fimMinutos ? ` → ${alg.formatarHoraTrabalho(e.fimMinutos)}` : ''}</div>
-                  <div class="evento-titulo">${titulo}</div>
-                  <div class="evento-texto">${
-                    e.tipo === 'tarefa' ? `${e.duracao} min` : `${e.descricao}`
-                  }</div>
-                </div>`
-            })
-            .join('')
-        : '<div class="evento-calendario"><div class="evento-horario">Sem evento</div></div>'
-      return `
-        <div class="linha-horario">
-          <span class="hora-rotulo">${alg.formatarHoraTrabalho(hora)}</span>
-          <div class="blocos-hora">${blocosHtml}</div>
-        </div>`
-    })
-    .join('')
-
-  return `
-    <div class="calendario-resumo">
-      <strong>Visão por Hora — ${formatarDataCompleta(dataSelecionada)}</strong>
-      <p>Veja cada bloco de tempo com as tarefas geradas no seu dia.</p>
-    </div>
-    ${linhas}`
+async function copiarAgenda() {
+  if (!estado.agendaAtual) return
+  const texto = alg.gerarMensagemWhatsApp(estado.agendaAtual, estado.perfil.nome)
+  const ok = await copiarTexto(texto)
+  notificar(ok ? 'Agenda copiada para a área de transferência.' : 'Não foi possível copiar automaticamente.', {
+    tipo: ok ? 'sucesso' : 'erro'
+  })
 }
+
+function exportarICS() {
+  if (!estado.agendaAtual) return
+  const conteudo = alg.gerarICS(estado.agendaAtual, dataReferencia(), estado.perfil.nome)
+  baixarArquivo(`chronos-${estado.dataAgenda}.ics`, conteudo, 'text/calendar;charset=utf-8')
+  notificar('Arquivo .ics baixado. Importe no Google Agenda, Outlook ou Apple Calendar.', {
+    tipo: 'sucesso',
+    duracao: 6000
+  })
+}
+
+/* =========================================================================
+   Navegação e tema
+   ========================================================================= */
 
 function abrirCalendario() {
-  document.getElementById('tela-principal').classList.remove('ativa')
-  document.getElementById('tela-calendario').classList.add('ativa')
-  renderizarCalendario()
+  ui.mostrarTela('tela-calendario')
+  calendario.renderizar()
 }
 
-function voltarParaApp() {
-  document.getElementById('tela-calendario').classList.remove('ativa')
-  document.getElementById('tela-principal').classList.add('ativa')
+/** Volta ao painel e redesenha os gráficos, que não medem enquanto ocultos. */
+function voltarAoPainel() {
+  ui.mostrarTela('tela-painel')
+  if (estado.autenticado) atualizarPainel()
 }
 
-function mudarVisaoCalendario(visao) {
-  visaoCalendario = visao
-  document.querySelectorAll('.botao-aba, .botao-lateral').forEach(btn => {
-    btn.classList.toggle('ativa', btn.dataset.visao === visao)
-  })
-  renderizarCalendario()
-}
-
-function mudarMes(delta) {
-  mesCalendario.setMonth(mesCalendario.getMonth() + delta)
-  const hoje = new Date()
-  if (
-    mesCalendario.getFullYear() === hoje.getFullYear() &&
-    mesCalendario.getMonth() === hoje.getMonth()
-  ) {
-    dataSelecionada = hoje
-  } else {
-    dataSelecionada = new Date(
-      mesCalendario.getFullYear(),
-      mesCalendario.getMonth(),
-      1
-    )
-  }
-  renderizarCalendario()
-}
-
-function selecionarDiaCalendario(dia) {
-  dataSelecionada = new Date(
-    mesCalendario.getFullYear(),
-    mesCalendario.getMonth(),
-    dia
+function alternarTema() {
+  estado.tema = estado.tema === 'escuro' ? 'claro' : 'escuro'
+  ui.aplicarTema(estado.tema)
+  storage.salvarTema(estado.tema)
+  const janela = montarJanelaAtual()
+  graficos.atualizarTemaGraficos(
+    estado.bio,
+    janela,
+    estado.agendaAtual?.eventos || [],
+    estado.agendaAtual?.stats
   )
-  renderizarCalendario()
 }
 
-// --- funções exportadas como API de interação com HTML ---
+/* =========================================================================
+   Ligação de eventos
+   ========================================================================= */
 
-// ligado no carregamento da página para garantir que o botão exista
-if (typeof document !== 'undefined') {
-  document.addEventListener('DOMContentLoaded', () => {
-    const btn = document.getElementById('btn-iniciar')
-    if (btn) btn.addEventListener('click', entrarNoSistema)
+function ligarEventosBoasVindas() {
+  $('#form-boas-vindas')?.addEventListener('submit', entrarNoSistema)
 
-    // formulário auxilia na captura do Enter sem refresh
-    const form = document.getElementById('dados-usuario')
-    if (form) {
-      form.addEventListener('submit', event => {
-        event.preventDefault()
-        entrarNoSistema()
-      })
+  const ultimo = storage.ultimoPerfil()
+  if (ultimo && $('#seu-nome')) {
+    $('#seu-nome').value = ultimo.nome
+    const documento = storage.carregarDocumento(ultimo.nome)
+    if (documento?.perfil) {
+      if ($('#sua-idade') && documento.perfil.idade) $('#sua-idade').value = documento.perfil.idade
+      ui.preencherCronotipos(documento.perfil.cronotipo)
+      return
     }
+  }
+  ui.preencherCronotipos('intermediario')
+}
 
-    const formInventario = document.getElementById('form-inventario-tarefas')
-    if (formInventario) {
-      formInventario.addEventListener('submit', event => {
-        event.preventDefault()
-        adicionarTarefa()
-      })
-    }
+function ligarEventosInventario() {
+  $('#form-tarefa')?.addEventListener('submit', adicionarTarefa)
 
-    const formInterrupcoes = document.getElementById('form-interrupcoes')
-    if (formInterrupcoes) {
-      formInterrupcoes.addEventListener(
-        'submit',
-        adicionarInterrupcaoDoFormulario
-      )
-    }
+  $('#lista-de-tarefas')?.addEventListener('click', evento => {
+    const botao = evento.target.closest('[data-acao]')
+    if (!botao) return
+    const { acao, id } = botao.dataset
+    if (acao === 'excluir') excluirTarefa(id)
+    else if (acao === 'editar') editarTarefa(id)
+    else if (acao === 'concluir') alternarConcluida(id)
+  })
 
-    const inputNomeUsuario = document.getElementById('seu-nome')
-    const inputIdadeUsuario = document.getElementById('sua-idade')
-    if (inputNomeUsuario && inputIdadeUsuario) {
-      inputNomeUsuario.addEventListener('keydown', event => {
-        if (event.key === 'Enter') {
-          event.preventDefault()
-          inputIdadeUsuario.focus()
-        }
-      })
-      inputIdadeUsuario.addEventListener('keydown', event => {
-        if (event.key === 'Enter') {
-          event.preventDefault()
-          entrarNoSistema()
-        }
-      })
-    }
+  $('#btn-limpar-concluidas')?.addEventListener('click', limparConcluidas)
+  $('#btn-limpar-todas')?.addEventListener('click', limparTodas)
 
-    const inputNomeTarefa = document.getElementById('nome-tarefa')
-    const inputPesoTarefa = document.getElementById('peso-tarefa')
-    const inputTempoTarefa = document.getElementById('tempo-tarefa')
-    if (inputNomeTarefa && inputPesoTarefa && inputTempoTarefa) {
-      inputNomeTarefa.addEventListener('keydown', event => {
-        if (event.key === 'Enter') {
-          event.preventDefault()
-          inputPesoTarefa.focus()
-        }
-      })
-      inputPesoTarefa.addEventListener('keydown', event => {
-        if (event.key === 'Enter') {
-          event.preventDefault()
-          inputTempoTarefa.focus()
-        }
-      })
-      inputTempoTarefa.addEventListener('keydown', event => {
-        if (event.key === 'Enter') {
-          event.preventDefault()
-          adicionarTarefa()
-        }
-      })
-    }
+  const campoNome = $('#nome-tarefa')
+  campoNome?.addEventListener('blur', () => {
+    const sugestao = tarefas.obterSugestaoPorNome(campoNome.value, estado.historico)
+    ui.mostrarSugestao(sugestao)
+    if (!sugestao) return
+    if (!$('#peso-tarefa').value) $('#peso-tarefa').value = sugestao.peso
+    if (!$('#tempo-tarefa').value) $('#tempo-tarefa').value = sugestao.tempo
+    if ($('#categoria-tarefa') && sugestao.categoria) $('#categoria-tarefa').value = sugestao.categoria
+  })
+  campoNome?.addEventListener('input', () => ui.mostrarSugestao(null))
+}
 
-    // liga sugestões inteligentes de tarefas
-    if (ui && typeof ui.inicializarSugestoes === 'function') {
-      ui.inicializarSugestoes()
-    }
-
-    const temInterrupcoes = document.getElementById('tem-interrupcoes')
-    if (temInterrupcoes) {
-      temInterrupcoes.addEventListener('change', () => {
-        toggleInterrupcoesVisibilidade()
-        renderizarGrafico()
-      })
-    }
-
-    const btnAddInterrupcao = document.getElementById(
-      'btn-adicionar-interrupcao'
-    )
-    if (btnAddInterrupcao) {
-      btnAddInterrupcao.addEventListener('click', () => {
-        adicionarInterrupcaoNaTela()
-        renderizarGrafico()
-      })
-    }
-
-    const listaInterrupcoes = document.getElementById('lista-interrupcoes')
-    if (listaInterrupcoes) {
-      listaInterrupcoes.addEventListener('click', event => {
-        if (event.target.matches('.botao-remover-interrupcao')) {
-          event.target.closest('.item-interrupcao')?.remove()
-          renderizarGrafico()
-        }
-      })
-    }
-
-    const btnVerCalendario = document.getElementById('btn-ver-calendario')
-    if (btnVerCalendario)
-      btnVerCalendario.addEventListener('click', abrirCalendario)
-
-    const btnTrocarPerfil = document.getElementById('btn-trocar-perfil')
-    if (btnTrocarPerfil)
-      btnTrocarPerfil.addEventListener('click', trocarUsuario)
-
-    const btnVoltarApp = document.getElementById('btn-voltar-app')
-    if (btnVoltarApp) btnVoltarApp.addEventListener('click', voltarParaApp)
-
-    const btnLimparConcluidas = document.getElementById('btn-limpar-concluidas')
-    if (btnLimparConcluidas)
-      btnLimparConcluidas.addEventListener('click', limparConcluidas)
-
-    const btnLimparTodas = document.getElementById('btn-limpar-todas')
-    if (btnLimparTodas) btnLimparTodas.addEventListener('click', limparTodas)
-
-    const btnOtimizarDia = document.getElementById('btn-otimizar-dia')
-    if (btnOtimizarDia) btnOtimizarDia.addEventListener('click', otimizarDia)
-
-    const campoInicio = document.getElementById('inicio-disponivel')
-    const campoFim = document.getElementById('fim-disponivel')
-    const campoLimiteHoras = document.getElementById('limite-horas')
-
-    if (campoInicio) campoInicio.addEventListener('change', renderizarGrafico)
-    if (campoFim) campoFim.addEventListener('change', renderizarGrafico)
-    if (campoLimiteHoras)
-      campoLimiteHoras.addEventListener('change', renderizarGrafico)
-
-    const botaoVisoes = document.querySelectorAll('.botao-lateral')
-    botaoVisoes.forEach(botao => {
-      botao.addEventListener('click', () => {
-        const visao = botao.dataset.visao
-        if (visao) mudarVisaoCalendario(visao)
-      })
+function ligarEventosJanela() {
+  ;['#inicio-disponivel', '#fim-disponivel', '#limite-horas'].forEach(seletor => {
+    $(seletor)?.addEventListener('change', () => {
+      atualizarPainel({ regerar: true })
+      salvar()
     })
-
-    const btnMesAnterior = document.getElementById('btn-mes-anterior')
-    const btnMesProximo = document.getElementById('btn-mes-proximo')
-    if (btnMesAnterior)
-      btnMesAnterior.addEventListener('click', () => mudarMes(-1))
-    if (btnMesProximo)
-      btnMesProximo.addEventListener('click', () => mudarMes(1))
-  })
-}
-export function entrarNoSistema() {
-  console.log('entra: iniciar otimização chamada')
-  const inputNome = document.getElementById('seu-nome')
-  const inputIdade = document.getElementById('sua-idade')
-
-  const nome = inputNome.value.trim()
-  const idade = parseInt(inputIdade.value)
-  console.log('dados fornecidos:', { nome, idade, raw: inputIdade.value })
-
-  if (!nome || !idade || isNaN(idade)) {
-    console.log('falha na validação de entrada', { nome, idade })
-    return alert('Por favor, preencha corretamente seu nome e idade!')
-  }
-
-  const dadosSalvos = storage.carregarDadosUsuario(nome)
-  if (dadosSalvos) {
-    tarefas.definirLista(dadosSalvos.listaTarefas || [])
-    dadosUsuario = dadosSalvos.dadosUsuario || dadosUsuario
-    configuracoes = dadosSalvos.configuracoes || configuracoes
-  }
-
-  let calcFoco = Math.floor(90 - Math.abs(idade - 25) * 1.2)
-  dadosUsuario = { nome, idade, focoMaximo: Math.max(25, calcFoco) }
-
-  ui.atualizarSaudacao(dadosUsuario.nome)
-  ui.atualizarEstatisticasBio(dadosUsuario.focoMaximo)
-
-  const limiteHorasCampo = document.getElementById('limite-horas')
-  if (limiteHorasCampo) limiteHorasCampo.value = configuracoes.limiteHoras
-  const inicioCampo = document.getElementById('inicio-disponivel')
-  const fimCampo = document.getElementById('fim-disponivel')
-  if (inicioCampo) inicioCampo.value = configuracoes.inicioDisponivel || '08:00'
-  if (fimCampo) fimCampo.value = configuracoes.fimDisponivel || '18:00'
-  carregarInterrupcoesNaTela(configuracoes.interrupcoes || [])
-
-  ui.atualizarListaNaTela(tarefas.listaTarefas, {
-    excluir: excluirTarefa,
-    editar: editarTarefa,
-    toggleConcluida: toggleConcluidaTarefa
-  })
-  ui.transicionarParaTelaPrincipal()
-
-  setTimeout(() => atualizarGraficos(), 50)
-}
-
-export function renderizarGrafico() {
-  atualizarGraficos()
-}
-
-// recalcula energias e tempo livre
-export function atualizarGraficos() {
-  const compensacao = calcularCompensacaoPorIdade(dadosUsuario.idade || 25)
-  ui.renderizarGrafico(compensacao)
-  const limiteMinutos = calcularLimiteDeTempo()
-  const usado = tarefas.filtrarAtivas().reduce((sum, t) => sum + t.tempo, 0)
-  ui.renderizarGraficoLivre(usado, limiteMinutos)
-}
-
-// expõe funções para HTML
-window.entrarNoSistema = entrarNoSistema
-window.trocarUsuario = trocarUsuario
-window.adicionarTarefa = adicionarTarefa
-window.editarTarefa = editarTarefa
-window.toggleConcluidaTarefa = toggleConcluidaTarefa
-window.limparConcluidas = limparConcluidas
-window.abrirCalendario = abrirCalendario
-window.voltarParaApp = voltarParaApp
-window.mudarVisaoCalendario = mudarVisaoCalendario
-window.mudarMes = mudarMes
-window.selecionarDiaCalendario = selecionarDiaCalendario
-window.limparTodas = limparTodas
-window.otimizarDia = otimizarDia
-window.enviarParaWhatsApp = enviarParaWhatsApp
-window.renderizarGrafico = renderizarGrafico
-
-export function trocarUsuario() {
-  storage.salvarDadosUsuario(
-    dadosUsuario.nome,
-    tarefas.listaTarefas,
-    dadosUsuario,
-    configuracoes
-  )
-  tarefas.limparTodas()
-  dadosUsuario = { nome: '', idade: 0, focoMaximo: 0 }
-  configuracoes = {
-    limiteHoras: 6,
-    inicioDisponivel: '08:00',
-    fimDisponivel: '18:00',
-    interrupcoes: []
-  }
-  document.getElementById('seu-nome').value = ''
-  document.getElementById('sua-idade').value = ''
-  ui.limparInterface()
-  ui.transicionarParaTelaInicial()
-  atualizarGraficos()
-}
-
-export function adicionarTarefa() {
-  const nome = document.getElementById('nome-tarefa').value.trim()
-  const peso = parseFloat(document.getElementById('peso-tarefa').value)
-  const tempo = parseFloat(document.getElementById('tempo-tarefa').value)
-
-  if (!nome || isNaN(peso) || isNaN(tempo))
-    return alert('Preencha todos os dados da tarefa corretamente!')
-
-  if (tempo > dadosUsuario.focoMaximo) {
-    alert(
-      `Atenção ${dadosUsuario.nome}! Tarefas acima de ${dadosUsuario.focoMaximo} min sem pausa podem esgotar sua energia mental. Cuidado!`
-    )
-  }
-
-  tarefas.adicionar(nome, peso, tempo)
-  document.getElementById('nome-tarefa').value = ''
-  document.getElementById('peso-tarefa').value = ''
-  document.getElementById('tempo-tarefa').value = ''
-
-  ui.atualizarListaNaTela(tarefas.listaTarefas, {
-    excluir: excluirTarefa,
-    editar: editarTarefa,
-    toggleConcluida: toggleConcluidaTarefa
-  })
-  storage.salvarDadosUsuario(
-    dadosUsuario.nome,
-    tarefas.listaTarefas,
-    dadosUsuario,
-    configuracoes
-  )
-  atualizarGraficos()
-}
-
-export function excluirTarefa(id) {
-  tarefas.excluir(id)
-  ui.atualizarListaNaTela(tarefas.listaTarefas, {
-    excluir: excluirTarefa,
-    editar: editarTarefa,
-    toggleConcluida: toggleConcluidaTarefa
-  })
-  storage.salvarDadosUsuario(
-    dadosUsuario.nome,
-    tarefas.listaTarefas,
-    dadosUsuario,
-    configuracoes
-  )
-  atualizarGraficos()
-}
-
-export function toggleConcluidaTarefa(id) {
-  tarefas.toggleConcluida(id)
-  ui.atualizarListaNaTela(tarefas.listaTarefas, {
-    excluir: excluirTarefa,
-    editar: editarTarefa,
-    toggleConcluida: toggleConcluidaTarefa
-  })
-  storage.salvarDadosUsuario(
-    dadosUsuario.nome,
-    tarefas.listaTarefas,
-    dadosUsuario,
-    configuracoes
-  )
-  atualizarGraficos()
-}
-
-export function editarTarefa(id) {
-  const t = tarefas.listaTarefas.find(x => x.id === id)
-  if (!t) return
-  const novoNome = prompt('Nome da tarefa', t.nome)
-  if (novoNome === null) return
-  const novoPeso = prompt('Peso (1-10)', t.peso)
-  if (novoPeso === null) return
-  const novoTempo = prompt('Tempo em minutos', t.tempo)
-  if (novoTempo === null) return
-
-  tarefas.editar(id, {
-    nome: novoNome.trim() || t.nome,
-    peso: parseFloat(novoPeso) || t.peso,
-    tempo: parseFloat(novoTempo) || t.tempo
   })
 
-  ui.atualizarListaNaTela(tarefas.listaTarefas, {
-    excluir: excluirTarefa,
-    editar: editarTarefa,
-    toggleConcluida: toggleConcluidaTarefa
+  $('#form-interrupcao')?.addEventListener('submit', adicionarInterrupcao)
+  $('#lista-interrupcoes')?.addEventListener('click', evento => {
+    const botao = evento.target.closest('[data-remover-interrupcao]')
+    if (botao) removerInterrupcao(Number(botao.dataset.removerInterrupcao))
   })
-  storage.salvarDadosUsuario(
-    dadosUsuario.nome,
-    tarefas.listaTarefas,
-    dadosUsuario,
-    configuracoes
-  )
-  atualizarGraficos()
 }
 
-export function limparConcluidas() {
-  tarefas.limparConcluidas()
-  ui.atualizarListaNaTela(tarefas.listaTarefas, {
-    excluir: excluirTarefa,
-    editar: editarTarefa,
-    toggleConcluida: toggleConcluidaTarefa
+function ligarEventosAgenda() {
+  $('#btn-gerar-agenda')?.addEventListener('click', () => gerarAgenda())
+  $('#btn-whatsapp')?.addEventListener('click', enviarParaWhatsApp)
+  $('#btn-copiar')?.addEventListener('click', copiarAgenda)
+  $('#btn-ics')?.addEventListener('click', exportarICS)
+
+  $('#data-agenda')?.addEventListener('change', evento => {
+    definirDataAgenda(evento.target.value || calendario.chaveData(new Date()))
+    const salva = estado.agendas[estado.dataAgenda]
+    estado.agendaAtual = salva || null
+    ui.renderizarAgenda(salva || null)
+    atualizarPainel()
   })
-  storage.salvarDadosUsuario(
-    dadosUsuario.nome,
-    tarefas.listaTarefas,
-    dadosUsuario,
-    configuracoes
-  )
-  atualizarGraficos()
-}
 
-export function limparTodas() {
-  if (!confirm('Deseja realmente apagar todas as tarefas?')) return
-  tarefas.limparTodas()
-  ui.atualizarListaNaTela(tarefas.listaTarefas, {
-    excluir: excluirTarefa,
-    editar: editarTarefa,
-    toggleConcluida: toggleConcluidaTarefa
+  $('#resultado-agenda')?.addEventListener('click', evento => {
+    const botao = evento.target.closest('[data-foco]')
+    if (!botao) return
+    foco.iniciarFoco({
+      titulo: botao.dataset.titulo,
+      minutos: Number(botao.dataset.minutos),
+      aoConcluir: () => {
+        const id = botao.dataset.tarefa
+        const tarefa = id ? tarefas.obter(id) : null
+        if (tarefa && !tarefa.concluida) alternarConcluida(id)
+      }
+    })
   })
-  storage.salvarDadosUsuario(
-    dadosUsuario.nome,
-    tarefas.listaTarefas,
-    dadosUsuario,
-    configuracoes
-  )
-  atualizarGraficos()
 }
 
-export function otimizarDia() {
-  const containerLista = document.getElementById('resultado-otimizacao')
-  if (tarefas.listaTarefas.length === 0)
-    return alert('Adicione tarefas ao inventário primeiro!')
+function ligarEventosNavegacao() {
+  $('#btn-ver-calendario')?.addEventListener('click', abrirCalendario)
+  $('#btn-voltar-painel')?.addEventListener('click', voltarAoPainel)
+  $('#btn-trocar-perfil')?.addEventListener('click', trocarPerfil)
+  $('#btn-tema')?.addEventListener('click', alternarTema)
 
-  const disponibilidade = obterDisponibilidade()
-  if (!disponibilidade)
-    return alert(
-      'Informe um período disponível válido: início e fim de trabalho.'
-    )
-
-  const limiteInput = document.getElementById('limite-horas')
-  const limiteHoras =
-    limiteInput && !Number.isNaN(parseInt(limiteInput.value))
-      ? parseInt(limiteInput.value)
-      : 6
-  const limiteMinutos = Math.min(limiteHoras * 60, disponibilidade.disponivel)
-
-  const tarefasOrdenadas = tarefas
-    .filtrarAtivas()
-    .sort((a, b) => b.peso - a.peso)
-  const compensacao = calcularCompensacaoPorIdade(dadosUsuario.idade || 25)
-  const resultado = alg.gerarAgendaHTML(
-    tarefasOrdenadas,
-    limiteMinutos,
-    disponibilidade,
-    compensacao
-  )
-  ui.mostrarResultado(
-    resultado.html +
-      '<button class="botao-whatsapp" onclick="enviarParaWhatsApp()">📱 Enviar para WhatsApp</button>'
-  )
-  const statsBox = document.getElementById('resumo-agenda')
-  if (statsBox) {
-    const livre = resultado.stats.limite - resultado.stats.utilizado
-    statsBox.innerText = `Usado: ${resultado.stats.utilizado} min; Livre: ${
-      livre >= 0 ? livre : 0
-    } min; Não agendadas: ${resultado.stats.naoAgendadas}`
-  }
-
-  configuracoes.limiteHoras = limiteHoras
-  configuracoes.inicioDisponivel = disponibilidade.inicio
-  configuracoes.fimDisponivel = disponibilidade.fim
-  configuracoes.interrupcoes = obterInterrupcoesDoDOM()
-  storage.salvarDadosUsuario(
-    dadosUsuario.nome,
-    tarefas.listaTarefas,
-    dadosUsuario,
-    configuracoes
-  )
-  atualizarGraficos()
+  $$('[data-visao]').forEach(botao => {
+    botao.addEventListener('click', () => calendario.definirVisao(botao.dataset.visao))
+  })
+  $('#btn-periodo-anterior')?.addEventListener('click', () => calendario.navegar(-1))
+  $('#btn-periodo-proximo')?.addEventListener('click', () => calendario.navegar(1))
+  $('#btn-hoje')?.addEventListener('click', () => calendario.irParaHoje())
 }
 
-export function enviarParaWhatsApp() {
-  if (tarefas.filtrarAtivas().length === 0)
-    return alert('Gere a agenda primeiro!')
+function ligarAtalhos() {
+  document.addEventListener('keydown', evento => {
+    const alvo = evento.target
+    const digitando = alvo.matches('input, textarea, select') || alvo.isContentEditable
+    if (digitando || evento.ctrlKey || evento.metaKey || evento.altKey) return
+    if (!estado.autenticado) return
 
-  const disponibilidade = obterDisponibilidade()
-  if (!disponibilidade)
-    return alert('Informe um período disponível válido antes de enviar.')
+    if (evento.key === 'n') {
+      evento.preventDefault()
+      voltarAoPainel()
+      $('#nome-tarefa')?.focus()
+    } else if (evento.key === 'g') {
+      evento.preventDefault()
+      voltarAoPainel()
+      gerarAgenda()
+    } else if (evento.key === 'c') {
+      evento.preventDefault()
+      abrirCalendario()
+    } else if (evento.key === 'Escape') {
+      if (document.body.dataset.tela === 'tela-calendario') voltarAoPainel()
+    }
+  })
+}
 
-  const limiteInput = document.getElementById('limite-horas')
-  const limiteHoras =
-    limiteInput && !Number.isNaN(parseInt(limiteInput.value))
-      ? parseInt(limiteInput.value)
-      : 6
-  const limiteMinutos = Math.min(limiteHoras * 60, disponibilidade.disponivel)
-  const nome = dadosUsuario.nome
-  const compensacao = calcularCompensacaoPorIdade(dadosUsuario.idade || 25)
+/* =========================================================================
+   Inicialização
+   ========================================================================= */
 
-  const mensagem = alg.gerarMensagemWhatsApp(
-    tarefas.filtrarAtivas().sort((a, b) => b.peso - a.peso),
-    limiteMinutos,
-    disponibilidade,
-    compensacao,
-    nome
-  )
-  const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(mensagem)}`
-  window.open(urlWhatsApp, '_blank')
+function iniciar() {
+  estado.tema = storage.lerTema() || 'escuro'
+  ui.aplicarTema(estado.tema)
+
+  ui.preencherSelectCategorias($('#categoria-tarefa'), 'foco')
+  ui.mostrarTela('tela-boas-vindas')
+
+  calendario.inicializar({
+    container: $('#calendario-conteudo'),
+    rotuloPeriodo: $('#rotulo-periodo'),
+    listaFeriados: $('#lista-feriados'),
+    obterAgenda: chave => estado.agendas[chave] || null,
+    aoMudarDia: data => {
+      const chave = calendario.chaveData(data)
+      definirDataAgenda(chave)
+      estado.agendaAtual = estado.agendas[chave] || null
+      ui.renderizarAgenda(estado.agendaAtual)
+      if (estado.autenticado) atualizarPainel()
+    }
+  })
+
+  ligarEventosBoasVindas()
+  ligarEventosInventario()
+  ligarEventosJanela()
+  ligarEventosAgenda()
+  ligarEventosNavegacao()
+  ligarAtalhos()
+
+  const anoRodape = $('#ano-atual')
+  if (anoRodape) anoRodape.textContent = new Date().getFullYear()
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', iniciar)
+} else {
+  iniciar()
 }

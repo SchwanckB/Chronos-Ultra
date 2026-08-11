@@ -1,211 +1,389 @@
-import { obterEnergia } from './algoritmo.js'
-import * as tarefas from './tarefas.js' // necessário para sugestões automáticas
-
-let graficoInstancia = null
-let graficoLivreInstancia = null
-
-export function atualizarSaudacao(nome) {
-  document.getElementById('saudacao-nome').innerText = `Olá, ${nome}!`
-}
-
 /**
- * Anexa ouvintes aos campos de tarefa para sugerir peso/tempo baseado em
- * entradas anteriores. Chamado no carregamento da página.
+ * Camada de apresentação: transforma o estado em DOM.
+ * Nenhuma regra de negócio mora aqui — apenas renderização e eventos de tela.
  */
-export function inicializarSugestoes() {
-  const nomeInput = document.getElementById('nome-tarefa')
-  const pesoInput = document.getElementById('peso-tarefa')
-  const tempoInput = document.getElementById('tempo-tarefa')
-  const info = document.getElementById('sugestao-tarefa')
-  if (!nomeInput || !pesoInput || !tempoInput || !info) return
 
-  // ao tirar o foco mostramos a sugestão, se houver; ao digitar começamos limpo
-  nomeInput.addEventListener('blur', () => {
-    const valor = nomeInput.value.trim()
-    if (!valor) {
-      info.innerText = ''
-      return
-    }
-    const sugestao = tarefas.obterSugestaoPorNome(valor)
-    if (sugestao) {
-      pesoInput.value = sugestao.peso
-      tempoInput.value = sugestao.tempo
-      info.innerText = `Sugestão: peso ${sugestao.peso}, tempo ${sugestao.tempo} min` // eslint-disable-line no-useless-escape
-    } else {
-      info.innerText = ''
-    }
+import { escaparHTML } from './componentes.js'
+import { CATEGORIAS, obterCategoria } from './tarefas.js'
+import {
+  CRONOTIPOS,
+  obterCronotipo,
+  formatarHora,
+  formatarDuracao,
+  classificarEnergia,
+  calcularUrgencia
+} from './algoritmo.js'
+
+const $ = seletor => document.querySelector(seletor)
+const $$ = seletor => Array.from(document.querySelectorAll(seletor))
+
+/* ------------------------------------------------------------------ telas - */
+
+export function mostrarTela(id) {
+  $$('.tela').forEach(tela => {
+    const ativa = tela.id === id
+    tela.classList.toggle('ativa', ativa)
+    tela.hidden = !ativa
   })
-  nomeInput.addEventListener('input', () => {
-    if (info) info.innerText = ''
-  })
+  document.body.dataset.tela = id
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-export function atualizarEstatisticasBio(focoMaximo) {
-  document.getElementById('caixa-estatisticas-bio').innerHTML =
-    `🧬 Foco Ideal: <b>${focoMaximo} min</b>`
+export function aplicarTema(tema) {
+  document.documentElement.dataset.tema = tema
+  const botao = $('#btn-tema')
+  if (botao) {
+    const escuro = tema === 'escuro'
+    botao.textContent = escuro ? '🌙' : '☀️'
+    botao.setAttribute('aria-label', escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro')
+    botao.setAttribute('title', escuro ? 'Tema escuro ativo' : 'Tema claro ativo')
+  }
 }
 
-export function atualizarListaNaTela(listaTarefas, callbacks) {
-  // callbacks: { excluir, editar, toggleConcluida }
-  const divLista = document.getElementById('lista-de-tarefas')
-  if (listaTarefas.length === 0) {
-    divLista.innerHTML = ''
-    atualizarResumoInventario(listaTarefas)
+/* ---------------------------------------------------------------- perfil -- */
+
+export function preencherCronotipos(selecionado) {
+  const container = $('#grupo-cronotipo')
+  if (!container) return
+  container.innerHTML = CRONOTIPOS.map(
+    tipo => `
+      <label class="opcao-cronotipo">
+        <input type="radio" name="cronotipo" value="${tipo.id}" ${tipo.id === selecionado ? 'checked' : ''} />
+        <span class="opcao-cronotipo__icone" aria-hidden="true">${tipo.icone}</span>
+        <span class="opcao-cronotipo__texto">
+          <strong>${tipo.rotulo}</strong>
+          <small>${escaparHTML(tipo.descricao)}</small>
+        </span>
+      </label>`
+  ).join('')
+}
+
+export function atualizarCabecalho(perfil, bio) {
+  const saudacao = $('#saudacao-nome')
+  if (saudacao) saudacao.textContent = `Olá, ${perfil.nome}!`
+
+  const inicial = $('#avatar-inicial')
+  if (inicial) inicial.textContent = (perfil.nome || '?').trim().charAt(0).toUpperCase()
+
+  const cronotipo = obterCronotipo(bio.cronotipo)
+  const chips = [
+    { icone: '🧬', rotulo: 'Foco contínuo', valor: `${bio.focoMaximo} min` },
+    { icone: cronotipo.icone, rotulo: 'Cronotipo', valor: cronotipo.rotulo },
+    { icone: '⚡', rotulo: 'Pico de energia', valor: `${formatarHora(bio.picoHora * 60)}` }
+  ]
+
+  const container = $('#chips-bio')
+  if (container) {
+    container.innerHTML = chips
+      .map(
+        chip => `
+        <span class="chip" title="${escaparHTML(chip.rotulo)}">
+          <span aria-hidden="true">${chip.icone}</span>
+          <span class="chip__rotulo">${escaparHTML(chip.rotulo)}</span>
+          <strong>${escaparHTML(chip.valor)}</strong>
+        </span>`
+      )
+      .join('')
+  }
+}
+
+/* -------------------------------------------------------------- inventário */
+
+export function preencherSelectCategorias(select, selecionada) {
+  if (!select) return
+  select.innerHTML = CATEGORIAS.map(
+    c => `<option value="${c.id}" ${c.id === selecionada ? 'selected' : ''}>${c.icone} ${c.rotulo}</option>`
+  ).join('')
+}
+
+function etiquetaPrazo(prazo) {
+  if (!prazo) return ''
+  const urgencia = calcularUrgencia(prazo)
+  const data = new Date(`${prazo}T12:00:00`)
+  const texto = data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  const classe = urgencia >= 0.8 ? 'etiqueta--urgente' : urgencia >= 0.6 ? 'etiqueta--atencao' : ''
+  return `<span class="etiqueta ${classe}" title="Prazo">📅 ${texto}</span>`
+}
+
+export function renderizarListaTarefas(lista) {
+  const container = $('#lista-de-tarefas')
+  if (!container) return
+
+  if (!lista.length) {
+    container.innerHTML = `
+      <p class="estado-vazio">
+        Nenhuma tarefa ainda. Comece adicionando o que precisa sair do papel hoje.
+      </p>`
     return
   }
-  // ao longo deste método também atualizamos o resumo
 
-  divLista.innerHTML = listaTarefas
-    .map(t => {
-      const classes = ['item-tarefa']
-      if (t.concluida) classes.push('tarefa-concluida')
+  const ordenadas = [...lista].sort((a, b) => {
+    if (a.concluida !== b.concluida) return a.concluida ? 1 : -1
+    return calcularUrgencia(b.prazo) - calcularUrgencia(a.prazo) || b.peso - a.peso
+  })
+
+  container.innerHTML = ordenadas
+    .map(tarefa => {
+      const categoria = obterCategoria(tarefa.categoria)
       return `
-            <div class="${classes.join(' ')}">
-                <strong class="nome-tarefa">${t.nome}</strong>
-                <span class="item-tarefa-detalhes">Peso: ${t.peso} | ${t.tempo} min</span>
-                <div class="botoes-tarefa">
-                    <button class="botao-concluir" data-id="${t.id}">${
-                      t.concluida ? '↺' : '✅'
-                    }</button>
-                    <button class="botao-editar" data-id="${t.id}">✏️</button>
-                    <button class="botao-excluir" data-id="${t.id}">🗑️</button>
-                </div>
-            </div>
-        `
+      <article class="tarefa ${tarefa.concluida ? 'tarefa--concluida' : ''}" data-id="${tarefa.id}">
+        <button type="button" class="tarefa__check" data-acao="concluir" data-id="${tarefa.id}"
+          aria-label="${tarefa.concluida ? 'Reabrir' : 'Concluir'} ${escaparHTML(tarefa.nome)}"
+          aria-pressed="${tarefa.concluida}">
+          ${tarefa.concluida ? '✓' : ''}
+        </button>
+
+        <div class="tarefa__conteudo">
+          <h4 class="tarefa__nome" title="${escaparHTML(tarefa.nome)}">${escaparHTML(tarefa.nome)}</h4>
+          <div class="tarefa__etiquetas">
+            <span class="etiqueta etiqueta--categoria" title="Categoria">${categoria.icone} ${categoria.rotulo}</span>
+            <span class="etiqueta" title="Peso da tarefa">⚖️ ${tarefa.peso}</span>
+            <span class="etiqueta" title="Duração estimada">⏱️ ${formatarDuracao(tarefa.tempo)}</span>
+            ${etiquetaPrazo(tarefa.prazo)}
+          </div>
+        </div>
+
+        <div class="tarefa__acoes">
+          <button type="button" class="botao botao--icone botao--fantasma" data-acao="editar" data-id="${tarefa.id}"
+            aria-label="Editar ${escaparHTML(tarefa.nome)}">✏️</button>
+          <button type="button" class="botao botao--icone botao--fantasma botao--perigo-suave" data-acao="excluir" data-id="${tarefa.id}"
+            aria-label="Excluir ${escaparHTML(tarefa.nome)}">🗑️</button>
+        </div>
+      </article>`
+    })
+    .join('')
+}
+
+export function renderizarResumoInventario(stats, limiteMinutos) {
+  const container = $('#resumo-inventario')
+  if (!container) return
+
+  const excedente = stats.minutosAtivos - limiteMinutos
+  const proporcao = limiteMinutos > 0 ? Math.min(100, (stats.minutosAtivos / limiteMinutos) * 100) : 0
+  const classe = excedente > 0 ? 'barra--excedida' : proporcao > 80 ? 'barra--cheia' : ''
+
+  container.innerHTML = `
+    <div class="resumo-linha">
+      <span>${stats.ativas} pendente${stats.ativas === 1 ? '' : 's'} • ${formatarDuracao(stats.minutosAtivos)}</span>
+      <span>${stats.concluidas} concluída${stats.concluidas === 1 ? '' : 's'}</span>
+    </div>
+    <div class="barra ${classe}" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+      aria-valuenow="${Math.round(proporcao)}" aria-label="Ocupação do limite diário">
+      <span style="width:${proporcao}%"></span>
+    </div>
+    <p class="resumo-nota">
+      ${
+        excedente > 0
+          ? `⚠️ ${formatarDuracao(excedente)} acima do limite diário — algo ficará para outro dia.`
+          : `Cabe no limite diário, com ${formatarDuracao(Math.max(0, limiteMinutos - stats.minutosAtivos))} de margem.`
+      }
+    </p>`
+}
+
+export function mostrarSugestao(sugestao) {
+  const campo = $('#sugestao-tarefa')
+  if (!campo) return
+  if (!sugestao) {
+    campo.textContent = ''
+    campo.hidden = true
+    return
+  }
+  campo.hidden = false
+  campo.textContent = `Baseado em ${sugestao.amostras} registro${sugestao.amostras > 1 ? 's' : ''}: peso ${sugestao.peso}, ${sugestao.tempo} min.`
+}
+
+/* ---------------------------------------------------------- interrupções -- */
+
+export function renderizarInterrupcoes(lista) {
+  const container = $('#lista-interrupcoes')
+  if (!container) return
+
+  if (!lista.length) {
+    container.innerHTML = '<p class="estado-vazio estado-vazio--compacto">Nenhum compromisso fixo cadastrado.</p>'
+    return
+  }
+
+  container.innerHTML = lista
+    .map(
+      (item, indice) => `
+      <div class="interrupcao">
+        <div class="interrupcao__info">
+          <strong>${escaparHTML(item.tipo || 'Compromisso')}</strong>
+          ${item.nome ? `<span>${escaparHTML(item.nome)}</span>` : ''}
+          <small>${escaparHTML(item.inicio)} – ${escaparHTML(item.fim)}</small>
+        </div>
+        <button type="button" class="botao botao--icone botao--fantasma botao--perigo-suave"
+          data-remover-interrupcao="${indice}" aria-label="Remover compromisso ${escaparHTML(item.tipo || '')}">🗑️</button>
+      </div>`
+    )
+    .join('')
+}
+
+/* --------------------------------------------------------------- agenda --- */
+
+function blocoTarefa(evento) {
+  const categoria = obterCategoria(evento.categoria)
+  const energia = classificarEnergia(evento.energia)
+  return `
+    <article class="bloco bloco--tarefa ${evento.energiaClasse}" data-inicio="${evento.inicioMinutos}">
+      <div class="bloco__horario">
+        <strong>${formatarHora(evento.inicioMinutos)}</strong>
+        <span>${formatarHora(evento.fimMinutos)}</span>
+      </div>
+      <div class="bloco__corpo">
+        <h4 class="bloco__titulo">
+          ${escaparHTML(evento.titulo)}
+          ${evento.continuacao ? '<span class="bloco__tag">continuação</span>' : ''}
+        </h4>
+        <p class="bloco__meta">
+          <span>${categoria.icone} ${categoria.rotulo}</span>
+          <span>⏱️ ${formatarDuracao(evento.duracao)}</span>
+          <span class="bloco__energia" title="${energia.rotulo}">⚡ ${evento.energia}%</span>
+        </p>
+        <p class="bloco__motivo">${escaparHTML(evento.motivo || '')}</p>
+      </div>
+      <button type="button" class="botao botao--fantasma botao--foco" data-foco
+        data-titulo="${escaparHTML(evento.titulo)}" data-minutos="${evento.duracao}"
+        data-tarefa="${evento.id ?? ''}">▶ Focar</button>
+    </article>`
+}
+
+function blocoPausa(evento) {
+  return `
+    <article class="bloco bloco--pausa">
+      <div class="bloco__horario">
+        <strong>${formatarHora(evento.inicioMinutos)}</strong>
+        <span>${formatarHora(evento.fimMinutos)}</span>
+      </div>
+      <div class="bloco__corpo">
+        <h4 class="bloco__titulo">${evento.icone || '☕'} ${escaparHTML(evento.titulo)} · ${evento.duracao} min</h4>
+        <p class="bloco__motivo">${escaparHTML(evento.descricao || '')}</p>
+      </div>
+    </article>`
+}
+
+function blocoInterrupcao(evento) {
+  return `
+    <article class="bloco bloco--interrupcao">
+      <div class="bloco__horario">
+        <strong>${formatarHora(evento.inicioMinutos)}</strong>
+        <span>${formatarHora(evento.fimMinutos)}</span>
+      </div>
+      <div class="bloco__corpo">
+        <h4 class="bloco__titulo">⏸️ ${escaparHTML(evento.titulo)}</h4>
+        <p class="bloco__motivo">${escaparHTML(evento.descricao || '')}</p>
+      </div>
+    </article>`
+}
+
+export function renderizarAgenda(agenda) {
+  const container = $('#resultado-agenda')
+  if (!container) return
+
+  if (!agenda || !agenda.eventos.length) {
+    container.innerHTML = `
+      <div class="estado-vazio estado-vazio--ilustrado">
+        <span aria-hidden="true">🗓️</span>
+        <h3>Sua agenda aparece aqui</h3>
+        <p>Cadastre as tarefas, ajuste a janela de trabalho e gere o planejamento otimizado pela sua curva de energia.</p>
+      </div>`
+    return
+  }
+
+  const agendados = agenda.eventos.filter(e => e.tipo !== 'nao-agendada')
+  const pendentes = agenda.eventos.filter(e => e.tipo === 'nao-agendada')
+
+  const linhaDoTempo = agendados
+    .map(evento => {
+      if (evento.tipo === 'tarefa') return blocoTarefa(evento)
+      if (evento.tipo === 'pausa') return blocoPausa(evento)
+      return blocoInterrupcao(evento)
     })
     .join('')
 
-  // anexar listeners dos botões
-  divLista.querySelectorAll('.botao-excluir').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = parseInt(btn.getAttribute('data-id'))
-      callbacks.excluir(id)
-    })
-  })
-  divLista.querySelectorAll('.botao-editar').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = parseInt(btn.getAttribute('data-id'))
-      callbacks.editar(id)
-    })
-  })
-  divLista.querySelectorAll('.botao-concluir').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = parseInt(btn.getAttribute('data-id'))
-      callbacks.toggleConcluida(id)
-    })
-  })
+  const livre =
+    agenda.stats.minutosLivres > 0
+      ? `<div class="faixa-livre">
+           🌤️ <strong>${formatarDuracao(agenda.stats.minutosLivres)} de tempo livre</strong> preservados
+           a partir das ${formatarHora(agenda.stats.fimAgendaMinutos)}.
+         </div>`
+      : ''
 
-  // atualiza resumo sempre que a lista muda
-  atualizarResumoInventario(listaTarefas)
+  const naoAgendadas = pendentes.length
+    ? `<section class="pendencias">
+         <h4>⚠️ Não coube hoje (${pendentes.length})</h4>
+         <ul>
+           ${pendentes
+             .map(
+               e => `<li>
+                       <strong>${escaparHTML(e.titulo)}</strong>
+                       <span>${escaparHTML(e.descricao)}</span>
+                     </li>`
+             )
+             .join('')}
+         </ul>
+         <p class="pendencias__dica">Aumente o limite diário, amplie a janela ou reduza o peso de alguma tarefa.</p>
+       </section>`
+    : ''
+
+  container.innerHTML = `<div class="linha-do-tempo">${linhaDoTempo}</div>${livre}${naoAgendadas}`
 }
 
-// mostra resumo de quantidade, minutos e concluídas
-export function atualizarResumoInventario(lista) {
-  const resumo = document.getElementById('resumo-inventario')
-  if (!resumo) return
-  const totalMinutos = lista.reduce((sum, t) => sum + t.tempo, 0)
-  const concluidas = lista.filter(t => t.concluida).length
-  resumo.innerText = `Total: ${lista.length} tarefa(s), ${totalMinutos} min${
-    concluidas ? ` (${concluidas} concluída${concluidas > 1 ? 's' : ''})` : ''
-  }`
-}
+export function renderizarIndicadores(agenda) {
+  const container = $('#indicadores')
+  if (!container) return
 
-export function renderizarGrafico(compensacao) {
-  const canvas = document.getElementById('grafico-energia')
-  if (!canvas) return
-  const horasDia = Array.from({ length: 24 }, (_, i) => i)
-  const contexto = canvas.getContext('2d')
+  const stats = agenda?.stats
+  if (!stats) {
+    container.hidden = true
+    return
+  }
+  container.hidden = false
 
-  if (graficoInstancia) graficoInstancia.destroy()
-
-  graficoInstancia = new Chart(contexto, {
-    type: 'line',
-    data: {
-      labels: horasDia.map(h => h.toString().padStart(2, '0') + 'h'),
-      datasets: [
-        {
-          data: horasDia.map(h => obterEnergia(h, compensacao)),
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99, 102, 241, 0.2)',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 0
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: { min: 0, max: 100, display: false },
-        x: {
-          grid: { display: false, color: '#334155' },
-          ticks: { color: '#94a3b8', maxTicksLimit: 8 }
-        }
-      },
-      plugins: { legend: { display: false }, tooltip: { enabled: false } }
+  const cartoes = [
+    { icone: '🎯', rotulo: 'Trabalho planejado', valor: formatarDuracao(stats.trabalhados), detalhe: `${stats.ocupacao}% da janela` },
+    { icone: '☕', rotulo: 'Pausas programadas', valor: formatarDuracao(stats.minutosPausa), detalhe: `${stats.eficiencia}% de eficiência` },
+    { icone: '🌤️', rotulo: 'Tempo livre', valor: formatarDuracao(stats.minutosLivres), detalhe: stats.minutosLivres ? `livre às ${formatarHora(stats.fimAgendaMinutos)}` : 'dia cheio' },
+    {
+      icone: stats.naoAgendadas ? '⚠️' : '✅',
+      rotulo: 'Pendências',
+      valor: stats.naoAgendadas ? String(stats.naoAgendadas) : 'Nenhuma',
+      detalhe: stats.naoAgendadas ? `${formatarDuracao(stats.minutosNaoAgendados)} sobrando` : 'tudo encaixado'
     }
+  ]
+
+  container.innerHTML = cartoes
+    .map(
+      c => `
+      <div class="indicador">
+        <span class="indicador__icone" aria-hidden="true">${c.icone}</span>
+        <div>
+          <strong class="indicador__valor">${escaparHTML(c.valor)}</strong>
+          <span class="indicador__rotulo">${escaparHTML(c.rotulo)}</span>
+          <small class="indicador__detalhe">${escaparHTML(c.detalhe)}</small>
+        </div>
+      </div>`
+    )
+    .join('')
+}
+
+export function definirEstadoAcoesAgenda(temAgenda) {
+  $$('[data-requer-agenda]').forEach(botao => {
+    botao.disabled = !temAgenda
   })
 }
 
-export function renderizarGraficoLivre(utilizado, limite) {
-  const ctx = document.getElementById('grafico-livre').getContext('2d')
-  if (graficoLivreInstancia) graficoLivreInstancia.destroy()
-  const livre = Math.max(0, limite - utilizado)
-  graficoLivreInstancia = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: ['Ocupado', 'Livre'],
-      datasets: [
-        {
-          data: [utilizado, livre],
-          backgroundColor: ['#f87171', '#34d399'],
-          hoverBackgroundColor: ['#f87171', '#34d399'],
-          borderWidth: 0
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '70%',
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { color: '#94a3b8', boxWidth: 12 }
-        },
-        tooltip: { enabled: true }
-      }
-    }
+export function limparPainel() {
+  renderizarListaTarefas([])
+  renderizarAgenda(null)
+  renderizarInterrupcoes([])
+  mostrarSugestao(null)
+  const indicadores = $('#indicadores')
+  if (indicadores) indicadores.hidden = true
+  const resumo = $('#resumo-inventario')
+  if (resumo) resumo.innerHTML = ''
+  ;['#nome-tarefa', '#peso-tarefa', '#tempo-tarefa', '#prazo-tarefa'].forEach(seletor => {
+    const campo = $(seletor)
+    if (campo) campo.value = ''
   })
-}
-
-export function mostrarResultado(html) {
-  const containerLista = document.getElementById('resultado-otimizacao')
-  containerLista.innerHTML = html
-}
-
-export function limparInterface() {
-  document.getElementById('lista-de-tarefas').innerHTML = ''
-  const resumoInv = document.getElementById('resumo-inventario')
-  if (resumoInv) resumoInv.innerText = ''
-  const resumoAgenda = document.getElementById('resumo-agenda')
-  if (resumoAgenda) resumoAgenda.innerText = ''
-  document.getElementById('resultado-otimizacao').innerHTML =
-    '<p class="resultado-otimizacao-placeholder">Adicione tarefas acima e calcule sua agenda biológica.</p>'
-  document.getElementById('nome-tarefa').value = ''
-  document.getElementById('peso-tarefa').value = ''
-  document.getElementById('tempo-tarefa').value = ''
-  const info = document.getElementById('sugestao-tarefa')
-  if (info) info.innerText = ''
-}
-
-export function transicionarParaTelaPrincipal() {
-  document.getElementById('tela-boas-vindas').classList.remove('ativa')
-  document.getElementById('tela-principal').classList.add('ativa')
-}
-
-export function transicionarParaTelaInicial() {
-  document.getElementById('tela-principal').classList.remove('ativa')
-  document.getElementById('tela-boas-vindas').classList.add('ativa')
 }

@@ -1,293 +1,409 @@
 <!doctype html>
-<html lang="pt-br">
+<html lang="pt-br" data-tema="escuro">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chronos Ultra - Otimizador de Vida</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark light" />
+    <meta
+      name="description"
+      content="Chronos Ultra organiza sua rotina pela sua curva de energia: prioriza tarefas, distribui pausas inteligentes e preserva o seu tempo livre."
+    />
+    <meta name="theme-color" content="#0b1120" />
+    <title>Chronos Ultra — Agenda otimizada pela sua energia</title>
+
     <link rel="icon" href="img/favicon.ico" type="image/x-icon" sizes="any" />
-    <!-- favicon.ico contém múltiplas resoluções; o atributo sizes ajuda navegadores modernos -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4" defer></script>
   </head>
-  <body>
-    <main>
-      <div id="tela-boas-vindas" class="tela ativa">
-        <div class="cartao-boas-vindas">
-          <img
-            src="img/logocentral.png"
-            alt="Logo Chronos Ultra"
-            class="logo-central"
-            onerror="
-              this.onerror = null
-              this.src = 'img/logo.png'
-            "
-          />
-          <h1>Chronos Ultra</h1>
-          <p class="descricao-boas-vindas">
-            Sincronize sua produtividade com a sua biologia.
-          </p>
 
-          <form id="dados-usuario">
+  <body>
+    <a class="pular-para-conteudo" href="#conteudo">Pular para o conteúdo</a>
+
+    <!-- ==================================================================
+         Tela 1 — Boas-vindas
+         ================================================================== -->
+    <section id="tela-boas-vindas" class="tela tela--centralizada ativa">
+      <div class="cartao cartao--boas-vindas">
+        <img
+          src="img/logocentral.png"
+          alt=""
+          class="logo-central"
+          width="150"
+          height="150"
+          onerror="this.onerror=null;this.src='img/logo.png'"
+        />
+        <h1 class="titulo-marca">Chronos Ultra</h1>
+        <p class="subtitulo">
+          Sincronize sua produtividade com a sua biologia — e leve o tempo livre de volta para casa.
+        </p>
+
+        <form id="form-boas-vindas" class="formulario" novalidate>
+          <div class="campo">
+            <label for="seu-nome">Como podemos te chamar?</label>
             <input
               type="text"
               id="seu-nome"
-              placeholder="Qual o seu primeiro nome?"
-              autocomplete="on"
+              name="nome"
+              placeholder="Seu primeiro nome"
+              autocomplete="given-name"
+              maxlength="40"
+              required
             />
+          </div>
+
+          <div class="campo">
+            <label for="sua-idade">Sua idade</label>
             <input
               type="number"
               id="sua-idade"
-              placeholder="Sua idade (para calcular foco)"
-              min="10"
+              name="idade"
+              placeholder="Ex.: 28"
+              min="8"
               max="100"
+              inputmode="numeric"
+              required
             />
+            <small class="campo__ajuda">Usamos a idade para calcular sua janela de foco contínuo.</small>
+          </div>
 
-            <button id="btn-iniciar" type="submit">Iniciar Otimização</button>
-          </form>
-        </div>
+          <fieldset class="campo campo--fieldset">
+            <legend>Quando você rende mais?</legend>
+            <div id="grupo-cronotipo" class="grupo-cronotipo"></div>
+          </fieldset>
+
+          <button type="submit" class="botao botao--primario botao--bloco">
+            Iniciar otimização
+          </button>
+        </form>
+
+        <p class="nota-privacidade">
+          🔒 Tudo fica salvo apenas neste navegador. Nenhum dado é enviado para servidores.
+        </p>
       </div>
+    </section>
 
-      <div id="tela-principal" class="tela">
-        <div class="cabecalho-usuario">
-          <div class="saudacao">
-            <div class="estatisticas-bio" id="caixa-estatisticas-bio">
-              🧬 Foco Contínuo Ideal: -- min
+    <!-- ==================================================================
+         Tela 2 — Painel principal
+         ================================================================== -->
+    <section id="tela-painel" class="tela" hidden>
+      <header class="cabecalho">
+        <div class="cabecalho__interno">
+          <div class="cabecalho__identidade">
+            <span id="avatar-inicial" class="avatar" aria-hidden="true">C</span>
+            <div class="cabecalho__textos">
+              <h1 id="saudacao-nome" class="cabecalho__titulo">Olá!</h1>
+              <p class="cabecalho__legenda">Vamos desenhar um dia que respeita a sua energia.</p>
             </div>
-            <h1 id="saudacao-nome">Olá!</h1>
-            <p>Vamos hackear o seu tempo livre hoje.</p>
           </div>
-          <div class="cabecalho-meio">
-            <button
-              id="btn-ver-calendario"
-              class="botao-pequeno botao-calendario"
-            >
-              Ver Calendário
+
+          <div id="chips-bio" class="chips" aria-label="Seu perfil biológico"></div>
+
+          <nav class="cabecalho__acoes" aria-label="Ações principais">
+            <button type="button" id="btn-ver-calendario" class="botao botao--secundario">
+              <span aria-hidden="true">🗓️</span> Calendário
             </button>
-          </div>
-          <div class="controles-perfil">
-            <button id="btn-trocar-perfil" class="botao-sair">
-              Trocar Perfil
+            <a class="botao botao--fantasma" href="texto/texto.html" target="_blank" rel="noopener">
+              <span aria-hidden="true">📘</span> Manual
+            </a>
+            <button type="button" id="btn-tema" class="botao botao--icone botao--fantasma" aria-label="Alternar tema">
+              🌙
             </button>
-          </div>
+            <button type="button" id="btn-trocar-perfil" class="botao botao--fantasma botao--perigo-suave">
+              Trocar perfil
+            </button>
+          </nav>
         </div>
+      </header>
 
-        <div class="grade">
-          <div class="cartao">
-            <h2>1. Janela de Trabalho</h2>
-            <p class="descricao-cartao">
-              Sua janela de trabalho será calculada automaticamente pelo foco
-              ideal da sua idade.
-            </p>
-            <div class="campo-disponibilidade">
-              <label for="inicio-disponivel">Início disponível:</label>
-              <input type="time" id="inicio-disponivel" value="08:00" />
-              <label for="fim-disponivel">Fim disponível:</label>
-              <input type="time" id="fim-disponivel" value="18:00" />
-              <label for="limite-horas">Limite de horas diárias:</label>
-              <input
-                type="number"
-                id="limite-horas"
-                value="6"
-                min="1"
-                max="24"
-              />
-            </div>
-
-            <label class="label-checkbox">
-              <input type="checkbox" id="tem-interrupcoes" />
-              Tenho interrupções no período
-            </label>
-            <div id="interrupcoes-detalhes" class="interrupcoes-detalhes">
-              <form id="form-interrupcoes">
-                <input
-                  type="text"
-                  id="nome-interrupcao"
-                  placeholder="Nome da interrupção (Ex: Almoço)"
-                />
-                <div class="grupo-inputs">
-                  <input type="time" id="inicio-interrupcao" value="12:00" />
-                  <input type="time" id="fim-interrupcao" value="13:00" />
-                </div>
-                <select id="tipo-interrupcao">
-                  <option value="Almoço">Almoço</option>
-                  <option value="Jantar">Jantar</option>
-                  <option value="Café da Manhã">Café da Manhã</option>
-                  <option value="Café da Tarde">Café da Tarde</option>
-                  <option value="Reunião">Reunião</option>
-                  <option value="Descanso">Descanso</option>
-                  <option value="Outra">Outra</option>
-                </select>
-                <button type="submit">Adicionar interrupção</button>
-              </form>
-              <div id="lista-interrupcoes" class="lista-interrupcoes"></div>
-            </div>
-
-            <canvas id="grafico-livre" class="grafico-livre"></canvas>
-          </div>
-          <div class="cartao">
-            <h3 class="titulo-secundario">Guias de Referência</h3>
-
-            <div class="envoltorio-tabela">
-              <table class="tabela-ajuda">
-                <thead>
-                  <tr>
-                    <th>Peso (1-10)</th>
-                    <th>O que significa?</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><strong>8 a 10</strong></td>
-                    <td>Urgente / Alta Complexidade</td>
-                  </tr>
-                  <tr>
-                    <td><strong>4 a 7</strong></td>
-                    <td>Importante / Média Complexidade</td>
-                  </tr>
-                  <tr>
-                    <td><strong>1 a 3</strong></td>
-                    <td>Rotina / Baixa Complexidade</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div class="espacador-pequeno"></div>
-
-            <div class="envoltorio-tabela">
-              <table class="tabela-ajuda">
-                <thead>
-                  <tr>
-                    <th>Minutos</th>
-                    <th>O que significa?</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><strong>45+</strong></td>
-                    <td>Tarefa Complexa</td>
-                  </tr>
-                  <tr>
-                    <td><strong>20-45</strong></td>
-                    <td>Tarefa Básica</td>
-                  </tr>
-                  <tr>
-                    <td><strong>0-20</strong></td>
-                    <td>Micro-Tarefa</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="inventario-no-guia">
-              <h2>2. Inventário de Tarefas</h2>
-              <form id="form-inventario-tarefas">
-                <input
-                  type="text"
-                  id="nome-tarefa"
-                  placeholder="Nome da tarefa (ex: Estudar Cálculo)"
-                />
-                <!-- campo para mostrar sugestão automática baseada em histórico -->
-                <small id="sugestao-tarefa" class="sugestao-tarefa"></small>
-
-                <div class="grupo-inputs">
-                  <input
-                    type="number"
-                    id="peso-tarefa"
-                    placeholder="Peso (1-10)"
-                  />
-                  <input
-                    type="number"
-                    id="tempo-tarefa"
-                    placeholder="Minutos"
-                  />
-                </div>
-
-                <button type="submit">Adicionar Tarefa</button>
-              </form>
-              <div id="resumo-inventario" class="resumo-inventario"></div>
-              <div class="grupo-botoes-pequenos">
-                <button id="btn-limpar-concluidas" class="botao-pequeno">
-                  Limpar concluídas
-                </button>
-                <button id="btn-limpar-todas" class="botao-pequeno alerta">
-                  Apagar tudo
-                </button>
-              </div>
-              <div class="lista-tarefas" id="lista-de-tarefas"></div>
-            </div>
-          </div>
-
-          <div class="cartao">
-            <h2>3. Agenda Otimizada</h2>
-            <button id="btn-otimizar-dia">GERAR HORÁRIOS PERFEITOS</button>
-            <div id="resumo-agenda" class="resumo-agenda"></div>
-
-            <div id="resultado-otimizacao" class="resultado-otimizacao">
-              <p class="placeholder-resultado">
-                Adicione tarefas acima e calcule sua agenda biológica.
+      <main id="conteudo" class="painel">
+        <!-- ---------------------------------------------- Coluna: janela -->
+        <section class="cartao cartao--janela" aria-labelledby="titulo-janela">
+          <header class="cartao__cabecalho">
+            <span class="cartao__numero" aria-hidden="true">1</span>
+            <div>
+              <h2 id="titulo-janela" class="cartao__titulo">Janela de trabalho</h2>
+              <p class="cartao__descricao">
+                Defina o intervalo disponível e o teto de horas produtivas. Pausas não consomem esse teto.
               </p>
             </div>
-          </div>
-        </div>
-      </div>
+          </header>
 
-      <div id="tela-calendario" class="tela">
-        <div class="cabecalho-usuario">
-          <div class="saudacao">
-            <h1>Calendário</h1>
-            <p>Visão mensal funcional com feriados e horários gerados.</p>
+          <div class="grade-campos">
+            <div class="campo">
+              <label for="inicio-disponivel">Início</label>
+              <input type="time" id="inicio-disponivel" value="08:00" />
+            </div>
+            <div class="campo">
+              <label for="fim-disponivel">Fim</label>
+              <input type="time" id="fim-disponivel" value="18:00" />
+            </div>
+            <div class="campo">
+              <label for="limite-horas">Limite diário (h)</label>
+              <input type="number" id="limite-horas" value="6" min="0.5" max="16" step="0.5" inputmode="decimal" />
+            </div>
           </div>
-          <div class="controles-perfil">
-            <button id="btn-voltar-app" class="botao-pequeno">
-              Voltar ao App
-            </button>
+
+          <p id="aviso-janela" class="aviso-inline" hidden></p>
+
+          <details class="acordeao">
+            <summary class="acordeao__titulo">
+              <span>Compromissos fixos do dia</span>
+              <small>almoço, reuniões, deslocamentos…</small>
+            </summary>
+
+            <form id="form-interrupcao" class="formulario formulario--compacto">
+              <div class="grade-campos grade-campos--dupla">
+                <div class="campo">
+                  <label for="tipo-interrupcao">Tipo</label>
+                  <select id="tipo-interrupcao">
+                    <option>Almoço</option>
+                    <option>Café da manhã</option>
+                    <option>Café da tarde</option>
+                    <option>Jantar</option>
+                    <option>Reunião</option>
+                    <option>Deslocamento</option>
+                    <option>Descanso</option>
+                    <option>Outro</option>
+                  </select>
+                </div>
+                <div class="campo">
+                  <label for="nome-interrupcao">Descrição (opcional)</label>
+                  <input type="text" id="nome-interrupcao" placeholder="Ex.: Daily do time" maxlength="60" />
+                </div>
+                <div class="campo">
+                  <label for="inicio-interrupcao">Começa</label>
+                  <input type="time" id="inicio-interrupcao" value="12:00" />
+                </div>
+                <div class="campo">
+                  <label for="fim-interrupcao">Termina</label>
+                  <input type="time" id="fim-interrupcao" value="13:00" />
+                </div>
+              </div>
+              <button type="submit" class="botao botao--secundario botao--bloco">
+                Adicionar compromisso
+              </button>
+            </form>
+
+            <div id="lista-interrupcoes" class="lista lista--interrupcoes"></div>
+          </details>
+
+          <div class="grafico">
+            <h3 class="grafico__titulo">Sua curva de energia</h3>
+            <div class="grafico__area">
+              <canvas id="grafico-energia" aria-label="Gráfico da curva de energia ao longo do dia" role="img"></canvas>
+            </div>
           </div>
-        </div>
 
-        <div class="calendario-estrutura">
-          <aside class="menu-calendario">
-            <div class="menu-calendario-titulo">Exibir</div>
-            <button
-              id="btn-visao-mes"
-              class="botao-lateral ativa"
-              data-visao="mes"
-            >
-              Mês
-            </button>
-            <button id="btn-visao-dia" class="botao-lateral" data-visao="dia">
-              Dia
-            </button>
-            <button id="btn-visao-hora" class="botao-lateral" data-visao="hora">
-              Hora
-            </button>
+          <div class="grafico">
+            <h3 class="grafico__titulo">Como o dia é dividido</h3>
+            <div class="grafico__area grafico__area--rosca">
+              <canvas id="grafico-tempo" aria-label="Distribuição do dia entre trabalho, pausas e tempo livre" role="img"></canvas>
+            </div>
+          </div>
+        </section>
 
-            <div class="menu-calendario-navegacao">
-              <button id="btn-mes-anterior" class="botao-pequeno">←</button>
-              <span id="mes-ano-rotulo">Março 2026</span>
-              <button id="btn-mes-proximo" class="botao-pequeno">→</button>
+        <!-- --------------------------------------------- Coluna: tarefas -->
+        <section class="cartao cartao--tarefas" aria-labelledby="titulo-tarefas">
+          <header class="cartao__cabecalho">
+            <span class="cartao__numero" aria-hidden="true">2</span>
+            <div>
+              <h2 id="titulo-tarefas" class="cartao__titulo">Inventário de tarefas</h2>
+              <p class="cartao__descricao">
+                Quanto mais honesto o peso e a duração, melhor o encaixe na sua energia.
+              </p>
+            </div>
+          </header>
+
+          <form id="form-tarefa" class="formulario">
+            <div class="campo">
+              <label for="nome-tarefa">Tarefa</label>
+              <input
+                type="text"
+                id="nome-tarefa"
+                placeholder="Ex.: Estudar Cálculo II"
+                maxlength="120"
+                autocomplete="off"
+              />
+              <small id="sugestao-tarefa" class="campo__ajuda campo__ajuda--destaque" hidden></small>
             </div>
 
-            <div class="menu-calendario-titulo">Feriados</div>
-            <div class="lista-feriados" id="lista-feriados"></div>
-          </aside>
+            <div class="campo">
+              <label for="categoria-tarefa">Categoria</label>
+              <select id="categoria-tarefa"></select>
+            </div>
 
-          <section class="conteudo-calendario">
-            <div id="calendario-conteudo" class="calendario-conteudo"></div>
-          </section>
+            <div class="grade-campos grade-campos--tripla">
+              <div class="campo">
+                <label for="peso-tarefa">Peso (1–10)</label>
+                <input type="number" id="peso-tarefa" min="1" max="10" step="1" placeholder="7" inputmode="numeric" />
+              </div>
+              <div class="campo">
+                <label for="tempo-tarefa">Minutos</label>
+                <input type="number" id="tempo-tarefa" min="1" max="1440" step="5" placeholder="45" inputmode="numeric" />
+              </div>
+              <div class="campo">
+                <label for="prazo-tarefa">Prazo</label>
+                <input type="date" id="prazo-tarefa" />
+              </div>
+            </div>
+
+            <button type="submit" class="botao botao--primario botao--bloco">
+              <span aria-hidden="true">＋</span> Adicionar tarefa
+            </button>
+          </form>
+
+          <div id="resumo-inventario" class="resumo-inventario"></div>
+
+          <div class="barra-acoes">
+            <button type="button" id="btn-limpar-concluidas" class="botao botao--fantasma botao--pequeno">
+              Limpar concluídas
+            </button>
+            <button type="button" id="btn-limpar-todas" class="botao botao--fantasma botao--pequeno botao--perigo-suave">
+              Apagar tudo
+            </button>
+          </div>
+
+          <div id="lista-de-tarefas" class="lista lista--tarefas"></div>
+
+          <details class="acordeao">
+            <summary class="acordeao__titulo">
+              <span>Como escolher peso e duração</span>
+              <small>guia rápido de referência</small>
+            </summary>
+
+            <div class="tabela-envoltorio">
+              <table class="tabela">
+                <caption class="visualmente-oculto">Significado de cada faixa de peso</caption>
+                <thead>
+                  <tr><th scope="col">Peso</th><th scope="col">Significado</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><strong>8–10</strong></td><td>Urgente ou de alta complexidade</td></tr>
+                  <tr><td><strong>4–7</strong></td><td>Importante, complexidade média</td></tr>
+                  <tr><td><strong>1–3</strong></td><td>Rotina, baixa complexidade</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="tabela-envoltorio">
+              <table class="tabela">
+                <caption class="visualmente-oculto">Significado de cada faixa de duração</caption>
+                <thead>
+                  <tr><th scope="col">Duração</th><th scope="col">Significado</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><strong>45 min +</strong></td><td>Tarefa complexa — será dividida em blocos</td></tr>
+                  <tr><td><strong>20–45 min</strong></td><td>Tarefa básica</td></tr>
+                  <tr><td><strong>até 20 min</strong></td><td>Micro-tarefa</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </section>
+
+        <!-- ---------------------------------------------- Coluna: agenda -->
+        <section class="cartao cartao--agenda" aria-labelledby="titulo-agenda">
+          <header class="cartao__cabecalho">
+            <span class="cartao__numero" aria-hidden="true">3</span>
+            <div>
+              <h2 id="titulo-agenda" class="cartao__titulo">Agenda otimizada</h2>
+              <p class="cartao__descricao">
+                Tarefas exigentes nos picos, leves nos vales e pausas na medida certa.
+              </p>
+            </div>
+          </header>
+
+          <div class="agenda-controles">
+            <div class="campo campo--inline">
+              <label for="data-agenda">Planejar o dia</label>
+              <input type="date" id="data-agenda" />
+            </div>
+            <button type="button" id="btn-gerar-agenda" class="botao botao--primario botao--destaque">
+              <span aria-hidden="true">⚡</span> Gerar horários perfeitos
+            </button>
+          </div>
+
+          <div id="indicadores" class="indicadores" hidden></div>
+
+          <div id="resultado-agenda" class="resultado-agenda" aria-live="polite"></div>
+
+          <div class="barra-acoes barra-acoes--exportar">
+            <button type="button" id="btn-whatsapp" class="botao botao--whatsapp botao--pequeno" data-requer-agenda disabled>
+              <span aria-hidden="true">📱</span> WhatsApp
+            </button>
+            <button type="button" id="btn-copiar" class="botao botao--fantasma botao--pequeno" data-requer-agenda disabled>
+              <span aria-hidden="true">📋</span> Copiar
+            </button>
+            <button type="button" id="btn-ics" class="botao botao--fantasma botao--pequeno" data-requer-agenda disabled>
+              <span aria-hidden="true">📅</span> Exportar .ics
+            </button>
+          </div>
+        </section>
+      </main>
+    </section>
+
+    <!-- ==================================================================
+         Tela 3 — Calendário
+         ================================================================== -->
+    <section id="tela-calendario" class="tela" hidden>
+      <header class="cabecalho">
+        <div class="cabecalho__interno">
+          <div class="cabecalho__identidade">
+            <span class="avatar avatar--icone" aria-hidden="true">🗓️</span>
+            <div class="cabecalho__textos">
+              <h1 class="cabecalho__titulo">Calendário</h1>
+              <p class="cabecalho__legenda">Feriados nacionais e todas as agendas que você já gerou.</p>
+            </div>
+          </div>
+          <nav class="cabecalho__acoes" aria-label="Navegação do calendário">
+            <button type="button" id="btn-hoje" class="botao botao--fantasma">Hoje</button>
+            <button type="button" id="btn-voltar-painel" class="botao botao--secundario">
+              <span aria-hidden="true">←</span> Voltar ao painel
+            </button>
+          </nav>
         </div>
-      </div>
-      <footer>
-        <p>
-          © 2026 • Criado por
-          <strong
-            ><a href="https://github.com/SchwanckB" target="_blank"
-              >Bernardo Schwanck</a
-            ></strong
-          >
-        </p>
-      </footer>
-    </main>
+      </header>
+
+      <main class="calendario">
+        <aside class="calendario__lateral" aria-label="Controles do calendário">
+          <div class="grupo-visoes" role="group" aria-label="Modo de exibição">
+            <button type="button" class="botao botao--aba ativo" data-visao="mes" aria-pressed="true">Mês</button>
+            <button type="button" class="botao botao--aba" data-visao="semana" aria-pressed="false">Semana</button>
+            <button type="button" class="botao botao--aba" data-visao="dia" aria-pressed="false">Dia</button>
+          </div>
+
+          <div class="navegacao-periodo">
+            <button type="button" id="btn-periodo-anterior" class="botao botao--icone botao--fantasma" aria-label="Período anterior">←</button>
+            <strong id="rotulo-periodo" class="navegacao-periodo__rotulo">—</strong>
+            <button type="button" id="btn-periodo-proximo" class="botao botao--icone botao--fantasma" aria-label="Próximo período">→</button>
+          </div>
+
+          <div class="bloco-lateral">
+            <h2 class="bloco-lateral__titulo">Feriados do mês</h2>
+            <ul id="lista-feriados" class="lista-feriados"></ul>
+          </div>
+        </aside>
+
+        <div id="calendario-conteudo" class="calendario__conteudo"></div>
+      </main>
+    </section>
+
+    <footer class="rodape">
+      <p>
+        © <span id="ano-atual">2026</span> · Chronos Ultra — criado por
+        <a href="https://github.com/SchwanckB" target="_blank" rel="noopener">Bernardo Schwanck</a>
+      </p>
+      <p class="rodape__atalhos">
+        Atalhos: <kbd>N</kbd> nova tarefa · <kbd>G</kbd> gerar agenda · <kbd>C</kbd> calendário
+      </p>
+    </footer>
+
     <script type="module" src="js/app.js"></script>
   </body>
 </html>
