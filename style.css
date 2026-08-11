@@ -61,6 +61,11 @@
   --largura-max: 96rem;
   --altura-cabecalho: 4.5rem;
   --transicao: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* curva longa e desacelerada, para mudanças de layout que o olho acompanha */
+  --transicao-cabecalho: 380ms cubic-bezier(0.22, 1, 0.36, 1);
+  --saida-rapida: 150ms cubic-bezier(0.4, 0, 1, 1);
+  --entrada-atrasada: 240ms cubic-bezier(0.16, 1, 0.3, 1) 150ms;
 }
 
 [data-tema='claro'] {
@@ -2187,7 +2192,9 @@ body::before {
 }
 
 .botao__texto {
-  display: inline;
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 /* cartões e itens respondem ao ponteiro ----------------------------------- */
@@ -2502,22 +2509,7 @@ body::before {
 }
 
 @media (max-width: 40rem) {
-  .cabecalho__interno {
-    padding-block: var(--e3);
-  }
-  .cabecalho__acoes {
-    width: 100%;
-    margin-left: 0;
-  }
-  .cabecalho__acoes .botao {
-    flex: 1 1 auto;
-  }
-  .cabecalho__acoes .botao--icone {
-    flex: 0 0 auto;
-  }
-  .chips {
-    width: 100%;
-  }
+  /* o cabeçalho no mobile é governado pelo bloco de 48rem, mais abaixo */
   .chip__rotulo {
     display: none;
   }
@@ -2608,44 +2600,100 @@ body::before {
     display: none;
   }
 
-  .cabecalho__interno,
-  .cabecalho__identidade,
-  .cabecalho__acoes,
-  .avatar,
-  .cabecalho__titulo,
-  .chips {
-    transition:
-      padding var(--transicao),
-      gap var(--transicao),
-      width var(--transicao),
-      height var(--transicao),
-      font-size var(--transicao),
-      max-height var(--transicao),
-      opacity var(--transicao),
-      margin var(--transicao);
+  /* ------------------------------------------------------------------
+     Estrutura fixa do cabeçalho no mobile.
+     As ações ficam SEMPRE como ícones na primeira linha, ao lado do nome;
+     as pílulas de perfil ocupam a segunda. Nada muda de linha ao compactar,
+     e é isso que deixa a animação contínua: `flex-wrap` não é animável, então
+     qualquer rearranjo de linhas apareceria como um salto.
+     ------------------------------------------------------------------ */
+  .cabecalho__interno {
+    gap: var(--e2) var(--e3);
+    padding-block: var(--e3);
   }
-
-  .chips {
-    max-height: 10rem;
-    opacity: 1;
-    overflow: hidden;
-  }
-
-  .compacto .cabecalho__interno {
-    flex-wrap: nowrap;
-    gap: var(--e2);
-    padding-block: 0.3rem;
-  }
-
-  .compacto .cabecalho__identidade {
+  .cabecalho__identidade {
     flex: 1 1 auto;
     min-width: 0;
-    gap: var(--e2);
+  }
+  .cabecalho__acoes {
+    flex: 0 0 auto;
+    width: auto;
+    margin-left: auto;
+    flex-wrap: nowrap;
+    gap: var(--e1);
+  }
+  .cabecalho__acoes .botao {
+    flex: 0 0 auto;
+    gap: 0;
+    min-width: 2.6rem;
+    min-height: 2.6rem;
+    padding: 0.4rem;
+  }
+  /* o rótulo some da tela mas continua sendo o nome acessível do botão —
+     o emoji é aria-hidden, então `display:none` o deixaria sem rótulo algum */
+  .cabecalho__acoes .botao__texto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .chips {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  /* ---------- transições (definem também o caminho de volta) ---------- */
+  .cabecalho__interno {
+    transition:
+      padding var(--transicao-cabecalho),
+      gap var(--transicao-cabecalho);
+  }
+  .avatar {
+    transition:
+      width var(--transicao-cabecalho),
+      height var(--transicao-cabecalho),
+      font-size var(--transicao-cabecalho),
+      border-radius var(--transicao-cabecalho);
+  }
+  .cabecalho__titulo {
+    transition: font-size var(--transicao-cabecalho);
+  }
+  .painel,
+  .calendario {
+    transition: padding-top var(--transicao-cabecalho);
+  }
+
+  /* Ao expandir, o espaço abre primeiro e o conteúdo aparece depois
+     (`--entrada-atrasada`) — assim nenhum texto é exibido espremido. */
+  .chips,
+  .cabecalho__legenda {
+    overflow: hidden;
+    opacity: 1;
+    transition:
+      max-height var(--transicao-cabecalho),
+      opacity var(--entrada-atrasada);
+  }
+  .chips {
+    max-height: 8rem;
+  }
+  .cabecalho__legenda {
+    max-height: 4rem;
+  }
+
+  /* ---------- estado compacto ---------- */
+  .compacto .cabecalho__interno {
+    padding-block: 0.35rem;
+    gap: 0 var(--e3);
   }
 
   .compacto .avatar {
-    width: 2.1rem;
-    height: 2.1rem;
+    width: 2.2rem;
+    height: 2.2rem;
     font-size: var(--txt-sm);
     border-radius: var(--raio-md);
   }
@@ -2657,48 +2705,15 @@ body::before {
     text-overflow: ellipsis;
   }
 
+  /* Recolhendo a ordem se inverte: o texto some rápido e só então o espaço
+     fecha, então nada aparece amassado durante o movimento. */
+  .compacto .chips,
   .compacto .cabecalho__legenda {
-    display: none;
-  }
-
-  /* zera nos dois eixos: com `nowrap` um chip invisível ainda roubaria largura */
-  .compacto .chips {
-    flex: 0 0 0;
-    width: 0;
     max-height: 0;
-    margin: 0;
     opacity: 0;
-  }
-
-  /* as ações viram uma fileira de ícones à direita */
-  .compacto .cabecalho__acoes {
-    flex: 0 0 auto;
-    width: auto;
-    margin-left: auto;
-    flex-wrap: nowrap;
-    gap: var(--e1);
-  }
-
-  .compacto .cabecalho__acoes .botao {
-    flex: 0 0 auto;
-    gap: 0;
-    min-width: 2.5rem;
-    min-height: 2.5rem;
-    padding: 0.4rem;
-  }
-
-  /* some da tela, mas continua sendo o nome acessível do botão —
-     o emoji é aria-hidden, então `display:none` deixaria o botão sem rótulo */
-  .compacto .cabecalho__acoes .botao__texto {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-    border: 0;
+    transition:
+      opacity var(--saida-rapida),
+      max-height var(--transicao-cabecalho) 90ms;
   }
 
   /* o conteúdo sobe junto para aproveitar o espaço liberado */

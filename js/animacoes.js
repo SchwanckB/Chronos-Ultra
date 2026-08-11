@@ -172,36 +172,46 @@ export function transicionar(mudanca) {
  *  · `rolado`   — a página saiu do topo, então o cabeçalho ganha sombra;
  *  · `compacto` — o usuário está descendo, então ele encolhe e libera a tela.
  *
- * O modo compacto volta ao normal assim que a rolagem sobe, como nos apps
- * nativos. A leitura é agrupada em `requestAnimationFrame` para não disparar
- * layout a cada evento de scroll.
+ * A troca exige um gesto acumulado numa direção, não um quadro isolado: assim
+ * uma tremida de dedo ou o reajuste de altura provocado pelo próprio
+ * encolhimento não alternam o estado. A leitura roda dentro de
+ * `requestAnimationFrame` para não forçar layout a cada evento de scroll.
  *
  * @param {object} [opcoes]
- * @param {number} [opcoes.limiteCompacto] altura mínima de rolagem para encolher
+ * @param {number} [opcoes.limiteCompacto] rolagem mínima para poder encolher
  * @param {number} [opcoes.limiteTopo] abaixo disso o cabeçalho sempre volta inteiro
+ * @param {number} [opcoes.gesto] pixels acumulados numa direção para trocar de estado
  */
-export function ligarCabecalhoElevado({ limiteCompacto = 90, limiteTopo = 40 } = {}) {
+export function ligarCabecalhoElevado({ limiteCompacto = 96, limiteTopo = 48, gesto = 28 } = {}) {
+  const corpo = document.body
   let ultimoY = window.scrollY
+  let acumulado = 0
   let agendado = false
+
+  const definir = compacto => {
+    if (corpo.classList.contains('compacto') === compacto) return
+    corpo.classList.toggle('compacto', compacto)
+    acumulado = 0
+  }
 
   const avaliar = () => {
     agendado = false
     const y = Math.max(0, window.scrollY)
     const delta = y - ultimoY
+    ultimoY = y
 
-    document.body.classList.toggle('rolado', y > 8)
+    corpo.classList.toggle('rolado', y > 8)
+
+    // inverteu o sentido? o acumulador recomeça
+    if (delta > 0 !== acumulado > 0) acumulado = 0
+    acumulado += delta
 
     if (y <= limiteTopo) {
-      document.body.classList.remove('compacto')
-    } else if (delta > 4 && y > limiteCompacto) {
-      document.body.classList.add('compacto')
-    } else if (delta < -12) {
-      // subir só reexpande com um gesto claro, evitando piscar quando o
-      // próprio encolhimento reduz a altura da página
-      document.body.classList.remove('compacto')
+      definir(false)
+      return
     }
-
-    ultimoY = y
+    if (acumulado > gesto && y > limiteCompacto) definir(true)
+    else if (acumulado < -gesto) definir(false)
   }
 
   const aoRolar = () => {
