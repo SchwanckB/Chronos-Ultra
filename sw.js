@@ -33,11 +33,11 @@ const SHELL = [
   './js/agora.js',
   './js/icones.js',
   './js/navegacao.js',
-  './img/logo.png',
-  './img/logocentral.png',
-  './img/favicon.ico',
-  './img/icone-192.png',
-  './img/icone-512.png'
+  './img/Logo-Photoroom.png',
+  './img/favicon-32x32.png',
+  './img/android-chrome-192x192.png',
+  './img/android-chrome-512x512.png',
+  './img/apple-touch-icon.png'
 ]
 
 self.addEventListener('install', evento => {

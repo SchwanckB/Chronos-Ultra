@@ -160,8 +160,8 @@ function avisarNoSistema(titulo, corpo) {
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
     const aviso = new Notification(titulo, {
       body: corpo,
-      icon: 'img/icone-192.png',
-      badge: 'img/icone-192.png',
+      icon: 'img/android-chrome-192x192.png',
+      badge: 'img/android-chrome-192x192.png',
       tag: 'chronos-foco'
     })
     aviso.addEventListener('click', () => {
