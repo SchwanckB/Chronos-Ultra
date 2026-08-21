@@ -7,6 +7,7 @@
  */
 
 import { escaparHTML } from './componentes.js'
+import { icone } from './icones.js'
 import { formatarHora, formatarDuracao, MINUTOS_DIA } from './algoritmo.js'
 
 const INTERVALO = 15000
@@ -50,7 +51,9 @@ function montarConteudo(agenda) {
       estado: ehTarefa ? 'tarefa' : 'pausa',
       html: `
         <div class="agora__topo">
-          <span class="agora__selo">${ehTarefa ? '🎯 Agora' : `${atual.icone || '☕'} Agora`}</span>
+          <span class="agora__selo">
+            ${icone(ehTarefa ? 'alvo' : atual.simbolo || 'cafe', { tamanho: 14 })} Agora
+          </span>
           <span class="agora__relogio">${formatarHora(atual.inicioMinutos)} → ${formatarHora(atual.fimMinutos)}</span>
         </div>
         <h3 class="agora__titulo">${escaparHTML(atual.titulo)}</h3>
@@ -66,7 +69,7 @@ function montarConteudo(agenda) {
           ehTarefa
             ? `<button type="button" class="botao botao--secundario botao--pequeno" data-focar-agora
                  data-titulo="${escaparHTML(atual.titulo)}" data-minutos="${restante}"
-                 data-tarefa="${atual.id ?? ''}">▶ Focar nos ${restante} min restantes</button>`
+                 data-tarefa="${atual.id ?? ''}">${icone('play', { tamanho: 14 })} Focar nos ${restante} min restantes</button>`
             : ''
         }`
     }
@@ -78,7 +81,7 @@ function montarConteudo(agenda) {
       estado: 'aguardando',
       html: `
         <div class="agora__topo">
-          <span class="agora__selo">⏭️ A seguir</span>
+          <span class="agora__selo">${icone('pular', { tamanho: 14 })} A seguir</span>
           <span class="agora__relogio">${formatarHora(proximo.inicioMinutos)}</span>
         </div>
         <h3 class="agora__titulo">${escaparHTML(proximo.titulo)}</h3>
@@ -91,7 +94,7 @@ function montarConteudo(agenda) {
     estado: 'concluido',
     html: `
       <div class="agora__topo">
-        <span class="agora__selo">🌤️ Dia planejado concluído</span>
+        <span class="agora__selo">${icone('sol-nuvem', { tamanho: 14 })} Dia planejado concluído</span>
       </div>
       <h3 class="agora__titulo">Tempo livre desde ${formatarHora(fim)}</h3>
       <p class="agora__legenda">Tudo o que estava agendado já passou. O resto do dia é seu.</p>`

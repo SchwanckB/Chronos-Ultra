@@ -10,12 +10,14 @@
 import * as storage from './storage.js'
 import * as tarefas from './tarefas.js'
 import * as ui from './ui.js'
+import * as nav from './navegacao.js'
 import * as alg from './algoritmo.js'
 import * as calendario from './calendario.js'
 import * as graficos from './graficos.js'
 import * as foco from './foco.js'
 import * as agora from './agora.js'
 import * as anim from './animacoes.js'
+import { icone, aplicarIcones } from './icones.js'
 import {
   notificar,
   confirmar,
@@ -48,7 +50,10 @@ const estado = {
   dataAgenda: calendario.chaveData(new Date()),
   filtros: { ...FILTROS_PADRAO },
   tema: 'escuro',
-  autenticado: false
+  autenticado: false,
+  /* preferências da tela de Foco */
+  minutosFoco: 25,
+  imersivo: false
 }
 
 /** Único ponto de redesenho da lista, para os filtros valerem em toda ação. */
@@ -164,9 +169,26 @@ function atualizarPainel({ regerar = false } = {}) {
     }
   )
   graficos.renderizarSemana(estado.agendas)
+  graficos.renderizarCategorias(tarefas.listaTarefas, tarefas.CATEGORIAS)
   ui.renderizarIndicadores(agenda)
   ui.definirEstadoAcoesAgenda(Boolean(agenda?.eventos?.length))
+  atualizarPaineisDerivados(agenda)
   agora.atualizar()
+}
+
+/**
+ * Blocos que vivem fora do cartão da agenda mas bebem da mesma fonte:
+ * dashboard (próximas / agenda do dia), tela de Foco e estatísticas.
+ */
+function atualizarPaineisDerivados(agenda = estado.agendaAtual) {
+  const doDia = agendaDeHoje()
+  const stats = tarefas.estatisticas()
+
+  ui.renderizarProximas(agenda)
+  ui.renderizarAgendaDoDia(agenda)
+  ui.renderizarFilaFoco(doDia || agenda)
+  ui.renderizarTotais({ agendas: estado.agendas, estatisticasTarefas: stats, bio: estado.bio })
+  ui.atualizarContadorAvisos(stats.ativas)
 }
 
 function atualizarAvisoJanela(janela) {
@@ -234,7 +256,7 @@ function entrarNoSistema(evento) {
   renderizarLista()
   ui.renderizarAgenda(null)
   definirDataAgenda(calendario.chaveData(new Date()))
-  anim.transicionar(() => ui.mostrarTela('tela-painel'))
+  nav.irPara('tela-painel')
   atualizarPainel()
   anim.revelar('.cartao')
   salvar({ imediato: true })
@@ -275,8 +297,58 @@ async function trocarPerfil() {
   ui.limparPainel()
   if ($('#seu-nome')) $('#seu-nome').value = ''
   if ($('#sua-idade')) $('#sua-idade').value = ''
-  anim.transicionar(() => ui.mostrarTela('tela-boas-vindas'))
+  nav.irPara('tela-boas-vindas')
   $('#seu-nome')?.focus()
+}
+
+/** Edita nome, idade e cronotipo sem precisar sair e voltar ao perfil. */
+async function editarPerfil() {
+  const dados = await abrirFormulario({
+    titulo: 'Editar perfil',
+    descricao: 'A curva de energia é recalculada assim que você salvar.',
+    rotuloConfirmar: 'Salvar perfil',
+    campos: [
+      { id: 'nome', rotulo: 'Nome', valor: estado.perfil.nome },
+      {
+        id: 'idade',
+        rotulo: 'Idade',
+        tipo: 'number',
+        min: 8,
+        max: 100,
+        step: 1,
+        valor: estado.perfil.idade,
+        largura: 'metade'
+      },
+      {
+        id: 'cronotipo',
+        rotulo: 'Cronotipo',
+        tipo: 'select',
+        valor: estado.perfil.cronotipo,
+        opcoes: alg.CRONOTIPOS.map(c => ({ valor: c.id, rotulo: c.rotulo }))
+      }
+    ],
+    validar: valores => {
+      if (!valores.nome || valores.nome.trim().length < 2) return 'Informe um nome válido.'
+      if (!(valores.idade >= 8 && valores.idade <= 100)) return 'A idade precisa ficar entre 8 e 100 anos.'
+      return null
+    }
+  })
+  if (!dados) return
+
+  const nomeAnterior = estado.perfil.nome
+  estado.perfil = { nome: dados.nome.trim(), idade: dados.idade, cronotipo: dados.cronotipo }
+  estado.bio = alg.montarPerfilBiologico(estado.perfil)
+
+  ui.atualizarCabecalho(estado.perfil, estado.bio)
+  atualizarPainel({ regerar: true })
+  salvar({ imediato: true })
+
+  notificar(
+    nomeAnterior !== estado.perfil.nome
+      ? `Perfil atualizado. Os dados antigos continuam salvos em "${nomeAnterior}".`
+      : `Perfil atualizado. Foco contínuo ideal: ${estado.bio.focoMaximo} min.`,
+    { tipo: 'sucesso', duracao: 5000 }
+  )
 }
 
 /* =========================================================================
@@ -345,7 +417,7 @@ async function editarTarefa(id) {
         rotulo: 'Categoria',
         tipo: 'select',
         valor: tarefa.categoria,
-        opcoes: tarefas.CATEGORIAS.map(c => ({ valor: c.id, rotulo: `${c.icone} ${c.rotulo}` }))
+        opcoes: tarefas.CATEGORIAS.map(c => ({ valor: c.id, rotulo: c.rotulo }))
       },
       { id: 'peso', rotulo: 'Peso (1 a 10)', tipo: 'number', min: 1, max: 10, step: 1, valor: tarefa.peso, largura: 'metade' },
       { id: 'tempo', rotulo: 'Minutos', tipo: 'number', min: 1, max: 1440, step: 5, valor: tarefa.tempo, largura: 'metade' },
@@ -568,6 +640,7 @@ function gerarAgenda({ silencioso = false } = {}) {
   graficos.renderizarEnergia(estado.bio, janela, agenda.eventos)
   graficos.renderizarDistribuicao(agenda.stats)
   graficos.renderizarSemana(estado.agendas)
+  atualizarPaineisDerivados(agenda)
   agora.atualizar()
   salvar()
 
@@ -749,27 +822,92 @@ function focarAgora() {
 }
 
 function abrirCalendario() {
-  anim.transicionar(() => {
-    ui.mostrarTela('tela-calendario')
+  nav.irPara('tela-calendario')
+}
+
+function voltarAoPainel() {
+  nav.irPara('tela-painel')
+}
+
+/**
+ * Gancho de entrada em cada tela.
+ *
+ * Existe porque o Chart.js mede o canvas no momento em que desenha: em uma
+ * tela oculta a medida é zero. Redesenhar ao entrar mantém os gráficos
+ * corretos sem precisar recalcular nada em segundo plano.
+ */
+function aoEntrarNaTela(id) {
+  if (!estado.autenticado) return
+
+  if (id === 'tela-calendario') {
     calendario.renderizar()
+    return
+  }
+  if (id === 'tela-painel') {
+    atualizarPainel()
+    return
+  }
+  if (id === 'tela-estatisticas') {
+    redesenharGraficos()
+    ui.renderizarTotais({
+      agendas: estado.agendas,
+      estatisticasTarefas: tarefas.estatisticas(),
+      bio: estado.bio
+    })
+    return
+  }
+  if (id === 'tela-foco') {
+    ui.renderizarFilaFoco(agendaDeHoje() || estado.agendaAtual)
+    ui.renderizarSessaoFoco(foco.sessaoAtual(), { minutosPadrao: estado.minutosFoco })
+  }
+}
+
+/* -------------------------------------------------------------- resumo --- */
+
+/** Panorama rápido do dia, aberto pelo sino do topo. */
+function mostrarResumoDoDia() {
+  const stats = tarefas.estatisticas()
+  const agenda = agendaDeHoje() || estado.agendaAtual
+  const s = agenda?.stats
+
+  const linhas = [
+    ['lista', `${stats.ativas} tarefa(s) pendente(s)`, `${alg.formatarDuracao(stats.minutosAtivos)} no inventário`],
+    ['sucesso', `${stats.concluidas} concluída(s)`, 'bom trabalho'],
+    s ? ['alvo', alg.formatarDuracao(s.trabalhados), `${s.ocupacao}% da janela ocupada`] : null,
+    s ? ['sol-nuvem', alg.formatarDuracao(s.minutosLivres), 'de tempo livre preservado'] : null,
+    s?.naoAgendadas ? ['alerta', `${s.naoAgendadas} tarefa(s) fora do dia`, 'reveja o limite diário'] : null
+  ].filter(Boolean)
+
+  abrirPainel({
+    titulo: 'Resumo do dia',
+    descricao: agenda ? 'Como está o seu plano de hoje.' : 'Você ainda não gerou a agenda de hoje.',
+    html: `<ul class="lista-resumo">
+      ${linhas
+        .map(
+          ([simbolo, titulo, detalhe]) =>
+            `<li>
+               <span class="lista-resumo__icone">${icone(simbolo, { tamanho: 17 })}</span>
+               <span><strong>${escaparHTML(titulo)}</strong> — ${escaparHTML(detalhe)}</span>
+             </li>`
+        )
+        .join('')}
+    </ul>`
   })
 }
 
-/** Volta ao painel e redesenha os gráficos, que não medem enquanto ocultos. */
-function voltarAoPainel() {
-  anim.transicionar(() => {
-    ui.mostrarTela('tela-painel')
-    if (estado.autenticado) atualizarPainel()
-  })
-}
+/* ---------------------------------------------------------------- tema --- */
 
 const CICLO_TEMA = { escuro: 'claro', claro: 'auto', auto: 'escuro' }
 
-function alternarTema() {
-  estado.tema = CICLO_TEMA[estado.tema] || 'escuro'
+function definirTema(tema) {
+  estado.tema = ['escuro', 'claro', 'auto'].includes(tema) ? tema : 'escuro'
   anim.transicionar(() => ui.aplicarTema(estado.tema))
   storage.salvarTema(estado.tema)
   redesenharGraficos()
+}
+
+function alternarTema() {
+  definirTema(CICLO_TEMA[estado.tema] || 'escuro')
 }
 
 function redesenharGraficos() {
@@ -778,7 +916,9 @@ function redesenharGraficos() {
     montarJanelaAtual(),
     estado.agendaAtual?.eventos || [],
     estado.agendaAtual?.stats,
-    estado.agendas
+    estado.agendas,
+    tarefas.listaTarefas,
+    tarefas.CATEGORIAS
   )
 }
 
@@ -853,6 +993,8 @@ function ligarFiltros() {
     const valor = evento.target.value
     debounce = setTimeout(() => {
       estado.filtros.busca = valor
+      const espelho = $('#busca-global')
+      if (espelho) espelho.value = valor
       renderizarLista()
     }, 140)
   })
@@ -867,16 +1009,46 @@ function ligarFiltros() {
     renderizarLista()
   })
 
-  $('.segmentado')?.addEventListener('click', evento => {
+  // escopado ao seletor de situação: existe outro segmentado (tema) na tela
+  // de Configurações, e ele não pode ser desmarcado por este clique
+  $('#segmentado-status')?.addEventListener('click', evento => {
     const opcao = evento.target.closest('[data-status]')
     if (!opcao) return
     estado.filtros.status = opcao.dataset.status
-    $$('.segmentado__opcao').forEach(botao => {
+    $$('[data-status]').forEach(botao => {
       const ativo = botao === opcao
       botao.classList.toggle('ativo', ativo)
       botao.setAttribute('aria-pressed', String(ativo))
     })
     renderizarLista()
+  })
+}
+
+/**
+ * Busca do topo: filtra o inventário de qualquer tela e, ao confirmar,
+ * leva o usuário para Rotinas, onde a lista filtrada está visível.
+ */
+function ligarBuscaGlobal() {
+  const campo = $('#busca-global')
+  const formulario = $('#form-busca-global')
+  if (!campo) return
+
+  let debounce = null
+  campo.addEventListener('input', evento => {
+    clearTimeout(debounce)
+    const valor = evento.target.value
+    debounce = setTimeout(() => {
+      estado.filtros.busca = valor
+      const espelho = $('#busca-tarefa')
+      if (espelho) espelho.value = valor
+      renderizarLista()
+    }, 140)
+  })
+
+  formulario?.addEventListener('submit', evento => {
+    evento.preventDefault()
+    nav.irPara('tela-rotinas')
+    $('#lista-de-tarefas')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   })
 }
 
@@ -922,24 +1094,147 @@ function ligarEventosAgenda() {
   $('#resultado-agenda')?.addEventListener('click', evento => {
     const botao = evento.target.closest('[data-foco]')
     if (!botao) return
-    foco.iniciarFoco({
+    iniciarSessaoDeFoco({
       titulo: botao.dataset.titulo,
       minutos: Number(botao.dataset.minutos),
-      aoConcluir: () => {
-        const id = botao.dataset.tarefa
-        const tarefa = id ? tarefas.obter(id) : null
-        if (tarefa && !tarefa.concluida) alternarConcluida(id)
-      }
+      tarefa: botao.dataset.tarefa
     })
   })
+}
+
+/* =========================================================================
+   Modo Foco
+   ========================================================================= */
+
+/**
+ * Ponto único de partida de qualquer sessão: o cronômetro é o mesmo, venha
+ * o comando do cronograma, do painel "Agora" ou da tela de Foco.
+ */
+function iniciarSessaoDeFoco({ titulo, minutos, tarefa = '' }) {
+  foco.iniciarFoco({
+    titulo,
+    minutos,
+    aoConcluir: () => {
+      const alvo = tarefa ? tarefas.obter(tarefa) : null
+      if (alvo && !alvo.concluida) alternarConcluida(tarefa)
+    }
+  })
+}
+
+function definirMinutosDeFoco(minutos) {
+  estado.minutosFoco = Math.min(Math.max(Number(minutos) || 25, 1), 180)
+  $$('.foco-preset').forEach(preset => {
+    preset.classList.toggle('ativo', Number(preset.dataset.minutos) === estado.minutosFoco)
+  })
+  if (!foco.estaAtivo()) {
+    ui.renderizarSessaoFoco(null, { minutosPadrao: estado.minutosFoco })
+  }
+}
+
+/** Tela cheia + menus escondidos: o "bloquear distrações" do layout. */
+async function alternarImersivo(ligar) {
+  estado.imersivo = ligar
+  document.body.classList.toggle('imersivo', ligar)
+
+  try {
+    if (ligar && !document.fullscreenElement) await document.documentElement.requestFullscreen?.()
+    else if (!ligar && document.fullscreenElement) await document.exitFullscreen?.()
+  } catch {
+    /* alguns navegadores exigem gesto direto ou bloqueiam tela cheia */
+  }
+
+  sincronizarInterruptorImersivo()
+}
+
+function sincronizarInterruptorImersivo() {
+  const botao = $('#interruptor-imersivo')
+  if (botao) botao.setAttribute('aria-checked', String(estado.imersivo))
+}
+
+function sincronizarInterruptorNotificacoes() {
+  const botao = $('#interruptor-notificacoes')
+  if (!botao) return
+  const permitido = typeof Notification !== 'undefined' && Notification.permission === 'granted'
+  botao.setAttribute('aria-checked', String(permitido))
+}
+
+function ligarEventosFoco() {
+  $('#btn-foco-iniciar')?.addEventListener('click', () => {
+    iniciarSessaoDeFoco({ titulo: 'Sessão livre', minutos: estado.minutosFoco })
+  })
+  $('#btn-foco-pausar')?.addEventListener('click', () => foco.alternarPausa())
+  $('#btn-foco-encerrar')?.addEventListener('click', () => foco.pararFoco())
+
+  $$('.foco-preset').forEach(preset => {
+    preset.addEventListener('click', () => definirMinutosDeFoco(preset.dataset.minutos))
+  })
+
+  $('#fila-foco')?.addEventListener('click', evento => {
+    const botao = evento.target.closest('[data-foco-bloco]')
+    if (!botao) return
+    iniciarSessaoDeFoco({
+      titulo: botao.dataset.titulo,
+      minutos: Number(botao.dataset.minutos),
+      tarefa: botao.dataset.tarefa
+    })
+  })
+
+  $('#interruptor-imersivo')?.addEventListener('click', () => {
+    alternarImersivo(!estado.imersivo)
+  })
+
+  $('#interruptor-notificacoes')?.addEventListener('click', () => {
+    if (typeof Notification === 'undefined') {
+      notificar('Este navegador não oferece notificações do sistema.', { tipo: 'info' })
+      return
+    }
+    if (Notification.permission === 'granted') {
+      notificar('Para desativar, ajuste as permissões do site no navegador.', { tipo: 'info', duracao: 5000 })
+      return
+    }
+    if (Notification.permission === 'denied') {
+      notificar('As notificações estão bloqueadas nas permissões deste site.', { tipo: 'erro', duracao: 5000 })
+      return
+    }
+    Notification.requestPermission()
+      .then(sincronizarInterruptorNotificacoes)
+      .catch(() => {})
+  })
+
+  // sai do modo imersivo se o usuário fechar a tela cheia pelo Esc do navegador
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && estado.imersivo) {
+      estado.imersivo = false
+      document.body.classList.remove('imersivo')
+      sincronizarInterruptorImersivo()
+    }
+  })
+
+  // o anel grande é apenas um espelho do cronômetro
+  foco.assinar(sessao => ui.renderizarSessaoFoco(sessao, { minutosPadrao: estado.minutosFoco }))
 }
 
 function ligarEventosNavegacao() {
   $('#btn-ver-calendario')?.addEventListener('click', abrirCalendario)
   $('#btn-voltar-painel')?.addEventListener('click', voltarAoPainel)
   $('#btn-trocar-perfil')?.addEventListener('click', trocarPerfil)
+  $('#btn-sair-lateral')?.addEventListener('click', trocarPerfil)
   $('#btn-tema')?.addEventListener('click', alternarTema)
   $('#btn-atalhos')?.addEventListener('click', mostrarAtalhos)
+  $('#btn-resumo')?.addEventListener('click', mostrarResumoDoDia)
+  $('#btn-editar-perfil')?.addEventListener('click', editarPerfil)
+
+  $('#btn-gerar-rapido')?.addEventListener('click', () => {
+    nav.irPara('tela-rotinas')
+    gerarAgenda()
+  })
+
+  $('#segmentado-tema')?.addEventListener('click', evento => {
+    const opcao = evento.target.closest('[data-tema-opcao]')
+    if (opcao) definirTema(opcao.dataset.temaOpcao)
+  })
+
+  ligarBuscaGlobal()
 
   $$('[data-visao]').forEach(botao => {
     botao.addEventListener('click', () => calendario.definirVisao(botao.dataset.visao))
@@ -960,11 +1255,11 @@ function ligarAtalhos() {
 
     if (tecla === 'n') {
       evento.preventDefault()
-      voltarAoPainel()
+      nav.irPara('tela-rotinas')
       $('#nome-tarefa')?.focus()
     } else if (tecla === 'g') {
       evento.preventDefault()
-      voltarAoPainel()
+      nav.irPara('tela-rotinas')
       gerarAgenda()
     } else if (tecla === 'c') {
       evento.preventDefault()
@@ -979,7 +1274,9 @@ function ligarAtalhos() {
       evento.preventDefault()
       mostrarAtalhos()
     } else if (evento.key === 'Escape') {
-      if (document.body.dataset.tela === 'tela-calendario') voltarAoPainel()
+      // no modo imersivo o Esc pertence à tela cheia, não à navegação
+      if (estado.imersivo) return
+      if (nav.telaAtual() !== 'tela-painel') voltarAoPainel()
     }
   })
 }
@@ -1000,11 +1297,18 @@ function ligarPWA() {
 
   let promptInstalacao = null
   const botao = $('#btn-instalar')
+  const aviso = $('#instalar-indisponivel')
+
+  /** Botão e legenda são exclusivos: um aparece exatamente quando o outro some. */
+  const definirDisponibilidade = disponivel => {
+    if (botao) botao.hidden = !disponivel
+    if (aviso) aviso.hidden = disponivel
+  }
 
   window.addEventListener('beforeinstallprompt', evento => {
     evento.preventDefault()
     promptInstalacao = evento
-    if (botao) botao.hidden = false
+    definirDisponibilidade(true)
   })
 
   botao?.addEventListener('click', async () => {
@@ -1012,15 +1316,13 @@ function ligarPWA() {
     promptInstalacao.prompt()
     const escolha = await promptInstalacao.userChoice
     promptInstalacao = null
-    botao.hidden = true
+    definirDisponibilidade(false)
     if (escolha.outcome === 'accepted') {
       notificar('Chronos Ultra instalado. Ele abre offline também.', { tipo: 'sucesso' })
     }
   })
 
-  window.addEventListener('appinstalled', () => {
-    if (botao) botao.hidden = true
-  })
+  window.addEventListener('appinstalled', () => definirDisponibilidade(false))
 }
 
 /** Executa `?acao=` do atalho do app instalado. */
@@ -1043,9 +1345,12 @@ function iniciar() {
       redesenharGraficos()
     })
 
+  aplicarIcones()
   ui.preencherSelectCategorias($('#categoria-tarefa'), 'foco')
   ui.preencherControlesInventario()
-  ui.mostrarTela('tela-boas-vindas')
+
+  nav.inicializar({ aoEntrar: aoEntrarNaTela })
+  nav.irPara('tela-boas-vindas', { imediato: true })
 
   anim.ligarOndas()
   anim.ligarCabecalhoElevado()
@@ -1053,15 +1358,7 @@ function iniciar() {
 
   agora.iniciarMonitor({
     obterAgenda: agendaDeHoje,
-    aoFocar: ({ titulo, minutos, tarefa }) =>
-      foco.iniciarFoco({
-        titulo,
-        minutos,
-        aoConcluir: () => {
-          const alvo = tarefa ? tarefas.obter(tarefa) : null
-          if (alvo && !alvo.concluida) alternarConcluida(tarefa)
-        }
-      })
+    aoFocar: iniciarSessaoDeFoco
   })
 
   calendario.inicializar({
@@ -1083,11 +1380,18 @@ function iniciar() {
   ligarEventosJanela()
   ligarEventosAgenda()
   ligarEventosNavegacao()
+  ligarEventosFoco()
   ligarAtalhos()
   ligarPWA()
 
+  definirMinutosDeFoco(estado.minutosFoco)
+  sincronizarInterruptorImersivo()
+  sincronizarInterruptorNotificacoes()
+
   const anoRodape = $('#ano-atual')
   if (anoRodape) anoRodape.textContent = new Date().getFullYear()
+
+  ui.esconderSplash()
 }
 
 if (document.readyState === 'loading') {

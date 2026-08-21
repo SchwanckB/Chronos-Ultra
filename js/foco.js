@@ -7,11 +7,38 @@
  */
 
 import { criarElemento, notificar } from './componentes.js'
+import { icone } from './icones.js'
 
 let sessao = null
 let intervalo = null
 let painel = null
 let tituloOriginal = ''
+
+/* Assinantes do estado da sessão — a tela de Foco desenha o anel grande a
+   partir daqui, sem duplicar o cronômetro nem a contagem. */
+const ouvintes = new Set()
+
+function emitir() {
+  const instantaneo = sessaoAtual()
+  ouvintes.forEach(ouvinte => {
+    try {
+      ouvinte(instantaneo)
+    } catch {
+      /* um assinante quebrado não pode derrubar o cronômetro */
+    }
+  })
+}
+
+/**
+ * Observa o cronômetro. Devolve a função que cancela a assinatura.
+ * @param {Function} ouvinte recebe `sessaoAtual()` a cada atualização
+ */
+export function assinar(ouvinte) {
+  if (typeof ouvinte !== 'function') return () => {}
+  ouvintes.add(ouvinte)
+  ouvinte(sessaoAtual())
+  return () => ouvintes.delete(ouvinte)
+}
 
 const formatar = segundos => {
   const total = Math.max(0, Math.round(segundos))
@@ -39,8 +66,8 @@ function montarPainel() {
       <span class="painel-foco__estado" data-estado></span>
     </div>
     <div class="painel-foco__acoes">
-      <button type="button" class="botao botao--fantasma botao--icone" data-alternar aria-label="Pausar sessão">⏸️</button>
-      <button type="button" class="botao botao--fantasma botao--icone" data-encerrar aria-label="Encerrar sessão">⏹️</button>
+      <button type="button" class="botao botao--fantasma botao--icone" data-alternar aria-label="Pausar sessão"></button>
+      <button type="button" class="botao botao--fantasma botao--icone" data-encerrar aria-label="Encerrar sessão">${icone('parar', { tamanho: 15 })}</button>
     </div>`
 
   painel.querySelector('[data-alternar]').addEventListener('click', alternarPausa)
@@ -50,26 +77,30 @@ function montarPainel() {
 }
 
 function atualizarPainel() {
-  if (!sessao || !painel) return
+  if (!sessao) return
 
   const restante = calcularRestante()
   const proporcao = 1 - restante / sessao.totalSegundos
-  const circunferencia = 2 * Math.PI * 19
 
-  painel.querySelector('[data-relogio]').textContent = formatar(restante)
-  painel.querySelector('[data-titulo]').textContent = sessao.titulo
-  painel.querySelector('[data-estado]').textContent = sessao.pausada
-    ? 'Pausado'
-    : `${Math.round(proporcao * 100)}% do bloco concluído`
-  painel.querySelector('[data-progresso]').style.strokeDasharray = `${circunferencia}`
-  painel.querySelector('[data-progresso]').style.strokeDashoffset = `${circunferencia * (1 - proporcao)}`
-  painel.classList.toggle('painel-foco--pausado', sessao.pausada)
+  if (painel) {
+    const circunferencia = 2 * Math.PI * 19
 
-  const alternar = painel.querySelector('[data-alternar]')
-  alternar.textContent = sessao.pausada ? '▶️' : '⏸️'
-  alternar.setAttribute('aria-label', sessao.pausada ? 'Retomar sessão' : 'Pausar sessão')
+    painel.querySelector('[data-relogio]').textContent = formatar(restante)
+    painel.querySelector('[data-titulo]').textContent = sessao.titulo
+    painel.querySelector('[data-estado]').textContent = sessao.pausada
+      ? 'Pausado'
+      : `${Math.round(proporcao * 100)}% do bloco concluído`
+    painel.querySelector('[data-progresso]').style.strokeDasharray = `${circunferencia}`
+    painel.querySelector('[data-progresso]').style.strokeDashoffset = `${circunferencia * (1 - proporcao)}`
+    painel.classList.toggle('painel-foco--pausado', sessao.pausada)
+
+    const alternar = painel.querySelector('[data-alternar]')
+    alternar.innerHTML = icone(sessao.pausada ? 'play' : 'pausa', { tamanho: 15 })
+    alternar.setAttribute('aria-label', sessao.pausada ? 'Retomar sessão' : 'Pausar sessão')
+  }
 
   document.title = `${formatar(restante)} • ${sessao.titulo}`
+  emitir()
 
   if (restante <= 0) encerrar(true)
 }
@@ -80,7 +111,7 @@ function calcularRestante() {
   return sessao.restanteCongelado - (Date.now() - sessao.retomadaEm) / 1000
 }
 
-function alternarPausa() {
+export function alternarPausa() {
   if (!sessao) return
   if (sessao.pausada) {
     sessao.retomadaEm = Date.now()
@@ -102,6 +133,7 @@ function encerrar(concluida) {
   painel?.remove()
   painel = null
   document.title = tituloOriginal || document.title
+  emitir()
 
   if (concluida) {
     notificar(`Bloco "${titulo}" concluído. Faça a pausa antes do próximo.`, {
@@ -167,8 +199,18 @@ export function estaAtivo() {
   return Boolean(sessao)
 }
 
+/**
+ * Instantâneo da sessão em andamento.
+ * @returns {{titulo: string, restante: number, total: number, pausada: boolean}|null}
+ */
 export function sessaoAtual() {
-  return sessao ? { titulo: sessao.titulo, restante: calcularRestante() } : null
+  if (!sessao) return null
+  return {
+    titulo: sessao.titulo,
+    restante: calcularRestante(),
+    total: sessao.totalSegundos,
+    pausada: sessao.pausada
+  }
 }
 
 /**

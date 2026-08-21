@@ -10,6 +10,7 @@ import { obterEnergia, formatarDuracao } from './algoritmo.js'
 let graficoEnergia = null
 let graficoTempo = null
 let graficoSemana = null
+let graficoCategorias = null
 
 const ANIMACAO = () =>
   window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -44,9 +45,9 @@ export function renderizarEnergia(perfil, janela = null, eventos = []) {
   if (!canvas || !temChart()) return
 
   const passos = Array.from({ length: 49 }, (_, i) => i / 2) // 30 em 30 minutos
-  const primaria = cor('--cor-primaria', '#6366f1')
-  const texto = cor('--cor-texto-suave', '#94a3b8')
-  const grade = cor('--cor-grade', 'rgba(148,163,184,0.16)')
+  const primaria = cor('--cor-primaria', '#14b8a6')
+  const texto = cor('--cor-texto-suave', '#8badb9')
+  const grade = cor('--cor-grade', 'rgba(94,234,212,0.14)')
 
   const dentroDaJanela = hora => {
     if (!janela) return true
@@ -122,9 +123,9 @@ export function renderizarDistribuicao(stats) {
   if (!canvas || !temChart()) return
 
   const dados = [
-    { rotulo: 'Trabalho', valor: stats.trabalhados, cor: cor('--cor-primaria', '#6366f1') },
+    { rotulo: 'Trabalho', valor: stats.trabalhados, cor: cor('--cor-primaria', '#14b8a6') },
     { rotulo: 'Pausas', valor: stats.minutosPausa, cor: cor('--cor-aviso', '#f59e0b') },
-    { rotulo: 'Compromissos', valor: stats.minutosInterrupcao, cor: cor('--cor-secundaria', '#ec4899') },
+    { rotulo: 'Compromissos', valor: stats.minutosInterrupcao, cor: cor('--cor-secundaria', '#06b6d4') },
     { rotulo: 'Tempo livre', valor: stats.minutosLivres, cor: cor('--cor-sucesso', '#10b981') }
   ].filter(item => item.valor > 0)
 
@@ -137,7 +138,7 @@ export function renderizarDistribuicao(stats) {
       datasets: [
         {
           data: vazio ? [1] : dados.map(d => d.valor),
-          backgroundColor: vazio ? [cor('--cor-borda', '#334155')] : dados.map(d => d.cor),
+          backgroundColor: vazio ? [cor('--cor-borda', '#1e3a52')] : dados.map(d => d.cor),
           borderWidth: 0,
           hoverOffset: 6
         }
@@ -152,7 +153,7 @@ export function renderizarDistribuicao(stats) {
         legend: {
           position: 'bottom',
           labels: {
-            color: cor('--cor-texto-suave', '#94a3b8'),
+            color: cor('--cor-texto-suave', '#8badb9'),
             boxWidth: 10,
             boxHeight: 10,
             usePointStyle: true,
@@ -202,9 +203,9 @@ export function renderizarSemana(agendas = {}) {
     return
   }
 
-  const primaria = cor('--cor-primaria', '#6366f1')
+  const primaria = cor('--cor-primaria', '#14b8a6')
   const sucesso = cor('--cor-sucesso', '#10b981')
-  const texto = cor('--cor-texto-suave', '#94a3b8')
+  const texto = cor('--cor-texto-suave', '#8badb9')
 
   graficoSemana = destruir(graficoSemana)
   graficoSemana = new window.Chart(canvas.getContext('2d'), {
@@ -266,8 +267,93 @@ export function renderizarSemana(agendas = {}) {
   })
 }
 
-export function atualizarTemaGraficos(perfil, janela, eventos, stats, agendas) {
+/**
+ * Barras horizontais com os minutos pendentes por categoria de tarefa.
+ * Mostra onde o tempo do inventário está concentrado antes de agendar.
+ *
+ * @param {Array} tarefas inventário atual
+ * @param {Array} categorias lista de categorias (`tarefas.CATEGORIAS`)
+ */
+export function renderizarCategorias(tarefas = [], categorias = []) {
+  const canvas = document.getElementById('grafico-categorias')
+  const vazio = document.getElementById('categorias-vazia')
+  if (!canvas || !temChart()) return
+
+  const pendentes = tarefas.filter(t => !t.concluida)
+  const dados = categorias
+    .map(categoria => ({
+      rotulo: categoria.rotulo,
+      minutos: pendentes
+        .filter(t => t.categoria === categoria.id)
+        .reduce((soma, t) => soma + (t.tempo || 0), 0)
+    }))
+    .filter(item => item.minutos > 0)
+    .sort((a, b) => b.minutos - a.minutos)
+
+  if (vazio) vazio.hidden = dados.length > 0
+  canvas.parentElement.hidden = dados.length === 0
+  if (!dados.length) {
+    graficoCategorias = destruir(graficoCategorias)
+    return
+  }
+
+  const primaria = cor('--cor-primaria', '#14b8a6')
+  const secundaria = cor('--cor-secundaria', '#06b6d4')
+  const texto = cor('--cor-texto-suave', '#8badb9')
+  const grade = cor('--cor-grade', 'rgba(94,234,212,0.14)')
+
+  // degradê da marca distribuído entre as barras, da mais longa para a menor
+  const mistura = (indice, total) => {
+    const proporcao = total > 1 ? indice / (total - 1) : 0
+    return proporcao < 0.5
+      ? transparente(primaria, 0.9 - proporcao * 0.3)
+      : transparente(secundaria, 0.9 - (proporcao - 0.5) * 0.3)
+  }
+
+  graficoCategorias = destruir(graficoCategorias)
+  graficoCategorias = new window.Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: dados.map(d => d.rotulo),
+      datasets: [
+        {
+          label: 'Minutos',
+          data: dados.map(d => d.minutos),
+          backgroundColor: dados.map((_, i) => mistura(i, dados.length)),
+          borderRadius: 8,
+          borderSkipped: false,
+          barThickness: 'flex',
+          maxBarThickness: 22
+        }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: ANIMACAO(),
+      scales: {
+        x: {
+          grid: { color: grade },
+          border: { display: false },
+          ticks: { color: texto, font: { size: 10 }, callback: valor => `${valor}m` }
+        },
+        y: { grid: { display: false }, border: { display: false }, ticks: { color: texto, font: { size: 11 } } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          displayColors: false,
+          callbacks: { label: item => formatarDuracao(item.parsed.x) }
+        }
+      }
+    }
+  })
+}
+
+export function atualizarTemaGraficos(perfil, janela, eventos, stats, agendas, tarefas, categorias) {
   renderizarEnergia(perfil, janela, eventos)
   if (stats) renderizarDistribuicao(stats)
   if (agendas) renderizarSemana(agendas)
+  if (tarefas && categorias) renderizarCategorias(tarefas, categorias)
 }

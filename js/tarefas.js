@@ -6,12 +6,12 @@
  */
 
 export const CATEGORIAS = [
-  { id: 'foco', rotulo: 'Foco profundo', icone: '🧠', exigencia: 1 },
-  { id: 'criativa', rotulo: 'Criativa', icone: '🎨', exigencia: 0.85 },
-  { id: 'estudo', rotulo: 'Estudo', icone: '📚', exigencia: 0.9 },
-  { id: 'admin', rotulo: 'Administrativa', icone: '🗂️', exigencia: 0.5 },
-  { id: 'rotina', rotulo: 'Rotina', icone: '🔁', exigencia: 0.35 },
-  { id: 'pessoal', rotulo: 'Pessoal', icone: '🌱', exigencia: 0.45 }
+  { id: 'foco', rotulo: 'Foco profundo', icone: '🧠', simbolo: 'cerebro', exigencia: 1 },
+  { id: 'criativa', rotulo: 'Criativa', icone: '🎨', simbolo: 'brilho', exigencia: 0.85 },
+  { id: 'estudo', rotulo: 'Estudo', icone: '📚', simbolo: 'livro', exigencia: 0.9 },
+  { id: 'admin', rotulo: 'Administrativa', icone: '🗂️', simbolo: 'pasta', exigencia: 0.5 },
+  { id: 'rotina', rotulo: 'Rotina', icone: '🔁', simbolo: 'repetir', exigencia: 0.35 },
+  { id: 'pessoal', rotulo: 'Pessoal', icone: '🌱', simbolo: 'broto', exigencia: 0.45 }
 ]
 
 const CATEGORIA_PADRAO = 'foco'

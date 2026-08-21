@@ -8,7 +8,7 @@
       name="description"
       content="Chronos Ultra organiza sua rotina pela sua curva de energia: prioriza tarefas, distribui pausas inteligentes e preserva o seu tempo livre."
     />
-    <meta name="theme-color" content="#0b1120" />
+    <meta name="theme-color" content="#071a2b" />
     <title>Chronos Ultra — Agenda otimizada pela sua energia</title>
 
     <link rel="icon" href="img/favicon.ico" type="image/x-icon" sizes="any" />
@@ -19,7 +19,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="style.css" />
@@ -30,457 +30,1108 @@
     <a class="pular-para-conteudo" href="#conteudo">Pular para o conteúdo</a>
 
     <!-- ==================================================================
-         Tela 1 — Boas-vindas
+         Splash — primeira impressão da marca, sai sozinha ao carregar
+         ================================================================== -->
+    <div id="splash" class="splash" aria-hidden="true">
+      <img src="img/logocentral.png" alt="" class="splash__logo" width="128" height="128" />
+      <p class="splash__nome">Chronos Ultra</p>
+      <div class="splash__barra"></div>
+    </div>
+    <script>
+      // Rede de segurança: se o módulo principal falhar ao carregar, a splash
+      // não pode continuar cobrindo a tela.
+      setTimeout(function () {
+        var s = document.getElementById('splash')
+        if (s) s.classList.add('splash--saindo')
+      }, 5000)
+    </script>
+
+    <!-- ==================================================================
+         TELA 1 — Onboarding (boas-vindas)
          ================================================================== -->
     <section id="tela-boas-vindas" class="tela tela--centralizada ativa">
-      <div class="cartao cartao--boas-vindas">
-        <img
-          src="img/logocentral.png"
-          alt=""
-          class="logo-central"
-          width="150"
-          height="150"
-          onerror="this.onerror=null;this.src='img/logo.png'"
-        />
-        <h1 class="titulo-marca">Chronos Ultra</h1>
-        <p class="subtitulo">
-          Sincronize sua produtividade com a sua biologia — e leve o tempo livre de volta para casa.
-        </p>
-
-        <form id="form-boas-vindas" class="formulario" novalidate>
-          <div class="campo">
-            <label for="seu-nome">Como podemos te chamar?</label>
-            <input
-              type="text"
-              id="seu-nome"
-              name="nome"
-              placeholder="Seu primeiro nome"
-              autocomplete="given-name"
-              maxlength="40"
-              required
-            />
+      <div class="onboarding">
+        <div class="onboarding__marca">
+          <img
+            src="img/logocentral.png"
+            alt=""
+            class="logo-central"
+            width="150"
+            height="150"
+            onerror="this.onerror=null;this.src='img/logo.png'"
+          />
+          <div>
+            <h1 class="titulo-marca">
+              Bem-vindo ao <span class="texto-gradiente">Chronos Ultra</span>
+            </h1>
+            <p class="subtitulo">
+              Sincronize sua produtividade com a sua biologia — e leve o tempo livre de volta para casa.
+            </p>
           </div>
 
-          <div class="campo">
-            <label for="sua-idade">Sua idade</label>
-            <input
-              type="number"
-              id="sua-idade"
-              name="idade"
-              placeholder="Ex.: 28"
-              min="8"
-              max="100"
-              inputmode="numeric"
-              required
-            />
-            <small class="campo__ajuda">Usamos a idade para calcular sua janela de foco contínuo.</small>
+          <ul class="onboarding__beneficios">
+            <li class="beneficio"><span data-icone="raio" data-tamanho="18"></span> Tarefas exigentes nos seus picos de energia</li>
+            <li class="beneficio"><span data-icone="cafe" data-tamanho="18"></span> Pausas inteligentes calculadas para o seu foco</li>
+            <li class="beneficio"><span data-icone="sol-nuvem" data-tamanho="18"></span> Tempo livre preservado, não improvisado</li>
+          </ul>
+
+          <div class="passos" aria-hidden="true">
+            <span class="ativo"></span><span></span><span></span>
+          </div>
+        </div>
+
+        <div class="cartao cartao--boas-vindas">
+          <div>
+            <h2 class="cartao__titulo">Vamos começar</h2>
+            <p class="cartao__descricao">
+              Três respostas rápidas e a sua agenda passa a respeitar o seu relógio biológico.
+            </p>
           </div>
 
-          <fieldset class="campo campo--fieldset">
-            <legend>Quando você rende mais?</legend>
-            <div id="grupo-cronotipo" class="grupo-cronotipo"></div>
-          </fieldset>
+          <form id="form-boas-vindas" class="formulario" novalidate>
+            <div class="campo">
+              <label for="seu-nome">Como podemos te chamar?</label>
+              <input
+                type="text"
+                id="seu-nome"
+                name="nome"
+                placeholder="Seu primeiro nome"
+                autocomplete="given-name"
+                maxlength="40"
+                required
+              />
+            </div>
 
-          <button type="submit" class="botao botao--primario botao--bloco">
-            Iniciar otimização
-          </button>
-        </form>
+            <div class="campo">
+              <label for="sua-idade">Sua idade</label>
+              <input
+                type="number"
+                id="sua-idade"
+                name="idade"
+                placeholder="Ex.: 28"
+                min="8"
+                max="100"
+                inputmode="numeric"
+                required
+              />
+              <small class="campo__ajuda">Usamos a idade para calcular sua janela de foco contínuo.</small>
+            </div>
 
-        <p class="nota-privacidade">
-          🔒 Tudo fica salvo apenas neste navegador. Nenhum dado é enviado para servidores.
-        </p>
+            <fieldset class="campo campo--fieldset">
+              <legend>Quando você rende mais?</legend>
+              <div id="grupo-cronotipo" class="grupo-cronotipo"></div>
+            </fieldset>
+
+            <button type="submit" class="botao botao--primario botao--bloco botao--destaque">
+              <span data-icone="raio" data-tamanho="19"></span> Iniciar otimização
+            </button>
+          </form>
+
+          <p class="nota-privacidade">
+            <span data-icone="cadeado" data-tamanho="15"></span> Tudo fica salvo apenas neste navegador. Nenhum dado é enviado para servidores.
+          </p>
+        </div>
       </div>
     </section>
 
     <!-- ==================================================================
-         Tela 2 — Painel principal
+         SHELL DO APLICATIVO — menu lateral (desktop) + nav inferior (mobile)
          ================================================================== -->
-    <section id="tela-painel" class="tela" hidden>
-      <header class="cabecalho">
-        <div class="cabecalho__interno">
-          <div class="cabecalho__identidade">
-            <span id="avatar-inicial" class="avatar" aria-hidden="true">C</span>
-            <div class="cabecalho__textos">
-              <h1 id="saudacao-nome" class="cabecalho__titulo">Olá!</h1>
-              <p class="cabecalho__legenda">Vamos desenhar um dia que respeita a sua energia.</p>
-            </div>
-          </div>
-
-          <div id="chips-bio" class="chips" aria-label="Seu perfil biológico"></div>
-
-          <nav class="cabecalho__acoes" aria-label="Ações principais">
-            <button type="button" id="btn-instalar" class="botao botao--secundario" title="Instalar app" hidden>
-              <span aria-hidden="true">⬇️</span>
-              <span class="botao__texto">Instalar app</span>
-            </button>
-            <button type="button" id="btn-ver-calendario" class="botao botao--secundario" title="Abrir calendário">
-              <span aria-hidden="true">🗓️</span>
-              <span class="botao__texto">Calendário</span>
-            </button>
-            <a class="botao botao--fantasma" href="texto/texto.html" target="_blank" rel="noopener" title="Abrir o manual">
-              <span aria-hidden="true">📘</span>
-              <span class="botao__texto">Manual</span>
-            </a>
-            <button type="button" id="btn-atalhos" class="botao botao--icone botao--fantasma botao--so-desktop" aria-label="Ver atalhos de teclado" title="Atalhos de teclado">
-              ⌨️
-            </button>
-            <button type="button" id="btn-tema" class="botao botao--icone botao--fantasma" aria-label="Alternar tema">
-              🌙
-            </button>
-            <button type="button" id="btn-trocar-perfil" class="botao botao--fantasma botao--perigo-suave" title="Trocar de perfil">
-              <span aria-hidden="true">👤</span>
-              <span class="botao__texto">Trocar perfil</span>
-            </button>
-          </nav>
+    <div id="app" class="app" hidden>
+      <!-- --------------------------------------------------- menu lateral -->
+      <aside class="barra-lateral" aria-label="Menu principal">
+        <div class="barra-lateral__marca">
+          <img
+            src="img/logocentral.png"
+            alt=""
+            class="barra-lateral__logo"
+            width="42"
+            height="42"
+            onerror="this.onerror=null;this.src='img/logo.png'"
+          />
+          <span class="barra-lateral__nome">
+            <strong>Chronos</strong>
+            <span>Ultra</span>
+          </span>
         </div>
-      </header>
 
-      <main id="conteudo" class="painel">
-        <!-- ---------------------------------------------- Coluna: janela -->
-        <section class="cartao cartao--janela" aria-labelledby="titulo-janela">
-          <header class="cartao__cabecalho">
-            <span class="cartao__numero" aria-hidden="true">1</span>
-            <div>
-              <h2 id="titulo-janela" class="cartao__titulo">Janela de trabalho</h2>
-              <p class="cartao__descricao">
-                Defina o intervalo disponível e o teto de horas produtivas. Pausas não consomem esse teto.
-              </p>
-            </div>
-          </header>
+        <nav class="menu" aria-label="Navegação principal">
+          <p class="menu__rotulo">Menu</p>
+          <button type="button" class="menu__item ativo" data-ir="tela-painel">
+            <span class="menu__icone" data-icone="painel" data-tamanho="19"></span>
+            <span class="menu__rotulo-item">Dashboard</span>
+          </button>
+          <button type="button" class="menu__item" data-ir="tela-rotinas">
+            <span class="menu__icone" data-icone="rotinas" data-tamanho="19"></span>
+            <span class="menu__rotulo-item">Rotinas</span>
+          </button>
+          <button type="button" class="menu__item" data-ir="tela-foco">
+            <span class="menu__icone" data-icone="foco" data-tamanho="19"></span>
+            <span class="menu__rotulo-item">Modo Foco</span>
+          </button>
+          <button type="button" class="menu__item" data-ir="tela-calendario">
+            <span class="menu__icone" data-icone="calendario" data-tamanho="19"></span>
+            <span class="menu__rotulo-item">Calendário</span>
+          </button>
+          <button type="button" class="menu__item" data-ir="tela-estatisticas">
+            <span class="menu__icone" data-icone="estatisticas" data-tamanho="19"></span>
+            <span class="menu__rotulo-item">Estatísticas</span>
+          </button>
+          <button type="button" class="menu__item" data-ir="tela-configuracoes">
+            <span class="menu__icone" data-icone="configuracoes" data-tamanho="19"></span>
+            <span class="menu__rotulo-item">Configurações</span>
+          </button>
+        </nav>
 
-          <div class="grade-campos">
-            <div class="campo">
-              <label for="inicio-disponivel">Início</label>
-              <input type="time" id="inicio-disponivel" value="08:00" />
-            </div>
-            <div class="campo">
-              <label for="fim-disponivel">Fim</label>
-              <input type="time" id="fim-disponivel" value="18:00" />
-            </div>
-            <div class="campo">
-              <label for="limite-horas">Limite diário (h)</label>
-              <input type="number" id="limite-horas" value="6" min="0.5" max="16" step="0.5" inputmode="decimal" />
-            </div>
-          </div>
-
-          <p id="aviso-janela" class="aviso-inline" hidden></p>
-
-          <details class="acordeao">
-            <summary class="acordeao__titulo">
-              <span>Compromissos fixos do dia</span>
-              <small>almoço, reuniões, deslocamentos…</small>
-            </summary>
-
-            <form id="form-interrupcao" class="formulario formulario--compacto">
-              <div class="grade-campos grade-campos--dupla">
-                <div class="campo">
-                  <label for="tipo-interrupcao">Tipo</label>
-                  <select id="tipo-interrupcao">
-                    <option>Almoço</option>
-                    <option>Café da manhã</option>
-                    <option>Café da tarde</option>
-                    <option>Jantar</option>
-                    <option>Reunião</option>
-                    <option>Deslocamento</option>
-                    <option>Descanso</option>
-                    <option>Outro</option>
-                  </select>
-                </div>
-                <div class="campo">
-                  <label for="nome-interrupcao">Descrição (opcional)</label>
-                  <input type="text" id="nome-interrupcao" placeholder="Ex.: Daily do time" maxlength="60" />
-                </div>
-                <div class="campo">
-                  <label for="inicio-interrupcao">Começa</label>
-                  <input type="time" id="inicio-interrupcao" value="12:00" />
-                </div>
-                <div class="campo">
-                  <label for="fim-interrupcao">Termina</label>
-                  <input type="time" id="fim-interrupcao" value="13:00" />
-                </div>
-              </div>
-              <button type="submit" class="botao botao--secundario botao--bloco">
-                Adicionar compromisso
-              </button>
-            </form>
-
-            <div id="lista-interrupcoes" class="lista lista--interrupcoes"></div>
-          </details>
-
-          <div class="grafico">
-            <h3 class="grafico__titulo">Sua curva de energia</h3>
-            <div class="grafico__area">
-              <canvas id="grafico-energia" aria-label="Gráfico da curva de energia ao longo do dia" role="img"></canvas>
-            </div>
-          </div>
-
-          <div class="grafico">
-            <h3 class="grafico__titulo">Como o dia é dividido</h3>
-            <div class="grafico__area grafico__area--rosca">
-              <canvas id="grafico-tempo" aria-label="Distribuição do dia entre trabalho, pausas e tempo livre" role="img"></canvas>
-            </div>
-          </div>
-
-          <div class="grafico">
-            <h3 class="grafico__titulo">Últimos 7 dias</h3>
-            <p id="semana-vazia" class="estado-vazio estado-vazio--compacto" hidden>
-              Gere agendas ao longo da semana para acompanhar sua evolução aqui.
-            </p>
-            <div class="grafico__area">
-              <canvas id="grafico-semana" aria-label="Trabalho e tempo livre nos últimos sete dias" role="img"></canvas>
-            </div>
-          </div>
-        </section>
-
-        <!-- --------------------------------------------- Coluna: tarefas -->
-        <section class="cartao cartao--tarefas" aria-labelledby="titulo-tarefas">
-          <header class="cartao__cabecalho">
-            <span class="cartao__numero" aria-hidden="true">2</span>
-            <div>
-              <h2 id="titulo-tarefas" class="cartao__titulo">Inventário de tarefas</h2>
-              <p class="cartao__descricao">
-                Quanto mais honesto o peso e a duração, melhor o encaixe na sua energia.
-              </p>
-            </div>
-          </header>
-
-          <form id="form-tarefa" class="formulario">
-            <div class="campo">
-              <label for="nome-tarefa">Tarefa</label>
-              <input
-                type="text"
-                id="nome-tarefa"
-                placeholder="Ex.: Estudar Cálculo II"
-                maxlength="120"
-                autocomplete="off"
-              />
-              <small id="sugestao-tarefa" class="campo__ajuda campo__ajuda--destaque" hidden></small>
-            </div>
-
-            <div class="campo">
-              <label for="categoria-tarefa">Categoria</label>
-              <select id="categoria-tarefa"></select>
-            </div>
-
-            <div class="grade-campos grade-campos--tripla">
-              <div class="campo">
-                <label for="peso-tarefa">Peso (1–10)</label>
-                <input type="number" id="peso-tarefa" min="1" max="10" step="1" placeholder="7" inputmode="numeric" />
-              </div>
-              <div class="campo">
-                <label for="tempo-tarefa">Minutos</label>
-                <input type="number" id="tempo-tarefa" min="1" max="1440" step="5" placeholder="45" inputmode="numeric" />
-              </div>
-              <div class="campo">
-                <label for="prazo-tarefa">Prazo</label>
-                <input type="date" id="prazo-tarefa" />
-              </div>
-            </div>
-
-            <button type="submit" class="botao botao--primario botao--bloco">
-              <span aria-hidden="true">＋</span> Adicionar tarefa
+        <div class="barra-lateral__rodape">
+          <div class="perfil-mini">
+            <span id="avatar-lateral" class="avatar avatar--pequeno" aria-hidden="true">C</span>
+            <span class="perfil-mini__textos">
+              <span id="nome-lateral" class="perfil-mini__nome">Chronos</span>
+              <span class="perfil-mini__estado">Online</span>
+            </span>
+            <button
+              type="button"
+              id="btn-sair-lateral"
+              class="botao botao--icone botao--fantasma"
+              title="Trocar de perfil"
+              aria-label="Trocar de perfil"
+            >
+              <span data-icone="sair" data-tamanho="17"></span>
             </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ------------------------------------------- coluna de conteúdo -->
+      <div class="area">
+        <header class="topo">
+          <div class="topo__marca">
+            <img
+              src="img/logocentral.png"
+              alt=""
+              class="topo__logo"
+              width="34"
+              height="34"
+              onerror="this.onerror=null;this.src='img/logo.png'"
+            />
+          </div>
+
+          <div class="topo__titulo">
+            <h1 id="titulo-pagina">Dashboard</h1>
+            <p id="descricao-pagina">Sua visão geral do dia</p>
+          </div>
+
+          <form id="form-busca-global" class="campo campo--busca topo__busca" role="search">
+            <label class="visualmente-oculto" for="busca-global">Buscar tarefa</label>
+            <input type="search" id="busca-global" placeholder="Buscar tarefa…" autocomplete="off" />
           </form>
 
-          <div id="resumo-inventario" class="resumo-inventario"></div>
+          <div class="topo__acoes">
+            <button
+              type="button"
+              id="btn-resumo"
+              class="botao botao--icone botao--fantasma sino"
+              title="Resumo do dia"
+              aria-label="Ver resumo do dia"
+            >
+              <span data-icone="sino" data-tamanho="19"></span>
+              <span id="contador-avisos" class="sino__contador" hidden>0</span>
+            </button>
 
-          <div class="ferramentas">
-            <div class="campo campo--busca">
-              <label class="visualmente-oculto" for="busca-tarefa">Buscar tarefa</label>
-              <input type="search" id="busca-tarefa" placeholder="Buscar tarefa…" autocomplete="off" />
-            </div>
-            <div class="campo">
-              <label class="visualmente-oculto" for="filtro-categoria">Filtrar por categoria</label>
-              <select id="filtro-categoria"></select>
-            </div>
-            <div class="campo">
-              <label class="visualmente-oculto" for="ordenar-tarefas">Ordenar tarefas</label>
-              <select id="ordenar-tarefas"></select>
-            </div>
+            <button
+              type="button"
+              id="btn-ver-calendario"
+              class="botao botao--icone botao--fantasma"
+              title="Abrir calendário"
+              aria-label="Abrir calendário"
+            >
+              <span data-icone="calendario" data-tamanho="19"></span>
+              <span class="botao__texto visualmente-oculto">Calendário</span>
+            </button>
+
+            <button type="button" id="btn-tema" class="botao botao--icone botao--fantasma" aria-label="Alternar tema">
+              <span data-icone="lua" data-tamanho="19"></span>
+            </button>
+
+            <span id="avatar-inicial" class="avatar avatar--pequeno" aria-hidden="true">C</span>
           </div>
+        </header>
 
-          <div class="segmentado-linha">
-            <div class="segmentado" role="group" aria-label="Filtrar por situação">
-              <button type="button" class="segmentado__opcao ativo" data-status="todas" aria-pressed="true">Todas</button>
-              <button type="button" class="segmentado__opcao" data-status="pendentes" aria-pressed="false">Pendentes</button>
-              <button type="button" class="segmentado__opcao" data-status="concluidas" aria-pressed="false">Concluídas</button>
+        <main id="conteudo">
+          <!-- ==========================================================
+               TELA 2 — Dashboard
+               ========================================================== -->
+          <section id="tela-painel" class="tela ativa">
+            <div class="pagina">
+              <div class="pagina__cabecalho saudacao">
+                <div class="saudacao__textos">
+                  <h2 id="saudacao-nome" class="cabecalho__titulo">Olá!</h2>
+                  <p class="cabecalho__legenda">Seu dia produtivo começa aqui.</p>
+                </div>
+                <div class="pagina__acoes">
+                  <button type="button" id="btn-gerar-rapido" class="botao botao--primario">
+                    <span data-icone="raio" data-tamanho="18"></span> Gerar agenda
+                  </button>
+                  <button type="button" id="btn-ir-rotinas" class="botao botao--secundario" data-ir="tela-rotinas">
+                    <span data-icone="rotinas" data-tamanho="18"></span> Minhas rotinas
+                  </button>
+                </div>
+              </div>
+
+              <div id="chips-bio" class="chips" aria-label="Seu perfil biológico"></div>
+
+              <!-- bloco em andamento -->
+              <section id="painel-agora" class="agora" aria-live="polite" aria-label="Bloco atual" hidden></section>
+
+              <!-- KPIs -->
+              <div id="indicadores" class="indicadores" hidden></div>
+
+              <div class="grade-dashboard">
+                <div class="grade-dashboard__principal">
+                  <section class="cartao" aria-labelledby="titulo-produtividade">
+                    <header class="cartao__cabecalho">
+                      <div>
+                        <h3 id="titulo-produtividade" class="cartao__titulo">Produtividade semanal</h3>
+                        <p class="cartao__descricao">Trabalho planejado e tempo livre preservado nos últimos 7 dias.</p>
+                      </div>
+                      <div class="cartao__acoes">
+                        <button
+                          type="button"
+                          id="btn-ver-estatisticas"
+                          class="botao botao--fantasma botao--pequeno"
+                          data-ir="tela-estatisticas"
+                        >
+                          Ver relatórios
+                        </button>
+                      </div>
+                    </header>
+
+                    <p id="semana-vazia" class="estado-vazio estado-vazio--compacto" hidden>
+                      Gere agendas ao longo da semana para acompanhar sua evolução aqui.
+                    </p>
+                    <div class="grafico">
+                      <div class="grafico__area grafico__area--alta">
+                        <canvas
+                          id="grafico-semana"
+                          aria-label="Trabalho e tempo livre nos últimos sete dias"
+                          role="img"
+                        ></canvas>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="cartao" aria-labelledby="titulo-carga">
+                    <header class="cartao__cabecalho">
+                      <div>
+                        <h3 id="titulo-carga" class="cartao__titulo">Carga do dia</h3>
+                        <p class="cartao__descricao">Quanto do seu limite diário o inventário atual já ocupa.</p>
+                      </div>
+                    </header>
+                    <div id="resumo-inventario" class="resumo-inventario"></div>
+                  </section>
+                </div>
+
+                <div class="grade-dashboard__lateral">
+                  <section class="cartao" aria-labelledby="titulo-proximas">
+                    <header class="cartao__cabecalho">
+                      <div>
+                        <h3 id="titulo-proximas" class="cartao__titulo">Próximas atividades</h3>
+                        <p class="cartao__descricao">O que vem a seguir no seu plano.</p>
+                      </div>
+                    </header>
+                    <div id="lista-proximas" class="lista-proximas"></div>
+                  </section>
+
+                  <section class="cartao" aria-labelledby="titulo-agenda-dia">
+                    <header class="cartao__cabecalho">
+                      <div>
+                        <h3 id="titulo-agenda-dia" class="cartao__titulo">Sua agenda</h3>
+                        <p class="cartao__descricao">Hora a hora, do começo ao fim do dia planejado.</p>
+                      </div>
+                    </header>
+                    <div id="agenda-do-dia" class="agenda-dia"></div>
+                  </section>
+                </div>
+              </div>
             </div>
-            <span id="contador-filtro" class="contador-filtro" aria-live="polite"></span>
-          </div>
+          </section>
 
-          <div id="lista-de-tarefas" class="lista lista--tarefas"></div>
+          <!-- ==========================================================
+               TELA 3 — Rotinas (janela, tarefas e cronograma)
+               ========================================================== -->
+          <section id="tela-rotinas" class="tela" hidden>
+            <div class="pagina">
+              <div class="pagina__cabecalho">
+                <div>
+                  <h2 class="pagina__titulo">Rotinas</h2>
+                  <p class="pagina__descricao">
+                    Defina a janela, cadastre as tarefas e gere o cronograma otimizado pela sua energia.
+                  </p>
+                </div>
+              </div>
 
-          <div class="barra-acoes">
-            <button type="button" id="btn-limpar-concluidas" class="botao botao--fantasma botao--pequeno">
-              Limpar concluídas
-            </button>
-            <button type="button" id="btn-limpar-todas" class="botao botao--fantasma botao--pequeno botao--perigo-suave">
-              Apagar tudo
-            </button>
-           </div>
+              <div class="grade-rotinas">
+                <!-- ------------------------------------------- janela -->
+                <section class="cartao cartao--janela" aria-labelledby="titulo-janela">
+                  <header class="cartao__cabecalho">
+                    <span class="cartao__numero" aria-hidden="true">1</span>
+                    <div>
+                      <h3 id="titulo-janela" class="cartao__titulo">Janela de trabalho</h3>
+                      <p class="cartao__descricao">
+                        Intervalo disponível e teto de horas produtivas. Pausas não consomem esse teto.
+                      </p>
+                    </div>
+                  </header>
 
-          <details class="acordeao">
-            <summary class="acordeao__titulo">
-              <span>Como escolher peso e duração</span>
-              <small>guia rápido de referência</small>
-            </summary>
+                  <div class="grade-campos">
+                    <div class="campo">
+                      <label for="inicio-disponivel">Início</label>
+                      <input type="time" id="inicio-disponivel" value="08:00" />
+                    </div>
+                    <div class="campo">
+                      <label for="fim-disponivel">Fim</label>
+                      <input type="time" id="fim-disponivel" value="18:00" />
+                    </div>
+                    <div class="campo">
+                      <label for="limite-horas">Limite diário (h)</label>
+                      <input
+                        type="number"
+                        id="limite-horas"
+                        value="6"
+                        min="0.5"
+                        max="16"
+                        step="0.5"
+                        inputmode="decimal"
+                      />
+                    </div>
+                  </div>
 
-            <div class="tabela-envoltorio">
-              <table class="tabela">
-                <caption class="visualmente-oculto">Significado de cada faixa de peso</caption>
-                <thead>
-                  <tr><th scope="col">Peso</th><th scope="col">Significado</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td><strong>8–10</strong></td><td>Urgente ou de alta complexidade</td></tr>
-                  <tr><td><strong>4–7</strong></td><td>Importante, complexidade média</td></tr>
-                  <tr><td><strong>1–3</strong></td><td>Rotina, baixa complexidade</td></tr>
-                </tbody>
-              </table>
+                  <p id="aviso-janela" class="aviso-inline" hidden></p>
+
+                  <details class="acordeao">
+                    <summary class="acordeao__titulo">
+                      <span>Compromissos fixos do dia</span>
+                      <small>almoço, reuniões, deslocamentos…</small>
+                    </summary>
+
+                    <form id="form-interrupcao" class="formulario formulario--compacto" novalidate>
+                      <div class="grade-campos grade-campos--dupla">
+                        <div class="campo">
+                          <label for="tipo-interrupcao">Tipo</label>
+                          <select id="tipo-interrupcao">
+                            <option>Almoço</option>
+                            <option>Café da manhã</option>
+                            <option>Café da tarde</option>
+                            <option>Jantar</option>
+                            <option>Reunião</option>
+                            <option>Deslocamento</option>
+                            <option>Descanso</option>
+                            <option>Outro</option>
+                          </select>
+                        </div>
+                        <div class="campo">
+                          <label for="nome-interrupcao">Descrição (opcional)</label>
+                          <input type="text" id="nome-interrupcao" placeholder="Ex.: Daily do time" maxlength="60" />
+                        </div>
+                        <div class="campo">
+                          <label for="inicio-interrupcao">Começa</label>
+                          <input type="time" id="inicio-interrupcao" value="12:00" />
+                        </div>
+                        <div class="campo">
+                          <label for="fim-interrupcao">Termina</label>
+                          <input type="time" id="fim-interrupcao" value="13:00" />
+                        </div>
+                      </div>
+                      <button type="submit" class="botao botao--secundario botao--bloco">
+                        Adicionar compromisso
+                      </button>
+                    </form>
+
+                    <div id="lista-interrupcoes" class="lista lista--interrupcoes"></div>
+                  </details>
+                </section>
+
+                <!-- ------------------------------------------ tarefas -->
+                <section class="cartao cartao--tarefas" aria-labelledby="titulo-tarefas">
+                  <header class="cartao__cabecalho">
+                    <span class="cartao__numero" aria-hidden="true">2</span>
+                    <div>
+                      <h3 id="titulo-tarefas" class="cartao__titulo">Inventário de tarefas</h3>
+                      <p class="cartao__descricao">
+                        Quanto mais honesto o peso e a duração, melhor o encaixe na sua energia.
+                      </p>
+                    </div>
+                  </header>
+
+                  <!-- `novalidate`: com min="1" e step="5" o navegador considera
+                       inválido qualquer valor fora de 1, 6, 11… — inclusive 30, 45
+                       e 90 min. A validação do app (com avisos em português) é
+                       quem manda aqui, igual ao formulário de boas-vindas. -->
+                  <form id="form-tarefa" class="formulario" novalidate>
+                    <div class="campo">
+                      <label for="nome-tarefa">Tarefa</label>
+                      <input
+                        type="text"
+                        id="nome-tarefa"
+                        placeholder="Ex.: Estudar Cálculo II"
+                        maxlength="120"
+                        autocomplete="off"
+                      />
+                      <small id="sugestao-tarefa" class="campo__ajuda campo__ajuda--destaque" hidden></small>
+                    </div>
+
+                    <div class="campo">
+                      <label for="categoria-tarefa">Categoria</label>
+                      <select id="categoria-tarefa"></select>
+                    </div>
+
+                    <div class="grade-campos grade-campos--tripla">
+                      <div class="campo">
+                        <label for="peso-tarefa">Peso (1–10)</label>
+                        <input
+                          type="number"
+                          id="peso-tarefa"
+                          min="1"
+                          max="10"
+                          step="1"
+                          placeholder="7"
+                          inputmode="numeric"
+                        />
+                      </div>
+                      <div class="campo">
+                        <label for="tempo-tarefa">Minutos</label>
+                        <input
+                          type="number"
+                          id="tempo-tarefa"
+                          min="1"
+                          max="1440"
+                          step="5"
+                          placeholder="45"
+                          inputmode="numeric"
+                        />
+                      </div>
+                      <div class="campo">
+                        <label for="prazo-tarefa">Prazo</label>
+                        <input type="date" id="prazo-tarefa" />
+                      </div>
+                    </div>
+
+                    <button type="submit" class="botao botao--primario botao--bloco">
+                      <span data-icone="mais" data-tamanho="18"></span> Adicionar tarefa
+                    </button>
+                  </form>
+
+                  <div class="ferramentas">
+                    <div class="campo campo--busca">
+                      <label class="visualmente-oculto" for="busca-tarefa">Buscar tarefa</label>
+                      <input type="search" id="busca-tarefa" placeholder="Buscar tarefa…" autocomplete="off" />
+                    </div>
+                    <div class="campo">
+                      <label class="visualmente-oculto" for="filtro-categoria">Filtrar por categoria</label>
+                      <select id="filtro-categoria"></select>
+                    </div>
+                    <div class="campo">
+                      <label class="visualmente-oculto" for="ordenar-tarefas">Ordenar tarefas</label>
+                      <select id="ordenar-tarefas"></select>
+                    </div>
+                  </div>
+
+                  <div class="segmentado-linha">
+                    <div id="segmentado-status" class="segmentado" role="group" aria-label="Filtrar por situação">
+                      <button type="button" class="segmentado__opcao ativo" data-status="todas" aria-pressed="true">
+                        Todas
+                      </button>
+                      <button type="button" class="segmentado__opcao" data-status="pendentes" aria-pressed="false">
+                        Pendentes
+                      </button>
+                      <button type="button" class="segmentado__opcao" data-status="concluidas" aria-pressed="false">
+                        Concluídas
+                      </button>
+                    </div>
+                    <span id="contador-filtro" class="contador-filtro" aria-live="polite"></span>
+                  </div>
+
+                  <div id="lista-de-tarefas" class="lista lista--tarefas"></div>
+
+                  <div class="barra-acoes">
+                    <button type="button" id="btn-limpar-concluidas" class="botao botao--fantasma botao--pequeno">
+                      Limpar concluídas
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-limpar-todas"
+                      class="botao botao--fantasma botao--pequeno botao--perigo-suave"
+                    >
+                      Apagar tudo
+                    </button>
+                  </div>
+
+                  <details class="acordeao">
+                    <summary class="acordeao__titulo">
+                      <span>Como escolher peso e duração</span>
+                      <small>guia rápido de referência</small>
+                    </summary>
+
+                    <div class="tabela-envoltorio">
+                      <table class="tabela">
+                        <caption class="visualmente-oculto">Significado de cada faixa de peso</caption>
+                        <thead>
+                          <tr><th scope="col">Peso</th><th scope="col">Significado</th></tr>
+                        </thead>
+                        <tbody>
+                          <tr><td><strong>8–10</strong></td><td>Urgente ou de alta complexidade</td></tr>
+                          <tr><td><strong>4–7</strong></td><td>Importante, complexidade média</td></tr>
+                          <tr><td><strong>1–3</strong></td><td>Rotina, baixa complexidade</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div class="tabela-envoltorio">
+                      <table class="tabela">
+                        <caption class="visualmente-oculto">Significado de cada faixa de duração</caption>
+                        <thead>
+                          <tr><th scope="col">Duração</th><th scope="col">Significado</th></tr>
+                        </thead>
+                        <tbody>
+                          <tr><td><strong>45 min +</strong></td><td>Tarefa complexa — será dividida em blocos</td></tr>
+                          <tr><td><strong>20–45 min</strong></td><td>Tarefa básica</td></tr>
+                          <tr><td><strong>até 20 min</strong></td><td>Micro-tarefa</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </details>
+                </section>
+
+                <!-- ------------------------------------------- agenda -->
+                <section class="cartao cartao--agenda" aria-labelledby="titulo-agenda">
+                  <header class="cartao__cabecalho">
+                    <span class="cartao__numero" aria-hidden="true">3</span>
+                    <div>
+                      <h3 id="titulo-agenda" class="cartao__titulo">Cronograma otimizado</h3>
+                      <p class="cartao__descricao">
+                        Tarefas exigentes nos picos, leves nos vales e pausas na medida certa.
+                      </p>
+                    </div>
+                  </header>
+
+                  <div class="agenda-controles">
+                    <div class="campo campo--inline">
+                      <label for="data-agenda">Planejar o dia</label>
+                      <input type="date" id="data-agenda" />
+                    </div>
+                    <button type="button" id="btn-gerar-agenda" class="botao botao--primario botao--destaque">
+                      <span data-icone="raio" data-tamanho="19"></span> Gerar horários perfeitos
+                    </button>
+                  </div>
+
+                  <div id="resultado-agenda" class="resultado-agenda" aria-live="polite"></div>
+
+                  <div class="barra-acoes barra-acoes--exportar">
+                    <button
+                      type="button"
+                      id="btn-whatsapp"
+                      class="botao botao--whatsapp botao--pequeno"
+                      data-requer-agenda
+                      disabled
+                    >
+                      <span data-icone="conversa" data-tamanho="16"></span> WhatsApp
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-copiar"
+                      class="botao botao--fantasma botao--pequeno"
+                      data-requer-agenda
+                      disabled
+                    >
+                      <span data-icone="prancheta" data-tamanho="16"></span> Copiar
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-ics"
+                      class="botao botao--fantasma botao--pequeno"
+                      data-requer-agenda
+                      disabled
+                    >
+                      <span data-icone="arquivo" data-tamanho="16"></span> Exportar .ics
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-duplicar"
+                      class="botao botao--fantasma botao--pequeno"
+                      data-requer-agenda
+                      disabled
+                    >
+                      <span data-icone="duplicar" data-tamanho="16"></span> Duplicar para…
+                    </button>
+                  </div>
+                </section>
+              </div>
             </div>
+          </section>
 
-            <div class="tabela-envoltorio">
-              <table class="tabela">
-                <caption class="visualmente-oculto">Significado de cada faixa de duração</caption>
-                <thead>
-                  <tr><th scope="col">Duração</th><th scope="col">Significado</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td><strong>45 min +</strong></td><td>Tarefa complexa — será dividida em blocos</td></tr>
-                  <tr><td><strong>20–45 min</strong></td><td>Tarefa básica</td></tr>
-                  <tr><td><strong>até 20 min</strong></td><td>Micro-tarefa</td></tr>
-                </tbody>
-              </table>
+          <!-- ==========================================================
+               TELA 4 — Modo Foco
+               ========================================================== -->
+          <section id="tela-foco" class="tela" hidden>
+            <div class="pagina">
+              <div class="pagina__cabecalho">
+                <div>
+                  <h2 class="pagina__titulo">Modo Foco</h2>
+                  <p class="pagina__descricao">
+                    Um bloco por vez. O cronômetro segue rodando mesmo se você navegar pelo app.
+                  </p>
+                </div>
+              </div>
+
+              <div class="foco-tela">
+                <section id="foco-palco" class="cartao foco-palco" aria-labelledby="foco-titulo">
+                  <div class="anel-foco">
+                    <svg viewBox="0 0 100 100" aria-hidden="true">
+                      <defs>
+                        <linearGradient id="degrade-foco" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stop-color="#0d9488" />
+                          <stop offset="50%" stop-color="#14b8a6" />
+                          <stop offset="100%" stop-color="#06b6d4" />
+                        </linearGradient>
+                      </defs>
+                      <circle class="anel-foco__trilha" cx="50" cy="50" r="44" />
+                      <circle class="anel-foco__progresso" cx="50" cy="50" r="44" data-anel-progresso />
+                    </svg>
+                    <div class="anel-foco__centro">
+                      <strong id="foco-relogio" class="anel-foco__relogio">25:00</strong>
+                      <span id="foco-estado" class="anel-foco__estado">Pronto</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 id="foco-titulo" class="foco-palco__titulo">Sessão livre</h3>
+                    <p id="foco-descricao" class="foco-palco__descricao">
+                      Escolha a duração e comece — ou toque em um bloco do seu cronograma ao lado.
+                    </p>
+                  </div>
+
+                  <div class="foco-presets" role="group" aria-label="Duração da sessão">
+                    <button type="button" class="foco-preset" data-minutos="15">15 min</button>
+                    <button type="button" class="foco-preset ativo" data-minutos="25">25 min</button>
+                    <button type="button" class="foco-preset" data-minutos="45">45 min</button>
+                    <button type="button" class="foco-preset" data-minutos="60">60 min</button>
+                  </div>
+
+                  <div class="foco-palco__acoes">
+                    <button type="button" id="btn-foco-iniciar" class="botao botao--primario botao--destaque">
+                      <span data-icone="play" data-tamanho="18"></span> Iniciar sessão
+                    </button>
+                    <button type="button" id="btn-foco-pausar" class="botao botao--secundario" hidden>
+                      <span data-icone="pausa" data-tamanho="17"></span> Pausar
+                    </button>
+                    <button type="button" id="btn-foco-encerrar" class="botao botao--fantasma botao--perigo-suave" hidden>
+                      <span data-icone="parar" data-tamanho="17"></span> Encerrar
+                    </button>
+                  </div>
+                </section>
+
+                <div class="grade-dashboard__lateral">
+                  <section class="cartao" aria-labelledby="titulo-fila-foco">
+                    <header class="cartao__cabecalho">
+                      <div>
+                        <h3 id="titulo-fila-foco" class="cartao__titulo">Blocos de hoje</h3>
+                        <p class="cartao__descricao">Toque em um bloco para focar exatamente nele.</p>
+                      </div>
+                    </header>
+                    <div id="fila-foco" class="fila-foco"></div>
+                  </section>
+
+                  <section class="cartao" aria-labelledby="titulo-ambiente">
+                    <header class="cartao__cabecalho">
+                      <div>
+                        <h3 id="titulo-ambiente" class="cartao__titulo">Ambiente</h3>
+                        <p class="cartao__descricao">Ajustes que valem para a sessão inteira.</p>
+                      </div>
+                    </header>
+
+                    <div class="pilha-config">
+                      <div class="linha-config">
+                        <span class="linha-config__icone" data-icone="escudo" data-tamanho="19"></span>
+                        <span class="linha-config__textos">
+                          <span class="linha-config__titulo">Bloquear distrações</span>
+                          <span class="linha-config__descricao">
+                            Entra em tela cheia e esconde menus durante o foco.
+                          </span>
+                        </span>
+                        <span class="linha-config__controle">
+                          <button
+                            type="button"
+                            id="interruptor-imersivo"
+                            class="interruptor"
+                            role="switch"
+                            aria-checked="false"
+                            aria-label="Bloquear distrações"
+                          ></button>
+                        </span>
+                      </div>
+
+                      <div class="linha-config">
+                        <span class="linha-config__icone" data-icone="sino" data-tamanho="19"></span>
+                        <span class="linha-config__textos">
+                          <span class="linha-config__titulo">Avisar ao concluir</span>
+                          <span class="linha-config__descricao">
+                            Notificação do sistema quando o bloco termina.
+                          </span>
+                        </span>
+                        <span class="linha-config__controle">
+                          <button
+                            type="button"
+                            id="interruptor-notificacoes"
+                            class="interruptor"
+                            role="switch"
+                            aria-checked="false"
+                            aria-label="Avisar ao concluir"
+                          ></button>
+                        </span>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              </div>
             </div>
-          </details>
+          </section>
 
-          <details class="acordeao">
-            <summary class="acordeao__titulo">
-              <span>Backup dos seus dados</span>
-              <small>exportar ou restaurar</small>
-            </summary>
+          <!-- ==========================================================
+               TELA 5 — Estatísticas
+               ========================================================== -->
+          <section id="tela-estatisticas" class="tela" hidden>
+            <div class="pagina">
+              <div class="pagina__cabecalho">
+                <div>
+                  <h2 class="pagina__titulo">Estatísticas</h2>
+                  <p class="pagina__descricao">Como a sua energia, o seu tempo e as suas tarefas se comportam.</p>
+                </div>
+              </div>
 
-            <div class="barra-acoes">
-              <button type="button" id="btn-exportar-dados" class="botao botao--fantasma botao--pequeno">
-                <span aria-hidden="true">⬇️</span> Exportar JSON
-              </button>
-              <button type="button" id="btn-importar-dados" class="botao botao--fantasma botao--pequeno">
-                <span aria-hidden="true">⬆️</span> Importar JSON
-              </button>
-              <input type="file" id="arquivo-importacao" accept="application/json,.json" hidden />
+              <div id="totais-estatisticas" class="totais"></div>
+
+              <div class="grade-estatisticas">
+                <section class="cartao cartao--largo" aria-labelledby="titulo-energia">
+                  <header class="cartao__cabecalho">
+                    <div>
+                      <h3 id="titulo-energia" class="cartao__titulo">Sua curva de energia</h3>
+                      <p class="cartao__descricao">
+                        Os pontos marcam os horários em que existem tarefas agendadas.
+                      </p>
+                    </div>
+                  </header>
+                  <div class="grafico">
+                    <div class="grafico__area grafico__area--alta">
+                      <canvas
+                        id="grafico-energia"
+                        aria-label="Gráfico da curva de energia ao longo do dia"
+                        role="img"
+                      ></canvas>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="cartao" aria-labelledby="titulo-divisao">
+                  <header class="cartao__cabecalho">
+                    <div>
+                      <h3 id="titulo-divisao" class="cartao__titulo">Como o dia é dividido</h3>
+                      <p class="cartao__descricao">Trabalho, pausas, compromissos e tempo livre.</p>
+                    </div>
+                  </header>
+                  <div class="grafico">
+                    <div class="grafico__area grafico__area--rosca">
+                      <canvas
+                        id="grafico-tempo"
+                        aria-label="Distribuição do dia entre trabalho, pausas e tempo livre"
+                        role="img"
+                      ></canvas>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="cartao" aria-labelledby="titulo-categorias">
+                  <header class="cartao__cabecalho">
+                    <div>
+                      <h3 id="titulo-categorias" class="cartao__titulo">Produtividade por categoria</h3>
+                      <p class="cartao__descricao">Minutos pendentes por tipo de tarefa no inventário.</p>
+                    </div>
+                  </header>
+                  <p id="categorias-vazia" class="estado-vazio estado-vazio--compacto" hidden>
+                    Cadastre tarefas para ver a distribuição por categoria.
+                  </p>
+                  <div class="grafico">
+                    <div class="grafico__area grafico__area--alta">
+                      <canvas
+                        id="grafico-categorias"
+                        aria-label="Minutos por categoria de tarefa"
+                        role="img"
+                      ></canvas>
+                    </div>
+                  </div>
+                </section>
+              </div>
             </div>
-            <p class="campo__ajuda">
-              O arquivo contém perfil, tarefas, configurações e agendas salvas — útil para migrar de
-              navegador ou guardar uma cópia de segurança.
-            </p>
-          </details>
-        </section>
+          </section>
 
-        <!-- ---------------------------------------------- Coluna: agenda -->
-        <section class="cartao cartao--agenda" aria-labelledby="titulo-agenda">
-          <header class="cartao__cabecalho">
-            <span class="cartao__numero" aria-hidden="true">3</span>
-            <div>
-              <h2 id="titulo-agenda" class="cartao__titulo">Agenda otimizada</h2>
-              <p class="cartao__descricao">
-                Tarefas exigentes nos picos, leves nos vales e pausas na medida certa.
-              </p>
+          <!-- ==========================================================
+               TELA 6 — Configurações
+               ========================================================== -->
+          <section id="tela-configuracoes" class="tela" hidden>
+            <div class="pagina">
+              <div class="pagina__cabecalho">
+                <div>
+                  <h2 class="pagina__titulo">Configurações</h2>
+                  <p class="pagina__descricao">Perfil, aparência, dados e integrações do Chronos Ultra.</p>
+                </div>
+              </div>
+
+              <div class="grade-config">
+                <section class="cartao cartao--largo" aria-labelledby="titulo-perfil">
+                  <h3 id="titulo-perfil" class="visualmente-oculto">Perfil</h3>
+                  <div class="perfil-cartao">
+                    <span id="avatar-config" class="avatar avatar--grande" aria-hidden="true">C</span>
+                    <span class="perfil-cartao__textos">
+                      <span id="nome-config" class="perfil-cartao__nome">Chronos</span>
+                      <span id="detalhe-config" class="perfil-cartao__detalhe">Perfil local deste navegador</span>
+                    </span>
+                    <button type="button" id="btn-editar-perfil" class="botao botao--secundario">
+                      <span data-icone="editar" data-tamanho="17"></span> Editar perfil
+                    </button>
+                  </div>
+                </section>
+
+                <section class="cartao" aria-labelledby="titulo-aparencia">
+                  <header class="cartao__cabecalho">
+                    <div>
+                      <h3 id="titulo-aparencia" class="cartao__titulo">Aparência</h3>
+                      <p class="cartao__descricao">O tema acompanha o sistema quando você escolhe “Automático”.</p>
+                    </div>
+                  </header>
+
+                  <div class="segmentado" id="segmentado-tema" role="group" aria-label="Tema da interface">
+                    <button type="button" class="segmentado__opcao" data-tema-opcao="escuro" aria-pressed="false">
+                      <span data-icone="lua" data-tamanho="15"></span> Escuro
+                    </button>
+                    <button type="button" class="segmentado__opcao" data-tema-opcao="claro" aria-pressed="false">
+                      <span data-icone="sol" data-tamanho="15"></span> Claro
+                    </button>
+                    <button type="button" class="segmentado__opcao" data-tema-opcao="auto" aria-pressed="false">
+                      <span data-icone="sistema" data-tamanho="15"></span> Auto
+                    </button>
+                  </div>
+
+                  <div class="pilha-config">
+                    <div class="linha-config">
+                      <span class="linha-config__icone" data-icone="teclado" data-tamanho="19"></span>
+                      <span class="linha-config__textos">
+                        <span class="linha-config__titulo">Atalhos de teclado</span>
+                        <span class="linha-config__descricao">N, G, C, T, F e ? aceleram o uso no desktop.</span>
+                      </span>
+                      <span class="linha-config__controle">
+                        <button type="button" id="btn-atalhos" class="botao botao--fantasma botao--pequeno">
+                          Ver atalhos
+                        </button>
+                      </span>
+                    </div>
+
+                    <div class="linha-config">
+                      <span class="linha-config__icone" data-icone="celular" data-tamanho="19"></span>
+                      <span class="linha-config__textos">
+                        <span class="linha-config__titulo">Instalar aplicativo</span>
+                        <span class="linha-config__descricao">Abre offline, em janela própria, como um app nativo.</span>
+                      </span>
+                      <span class="linha-config__controle">
+                        <button type="button" id="btn-instalar" class="botao botao--secundario botao--pequeno" hidden>
+                          Instalar
+                        </button>
+                        <span id="instalar-indisponivel" class="linha-config__descricao">Já instalado ou indisponível</span>
+                      </span>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="cartao" aria-labelledby="titulo-dados">
+                  <header class="cartao__cabecalho">
+                    <div>
+                      <h3 id="titulo-dados" class="cartao__titulo">Seus dados</h3>
+                      <p class="cartao__descricao">
+                        Tudo vive neste navegador. Exporte para migrar de máquina ou guardar uma cópia.
+                      </p>
+                    </div>
+                  </header>
+
+                  <div class="barra-acoes">
+                    <button type="button" id="btn-exportar-dados" class="botao botao--fantasma botao--pequeno">
+                      <span data-icone="baixar" data-tamanho="16"></span> Exportar JSON
+                    </button>
+                    <button type="button" id="btn-importar-dados" class="botao botao--fantasma botao--pequeno">
+                      <span data-icone="enviar" data-tamanho="16"></span> Importar JSON
+                    </button>
+                    <input type="file" id="arquivo-importacao" accept="application/json,.json" hidden />
+                  </div>
+
+                  <div class="pilha-config">
+                    <div class="linha-config">
+                      <span class="linha-config__icone" data-icone="usuario" data-tamanho="19"></span>
+                      <span class="linha-config__textos">
+                        <span class="linha-config__titulo">Trocar de perfil</span>
+                        <span class="linha-config__descricao">
+                          Seus dados continuam salvos e voltam ao entrar com o mesmo nome.
+                        </span>
+                      </span>
+                      <span class="linha-config__controle">
+                        <button
+                          type="button"
+                          id="btn-trocar-perfil"
+                          class="botao botao--fantasma botao--pequeno botao--perigo-suave"
+                        >
+                          Trocar
+                        </button>
+                      </span>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="cartao cartao--largo" aria-labelledby="titulo-sobre">
+                  <header class="cartao__cabecalho">
+                    <div>
+                      <h3 id="titulo-sobre" class="cartao__titulo">Sobre</h3>
+                      <p class="cartao__descricao">Manual completo, código-fonte e privacidade.</p>
+                    </div>
+                  </header>
+
+                  <div class="pilha-config">
+                    <div class="linha-config">
+                      <span class="linha-config__icone" data-icone="livro-aberto" data-tamanho="19"></span>
+                      <span class="linha-config__textos">
+                        <span class="linha-config__titulo">Manual do Chronos Ultra</span>
+                        <span class="linha-config__descricao">Guia de cada tela, campo e da matemática do motor.</span>
+                      </span>
+                      <span class="linha-config__controle">
+                        <a
+                          class="botao botao--fantasma botao--pequeno"
+                          href="texto/texto.html"
+                          target="_blank"
+                          rel="noopener"
+                        >
+                          Abrir manual
+                        </a>
+                      </span>
+                    </div>
+
+                    <div class="linha-config">
+                      <span class="linha-config__icone" data-icone="cadeado" data-tamanho="19"></span>
+                      <span class="linha-config__textos">
+                        <span class="linha-config__titulo">Privacidade</span>
+                        <span class="linha-config__descricao">
+                          Nenhum dado sai do seu navegador: sem contas, sem servidores, sem rastreio.
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </section>
+              </div>
             </div>
-          </header>
+          </section>
 
-          <div class="agenda-controles">
-            <div class="campo campo--inline">
-              <label for="data-agenda">Planejar o dia</label>
-              <input type="date" id="data-agenda" />
+          <!-- ==========================================================
+               TELA 7 — Calendário
+               ========================================================== -->
+          <section id="tela-calendario" class="tela" hidden>
+            <div class="pagina">
+              <div class="pagina__cabecalho">
+                <div>
+                  <h2 class="pagina__titulo">Calendário</h2>
+                  <p class="pagina__descricao">Feriados nacionais e todas as agendas que você já gerou.</p>
+                </div>
+                <div class="pagina__acoes">
+                  <button type="button" id="btn-hoje" class="botao botao--fantasma" title="Ir para hoje">
+                    <span data-icone="pino" data-tamanho="17"></span>
+                    <span class="botao__texto">Hoje</span>
+                  </button>
+                  <button type="button" id="btn-voltar-painel" class="botao botao--secundario" title="Voltar ao painel">
+                    <span data-icone="seta-esquerda" data-tamanho="17"></span>
+                    <span class="botao__texto">Voltar ao painel</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="calendario">
+                <aside class="calendario__lateral" aria-label="Controles do calendário">
+                  <div class="grupo-visoes" role="group" aria-label="Modo de exibição">
+                    <button type="button" class="botao botao--aba ativo" data-visao="mes" aria-pressed="true">Mês</button>
+                    <button type="button" class="botao botao--aba" data-visao="semana" aria-pressed="false">Semana</button>
+                    <button type="button" class="botao botao--aba" data-visao="dia" aria-pressed="false">Dia</button>
+                  </div>
+
+                  <div class="navegacao-periodo">
+                    <button
+                      type="button"
+                      id="btn-periodo-anterior"
+                      class="botao botao--icone botao--fantasma"
+                      aria-label="Período anterior"
+                    >
+                      <span data-icone="chevron-esquerda" data-tamanho="18"></span>
+                    </button>
+                    <strong id="rotulo-periodo" class="navegacao-periodo__rotulo">—</strong>
+                    <button
+                      type="button"
+                      id="btn-periodo-proximo"
+                      class="botao botao--icone botao--fantasma"
+                      aria-label="Próximo período"
+                    >
+                      <span data-icone="chevron-direita" data-tamanho="18"></span>
+                    </button>
+                  </div>
+
+                  <div class="bloco-lateral">
+                    <h3 class="bloco-lateral__titulo">Feriados do mês</h3>
+                    <ul id="lista-feriados" class="lista-feriados"></ul>
+                  </div>
+                </aside>
+
+                <div id="calendario-conteudo" class="calendario__conteudo"></div>
+              </div>
             </div>
-            <button type="button" id="btn-gerar-agenda" class="botao botao--primario botao--destaque">
-              <span aria-hidden="true">⚡</span> Gerar horários perfeitos
-            </button>
-          </div>
+          </section>
+        </main>
 
-          <section id="painel-agora" class="agora" aria-live="polite" aria-label="Bloco atual" hidden></section>
+        <footer class="rodape">
+          <p>
+            © <span id="ano-atual">2026</span> · Chronos Ultra — criado por
+            <a href="https://github.com/SchwanckB" target="_blank" rel="noopener">Bernardo Schwanck</a>
+          </p>
+          <p class="rodape__atalhos">
+            Atalhos: <kbd>N</kbd> nova tarefa · <kbd>G</kbd> gerar agenda · <kbd>C</kbd> calendário
+          </p>
+        </footer>
+      </div>
 
-          <div id="indicadores" class="indicadores" hidden></div>
-
-          <div id="resultado-agenda" class="resultado-agenda" aria-live="polite"></div>
-
-          <div class="barra-acoes barra-acoes--exportar">
-            <button type="button" id="btn-whatsapp" class="botao botao--whatsapp botao--pequeno" data-requer-agenda disabled>
-              <span aria-hidden="true">📱</span> WhatsApp
-            </button>
-            <button type="button" id="btn-copiar" class="botao botao--fantasma botao--pequeno" data-requer-agenda disabled>
-              <span aria-hidden="true">📋</span> Copiar
-            </button>
-            <button type="button" id="btn-ics" class="botao botao--fantasma botao--pequeno" data-requer-agenda disabled>
-              <span aria-hidden="true">📅</span> Exportar .ics
-            </button>
-            <button type="button" id="btn-duplicar" class="botao botao--fantasma botao--pequeno" data-requer-agenda disabled>
-              <span aria-hidden="true">📄</span> Duplicar para…
-            </button>
-          </div>
-        </section>
-      </main>
-    </section>
-
-    <!-- ==================================================================
-         Tela 3 — Calendário
-         ================================================================== -->
-    <section id="tela-calendario" class="tela" hidden>
-      <header class="cabecalho">
-        <div class="cabecalho__interno">
-          <div class="cabecalho__identidade">
-            <span class="avatar avatar--icone" aria-hidden="true">🗓️</span>
-            <div class="cabecalho__textos">
-              <h1 class="cabecalho__titulo">Calendário</h1>
-              <p class="cabecalho__legenda">Feriados nacionais e todas as agendas que você já gerou.</p>
-            </div>
-          </div>
-          <nav class="cabecalho__acoes" aria-label="Navegação do calendário">
-            <button type="button" id="btn-hoje" class="botao botao--fantasma" title="Ir para hoje">
-              <span aria-hidden="true">📍</span>
-              <span class="botao__texto">Hoje</span>
-            </button>
-            <button type="button" id="btn-voltar-painel" class="botao botao--secundario" title="Voltar ao painel">
-              <span aria-hidden="true">←</span>
-              <span class="botao__texto">Voltar ao painel</span>
-            </button>
-          </nav>
-        </div>
-      </header>
-
-      <main class="calendario">
-        <aside class="calendario__lateral" aria-label="Controles do calendário">
-          <div class="grupo-visoes" role="group" aria-label="Modo de exibição">
-            <button type="button" class="botao botao--aba ativo" data-visao="mes" aria-pressed="true">Mês</button>
-            <button type="button" class="botao botao--aba" data-visao="semana" aria-pressed="false">Semana</button>
-            <button type="button" class="botao botao--aba" data-visao="dia" aria-pressed="false">Dia</button>
-          </div>
-
-          <div class="navegacao-periodo">
-            <button type="button" id="btn-periodo-anterior" class="botao botao--icone botao--fantasma" aria-label="Período anterior">←</button>
-            <strong id="rotulo-periodo" class="navegacao-periodo__rotulo">—</strong>
-            <button type="button" id="btn-periodo-proximo" class="botao botao--icone botao--fantasma" aria-label="Próximo período">→</button>
-          </div>
-
-          <div class="bloco-lateral">
-            <h2 class="bloco-lateral__titulo">Feriados do mês</h2>
-            <ul id="lista-feriados" class="lista-feriados"></ul>
-          </div>
-        </aside>
-
-        <div id="calendario-conteudo" class="calendario__conteudo"></div>
-      </main>
-    </section>
-
-    <footer class="rodape">
-      <p>
-        © <span id="ano-atual">2026</span> · Chronos Ultra — criado por
-        <a href="https://github.com/SchwanckB" target="_blank" rel="noopener">Bernardo Schwanck</a>
-      </p>
-      <p class="rodape__atalhos">
-        Atalhos: <kbd>N</kbd> nova tarefa · <kbd>G</kbd> gerar agenda · <kbd>C</kbd> calendário
-      </p>
-    </footer>
+      <!-- ------------------------------------------- navegação (mobile) -->
+      <nav class="nav-inferior" aria-label="Navegação principal">
+        <button type="button" class="nav-inferior__item ativo" data-ir="tela-painel">
+          <span class="nav-inferior__icone" data-icone="painel" data-tamanho="20"></span>
+          <span class="nav-inferior__rotulo">Início</span>
+        </button>
+        <button type="button" class="nav-inferior__item" data-ir="tela-rotinas">
+          <span class="nav-inferior__icone" data-icone="rotinas" data-tamanho="20"></span>
+          <span class="nav-inferior__rotulo">Rotinas</span>
+        </button>
+        <button type="button" class="nav-inferior__item nav-inferior__item--destaque" data-ir="tela-foco">
+          <span class="nav-inferior__icone" data-icone="foco" data-tamanho="22"></span>
+          <span class="visualmente-oculto">Modo Foco</span>
+        </button>
+        <button type="button" class="nav-inferior__item" data-ir="tela-estatisticas">
+          <span class="nav-inferior__icone" data-icone="estatisticas" data-tamanho="20"></span>
+          <span class="nav-inferior__rotulo">Stats</span>
+        </button>
+        <button type="button" class="nav-inferior__item" data-ir="tela-configuracoes">
+          <span class="nav-inferior__icone" data-icone="configuracoes" data-tamanho="20"></span>
+          <span class="nav-inferior__rotulo">Ajustes</span>
+        </button>
+      </nav>
+    </div>
 
     <script type="module" src="js/app.js"></script>
   </body>

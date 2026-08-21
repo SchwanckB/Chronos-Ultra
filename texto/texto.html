@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap"
       rel="stylesheet"
     />
 
@@ -23,24 +23,24 @@
          ================================================================== */
       :root {
         color-scheme: dark;
-        --primaria: #6366f1;
-        --primaria-clara: #818cf8;
-        --secundaria: #ec4899;
+        --primaria: #14b8a6;
+        --primaria-clara: #5eead4;
+        --secundaria: #06b6d4;
         --sucesso: #10b981;
         --aviso: #f59e0b;
         --perigo: #ef4444;
 
-        --fundo: #0b1120;
-        --fundo-topo: #131c33;
-        --superficie: #161f36;
-        --superficie-alta: #1d2740;
-        --suave: rgba(148, 163, 184, 0.08);
-        --borda: rgba(148, 163, 184, 0.18);
-        --borda-forte: rgba(148, 163, 184, 0.32);
+        --fundo: #071a2b;
+        --fundo-topo: #0d2b42;
+        --superficie: #0e2438;
+        --superficie-alta: #143149;
+        --suave: rgba(94, 234, 212, 0.08);
+        --borda: rgba(94, 234, 212, 0.18);
+        --borda-forte: rgba(94, 234, 212, 0.32);
 
-        --texto: #eef2ff;
-        --texto-medio: #cbd5e1;
-        --texto-suave: #94a3b8;
+        --texto: #eefaf9;
+        --texto-medio: #c3dbe2;
+        --texto-suave: #8badb9;
 
         --raio: 1rem;
         --raio-sm: 0.5rem;
@@ -55,16 +55,16 @@
 
       [data-tema='claro'] {
         color-scheme: light;
-        --fundo: #f4f6fb;
-        --fundo-topo: #eef1f9;
+        --fundo: #f1f5f7;
+        --fundo-topo: #e8f2f3;
         --superficie: #ffffff;
         --superficie-alta: #ffffff;
-        --suave: rgba(15, 23, 42, 0.04);
-        --borda: rgba(15, 23, 42, 0.12);
-        --borda-forte: rgba(15, 23, 42, 0.22);
-        --texto: #0f172a;
-        --texto-medio: #334155;
-        --texto-suave: #64748b;
+        --suave: rgba(13, 148, 136, 0.06);
+        --borda: rgba(15, 43, 64, 0.12);
+        --borda-forte: rgba(15, 43, 64, 0.24);
+        --texto: #0f2b40;
+        --texto-medio: #3c5b6f;
+        --texto-suave: #64818f;
         --sombra: 0 24px 50px -34px rgba(15, 23, 42, 0.4);
       }
 
@@ -99,6 +99,9 @@
       h3,
       h4 {
         margin: 0;
+        /* mesma face de títulos do aplicativo, para o manual não parecer outro produto */
+        font-family: 'Sora', 'Inter', system-ui, sans-serif;
+        letter-spacing: -0.02em;
         line-height: 1.25;
         text-wrap: balance;
       }

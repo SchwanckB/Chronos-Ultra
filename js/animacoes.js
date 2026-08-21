@@ -105,7 +105,9 @@ export function ligarOndas(raiz = document) {
   raiz.addEventListener(
     'pointerdown',
     evento => {
-      const botao = evento.target.closest('.botao, .tarefa__check, .dia')
+      const botao = evento.target.closest(
+        '.botao, .tarefa__check, .dia, .menu__item, .nav-inferior__item, .foco-preset, .fila-foco__item'
+      )
       if (!botao || botao.disabled || prefereMenosMovimento()) return
 
       const caixa = botao.getBoundingClientRect()
@@ -164,7 +166,15 @@ export function transicionar(mudanca) {
     mudanca()
     return
   }
-  document.startViewTransition(mudanca)
+
+  const transicao = document.startViewTransition(mudanca)
+
+  // Trocar de tela antes da anterior terminar é normal — o navegador descarta
+  // a transição antiga e rejeita estas promessas com AbortError. Sem um
+  // `catch`, cada troca rápida vira um "unhandled rejection" no console.
+  transicao.ready?.catch(() => {})
+  transicao.finished?.catch(() => {})
+  transicao.updateCallbackDone?.catch(() => {})
 }
 
 /**

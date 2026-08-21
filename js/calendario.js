@@ -7,6 +7,7 @@
  */
 
 import { escaparHTML } from './componentes.js'
+import { icone } from './icones.js'
 import { formatarHora, formatarDuracao } from './algoritmo.js'
 
 const NOMES_DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
@@ -130,7 +131,7 @@ function cartaoEvento(evento) {
   return `
     <article class="evento ${classe}">
       <span class="evento__faixa">${faixa}</span>
-      <h4 class="evento__titulo">${evento.icone ? `${evento.icone} ` : ''}${escaparHTML(evento.titulo)}</h4>
+      <h4 class="evento__titulo">${evento.simbolo ? `${icone(evento.simbolo, { tamanho: 14 })} ` : ''}${escaparHTML(evento.titulo)}</h4>
       <p class="evento__detalhe">${detalhe}</p>
     </article>`
 }

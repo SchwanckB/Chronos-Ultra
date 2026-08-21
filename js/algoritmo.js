@@ -16,10 +16,10 @@ export const MINUTOS_DIA = 1440
 const BLOCO_MINIMO = 10
 
 export const CRONOTIPOS = [
-  { id: 'matutino', rotulo: 'Matutino', descricao: 'Acordo cedo e rendo de manhã', icone: '🌅', picoHora: 9.5 },
-  { id: 'intermediario', rotulo: 'Intermediário', descricao: 'Meu pico é perto do meio-dia', icone: '☀️', picoHora: 11.5 },
-  { id: 'vespertino', rotulo: 'Vespertino', descricao: 'Engreno mesmo à tarde', icone: '🌇', picoHora: 15 },
-  { id: 'noturno', rotulo: 'Noturno', descricao: 'Produzo melhor à noite', icone: '🌙', picoHora: 19 }
+  { id: 'matutino', rotulo: 'Matutino', descricao: 'Acordo cedo e rendo de manhã', icone: '🌅', simbolo: 'amanhecer', picoHora: 9.5 },
+  { id: 'intermediario', rotulo: 'Intermediário', descricao: 'Meu pico é perto do meio-dia', icone: '☀️', simbolo: 'sol', picoHora: 11.5 },
+  { id: 'vespertino', rotulo: 'Vespertino', descricao: 'Engreno mesmo à tarde', icone: '🌇', simbolo: 'entardecer', picoHora: 15 },
+  { id: 'noturno', rotulo: 'Noturno', descricao: 'Produzo melhor à noite', icone: '🌙', simbolo: 'lua', picoHora: 19 }
 ]
 
 export function obterCronotipo(id) {
@@ -275,15 +275,15 @@ export function explicarEncaixe(detalhe) {
 function definirPausa({ continuos, perfil, trocaDeTarefa }) {
   const curta = perfil.pausaCurta
   if (continuos >= perfil.focoMaximo * 2.5) {
-    return { duracao: Math.max(30, curta * 3), tipo: 'Descanso profundo', icone: '🛌', motivo: 'Você acumulou muito tempo em foco — o corpo precisa reiniciar.' }
+    return { duracao: Math.max(30, curta * 3), tipo: 'Descanso profundo', icone: '🛌', simbolo: 'descanso', motivo: 'Você acumulou muito tempo em foco — o corpo precisa reiniciar.' }
   }
   if (continuos >= perfil.focoMaximo * 1.5) {
-    return { duracao: Math.max(20, curta * 2), tipo: 'Descanso recuperador', icone: '🌿', motivo: 'Recuperação proporcional ao esforço já realizado.' }
+    return { duracao: Math.max(20, curta * 2), tipo: 'Descanso recuperador', icone: '🌿', simbolo: 'folha', motivo: 'Recuperação proporcional ao esforço já realizado.' }
   }
   if (trocaDeTarefa) {
-    return { duracao: curta + 5, tipo: 'Troca de contexto', icone: '☕', motivo: 'Tarefa concluída. Feche o ciclo antes de começar a próxima.' }
+    return { duracao: curta + 5, tipo: 'Troca de contexto', icone: '☕', simbolo: 'cafe', motivo: 'Tarefa concluída. Feche o ciclo antes de começar a próxima.' }
   }
-  return { duracao: curta, tipo: 'Pausa de foco', icone: '💧', motivo: 'Respiro curto para sustentar a atenção no próximo bloco.' }
+  return { duracao: curta, tipo: 'Pausa de foco', icone: '💧', simbolo: 'gota', motivo: 'Respiro curto para sustentar a atenção no próximo bloco.' }
 }
 
 /* -------------------------------------------------------------------------
@@ -322,6 +322,7 @@ export function gerarAgenda({ tarefas = [], janela, limiteMinutos, perfil, refer
         titulo: bloco.descricao,
         descricao: 'Tempo bloqueado na sua janela.',
         icone: '⏸️',
+        simbolo: 'pausado',
         inicioMinutos: bloco.inicioMinutos,
         fimMinutos: bloco.fimMinutos,
         duracao: bloco.fimMinutos - bloco.inicioMinutos
@@ -419,6 +420,7 @@ export function gerarAgenda({ tarefas = [], janela, limiteMinutos, perfil, refer
         titulo: pausa.tipo,
         descricao: pausa.motivo,
         icone: pausa.icone,
+        simbolo: pausa.simbolo,
         inicioMinutos: cursor,
         fimMinutos: cursor + pausa.duracao,
         duracao: pausa.duracao

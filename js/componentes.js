@@ -5,6 +5,8 @@
  * Substituem `alert`/`confirm`/`prompt`, que travam a página e não têm estilo.
  */
 
+import { icone } from './icones.js'
+
 const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 
 /** Sempre use ao interpolar texto do usuário dentro de `innerHTML`. */
@@ -29,7 +31,7 @@ export function criarElemento(tag, { classe, texto, html, atributos } = {}) {
    Avisos
    ------------------------------------------------------------------------- */
 
-const ICONES = { sucesso: '✅', erro: '⚠️', info: 'ℹ️', foco: '🎯' }
+const ICONES = { sucesso: 'sucesso', erro: 'alerta', info: 'info', foco: 'alvo' }
 let pilhaAvisos = null
 
 function obterPilha() {
@@ -51,7 +53,9 @@ export function notificar(mensagem, opcoes = {}) {
   const pilha = obterPilha()
 
   const aviso = criarElemento('div', { classe: `aviso aviso--${tipo}` })
-  aviso.appendChild(criarElemento('span', { classe: 'aviso__icone', texto: ICONES[tipo] || ICONES.info }))
+  aviso.appendChild(
+    criarElemento('span', { classe: 'aviso__icone', html: icone(ICONES[tipo] || ICONES.info, { tamanho: 17 }) })
+  )
   aviso.appendChild(criarElemento('p', { classe: 'aviso__texto', texto: mensagem }))
 
   const fechar = () => {
@@ -75,7 +79,7 @@ export function notificar(mensagem, opcoes = {}) {
 
   const botaoFechar = criarElemento('button', {
     classe: 'aviso__fechar',
-    texto: '×',
+    html: icone('x', { tamanho: 15 }),
     atributos: { type: 'button', 'aria-label': 'Fechar aviso' }
   })
   botaoFechar.addEventListener('click', fechar)
@@ -105,7 +109,7 @@ function montarDialogo({ titulo, descricao, largura }) {
 
   const fechar = criarElemento('button', {
     classe: 'dialogo__fechar',
-    texto: '×',
+    html: icone('x', { tamanho: 18 }),
     atributos: { type: 'button', 'aria-label': 'Fechar' }
   })
   cabecalho.appendChild(fechar)
@@ -118,7 +122,12 @@ function exibir(dialogo) {
   document.body.appendChild(dialogo)
   if (typeof dialogo.showModal === 'function') dialogo.showModal()
   else dialogo.setAttribute('open', '')
-  requestAnimationFrame(() => dialogo.classList.add('dialogo--visivel'))
+
+  // Forçar o layout fixa o estado inicial da transição e só então trocamos a
+  // classe. Um `requestAnimationFrame` faria o mesmo, mas não é entregue em
+  // aba de segundo plano — e o diálogo ficaria invisível, ainda que aberto.
+  void dialogo.offsetWidth
+  dialogo.classList.add('dialogo--visivel')
 }
 
 function encerrar(dialogo, resolver, valor) {
