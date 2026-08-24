@@ -76,7 +76,13 @@ export function obterEnergia(hora, perfil) {
   const circadiano = 40 * Math.cos((fase * Math.PI) / 12)
   const vale = -18 * Math.exp(-Math.pow(fase - 3.4, 2) / 2)
   const rebote = 12 * Math.exp(-Math.pow(fase - 5.5, 2) / 1.5)
-  return limitar(Math.round(50 + circadiano + vale + rebote), 3, 100)
+
+  // Correção aprendida com as sessões reais (ver calibragem.js). O modelo
+  // circadiano é um palpite a partir do cronotipo declarado; esta parcela deixa
+  // a evidência de uso ter voz sem substituir a teoria.
+  const correcao = typeof perfil?.corrigirEnergia === 'function' ? perfil.corrigirEnergia(h) : 0
+
+  return limitar(Math.round(50 + circadiano + vale + rebote + correcao), 3, 100)
 }
 
 export function classificarEnergia(valor) {
@@ -396,6 +402,10 @@ export function gerarAgenda({ tarefas = [], janela, limiteMinutos, perfil, refer
         energia,
         energiaClasse: classificarEnergia(energia).classe,
         motivo: explicarEncaixe(detalhe),
+        /* correção aprendida, quando houve — a interface usa para explicar
+           por que o bloco ficou maior do que o usuário digitou */
+        desvioCalibragem: tarefa.desvioCalibragem ?? null,
+        tempoDeclarado: tarefa.tempoDeclarado ?? null,
         score: Number(detalhe.total.toFixed(3))
       })
 

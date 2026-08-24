@@ -1,0 +1,14 @@
+# dependências
+node_modules/
+
+# build
+dist/
+
+# ambiente — nunca versionar
+.env
+.env.local
+.env.*.local
+
+# sistema
+.DS_Store
+Thumbs.db

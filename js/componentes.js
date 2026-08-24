@@ -316,6 +316,69 @@ export function abrirFormulario({
   })
 }
 
+/**
+ * Pergunta rápida de qualidade ao fim de um bloco de foco.
+ *
+ * É deliberadamente de UM toque: três botões, sem campo de texto, sem etapa de
+ * confirmação. Fechar sem responder é uma resposta válida (`null`) — feedback
+ * obrigatório vira ruído, porque o usuário clica em qualquer coisa para se
+ * livrar do diálogo.
+ *
+ * @param {object} opcoes
+ * @param {string} opcoes.titulo nome do bloco concluído
+ * @param {number} [opcoes.minutos] tempo real de foco
+ * @returns {Promise<'bom'|'medio'|'ruim'|null>}
+ */
+export function perguntarFeedback({ titulo, minutos } = {}) {
+  return new Promise(resolver => {
+    const { dialogo, botaoFechar } = montarDialogo({
+      titulo: 'Como foi esse bloco?',
+      descricao: minutos
+        ? `${titulo} — ${minutos} min de foco. Sua resposta afina as próximas sugestões.`
+        : `${titulo}. Sua resposta afina as próximas sugestões.`,
+      largura: '25rem'
+    })
+
+    const OPCOES = [
+      { valor: 'bom', rotulo: 'Rendeu bem', icone: 'sucesso', classe: 'feedback--bom' },
+      { valor: 'medio', rotulo: 'Mediano', icone: 'medidor', classe: 'feedback--medio' },
+      { valor: 'ruim', rotulo: 'Custou', icone: 'alerta', classe: 'feedback--ruim' }
+    ]
+
+    const grupo = criarElemento('div', { classe: 'feedback', atributos: { role: 'group' } })
+
+    OPCOES.forEach(opcao => {
+      const botao = criarElemento('button', {
+        classe: `feedback__opcao ${opcao.classe}`,
+        html: `${icone(opcao.icone, { tamanho: 22 })}<span>${opcao.rotulo}</span>`,
+        atributos: { type: 'button' }
+      })
+      botao.addEventListener('click', () => encerrar(dialogo, resolver, opcao.valor))
+      grupo.appendChild(botao)
+    })
+
+    const pular = criarElemento('button', {
+      classe: 'feedback__pular',
+      texto: 'Agora não',
+      atributos: { type: 'button' }
+    })
+    pular.addEventListener('click', () => encerrar(dialogo, resolver, null))
+
+    botaoFechar.addEventListener('click', () => encerrar(dialogo, resolver, null))
+    dialogo.addEventListener('cancel', evento => {
+      evento.preventDefault()
+      encerrar(dialogo, resolver, null)
+    })
+
+    const corpo = criarElemento('div', { classe: 'dialogo__corpo' })
+    corpo.append(grupo, pular)
+    dialogo.appendChild(corpo)
+
+    exibir(dialogo)
+    grupo.firstElementChild?.focus()
+  })
+}
+
 /** Copia texto para a área de transferência com fallback para navegadores antigos. */
 export async function copiarTexto(texto) {
   try {

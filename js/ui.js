@@ -365,7 +365,18 @@ export function mostrarSugestao(sugestao) {
     return
   }
   campo.hidden = false
-  campo.textContent = `Baseado em ${sugestao.amostras} registro${sugestao.amostras > 1 ? 's' : ''}: peso ${sugestao.peso}, ${sugestao.tempo} min.`
+
+  const base = `Baseado em ${sugestao.amostras} registro${sugestao.amostras > 1 ? 's' : ''}: peso ${sugestao.peso}, ${sugestao.tempo} min.`
+  const cal = sugestao.calibragem
+
+  // Quando a calibragem alterou o número, o usuário precisa saber por quê —
+  // um valor que muda sozinho sem explicação corrói a confiança na ferramenta.
+  campo.innerHTML =
+    cal && cal.ajustado
+      ? `${escaparHTML(base)} <span class="sugestao__ajuste">${icone('medidor', { tamanho: 12 })} ajustado ${
+          cal.desvio > 0 ? '+' : ''
+        }${cal.desvio}% pelo seu histórico real</span>`
+      : escaparHTML(base)
 }
 
 /* ---------------------------------------------------------- interrupções -- */
@@ -417,6 +428,13 @@ function blocoTarefa(evento, indice) {
           <span class="bloco__energia" title="${energia.rotulo}">
             ${icone('raio', { tamanho: 14 })} ${evento.energia}%
           </span>
+          ${
+            evento.desvioCalibragem
+              ? `<span class="bloco__calibrado" title="Ajustado pelo seu histórico real: você estimou ${evento.tempoDeclarado} min">
+                   ${icone('medidor', { tamanho: 14 })} ${evento.desvioCalibragem > 0 ? '+' : ''}${evento.desvioCalibragem}% calibrado
+                 </span>`
+              : ''
+          }
         </p>
         <p class="bloco__motivo">${escaparHTML(evento.motivo || '')}</p>
       </div>
@@ -878,6 +896,74 @@ export function renderizarSessaoFoco(sessao, { minutosPadrao = 25, tituloPadrao 
     }
   }
   if (botaoEncerrar) botaoEncerrar.hidden = !ativo
+}
+
+/* ============================================================ calibragem ==
+   O que o app aprendeu com as sessões reais. Sem isto a recalibração seria
+   invisível — e correção invisível é indistinguível de bug.
+   ========================================================================= */
+
+/**
+ * @param {object} resumo saída de `calibragem.resumoDeAprendizado`
+ */
+export function renderizarAprendizado(resumo) {
+  const container = $('#painel-aprendizado')
+  if (!container || !resumo) return
+
+  if (resumo.faltamParaCalibrar > 0) {
+    container.innerHTML = `
+      <div class="aprendizado__vazio">
+        ${icone('medidor', { tamanho: 26 })}
+        <p>
+          Faltam <strong>${resumo.faltamParaCalibrar} sessão(ões) de foco</strong> para o app
+          começar a corrigir as estimativas com o seu histórico real.
+        </p>
+        <small>${resumo.sessoes} de 3 registradas até agora.</small>
+      </div>`
+    return
+  }
+
+  const precisao =
+    resumo.precisao === null
+      ? ''
+      : `<div class="aprendizado__precisao">
+           <strong>${Math.max(0, resumo.precisao)}%</strong>
+           <span>de precisão nas suas estimativas</span>
+         </div>`
+
+  const categorias = resumo.porCategoria.length
+    ? `<ul class="aprendizado__lista">
+        ${resumo.porCategoria
+          .map(
+            c => `<li class="aprendizado__item ${c.desvio > 0 ? 'excede' : c.desvio < 0 ? 'sobra' : ''}">
+                    <span class="aprendizado__rotulo">${escaparHTML(c.rotulo)}</span>
+                    <span class="aprendizado__texto">${escaparHTML(c.texto)}</span>
+                    <span class="aprendizado__amostras">${c.amostras} sessões</span>
+                  </li>`
+          )
+          .join('')}
+      </ul>`
+    : '<p class="aprendizado__nota">Ainda sem padrão por categoria.</p>'
+
+  const horas = []
+  if (resumo.melhorHora) {
+    horas.push(
+      `Você rende acima do previsto por volta das <strong>${String(resumo.melhorHora.hora).padStart(2, '0')}h</strong>.`
+    )
+  }
+  if (resumo.piorHora) {
+    horas.push(
+      `Às <strong>${String(resumo.piorHora.hora).padStart(2, '0')}h</strong> seu rendimento fica abaixo do que o modelo previa.`
+    )
+  }
+
+  container.innerHTML = `
+    ${precisao}
+    ${categorias}
+    ${horas.length ? `<p class="aprendizado__nota">${horas.join(' ')} A curva de energia já foi ajustada.</p>` : ''}
+    <small class="aprendizado__rodape">
+      Baseado em ${resumo.sessoes} sessão(ões) reais${resumo.comFeedback ? `, ${resumo.comFeedback} com avaliação` : ''}.
+    </small>`
 }
 
 /** Contador do sino no topo — quantas tarefas ainda estão pendentes. */

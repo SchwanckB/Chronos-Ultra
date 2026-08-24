@@ -6,11 +6,12 @@
  * versões antigas (`chronos-<slug>`) são migrados na primeira leitura.
  */
 
-const VERSAO = 3
+const VERSAO = 4
 const PREFIXO = 'chronos:perfil:'
 const CHAVE_INDICE = 'chronos:perfis'
 const CHAVE_ULTIMO = 'chronos:ultimo-perfil'
 const CHAVE_TEMA = 'chronos:tema'
+const CHAVE_BACKUP = 'chronos:ultimo-backup'
 
 export function gerarChave(nome) {
   return (nome || '')
@@ -77,11 +78,13 @@ export function documentoVazio(nome = '') {
     tarefas: [],
     agendas: {},
     historico: [],
+    /* v4 — sessões de foco reais: base da recalibração automática */
+    sessoes: [],
     atualizadoEm: null
   }
 }
 
-/** Converte documentos das versões 1 e 2 para o formato atual. */
+/** Converte documentos das versões anteriores para o formato atual. */
 function migrar(dados, nome) {
   const base = documentoVazio(nome)
   if (!dados || typeof dados !== 'object') return base
@@ -110,6 +113,7 @@ function migrar(dados, nome) {
         : [],
     agendas: dados.agendas && typeof dados.agendas === 'object' ? dados.agendas : {},
     historico: Array.isArray(dados.historico) ? dados.historico : [],
+    sessoes: Array.isArray(dados.sessoes) ? dados.sessoes : [],
     atualizadoEm: dados.atualizadoEm || null
   }
 }
@@ -189,4 +193,13 @@ export function lerTema() {
 
 export function salvarTema(tema) {
   escrever(CHAVE_TEMA, tema)
+}
+
+/** Quando o usuário exportou o backup pela última vez (epoch em ms). */
+export function lerMarcaBackup() {
+  return ler(CHAVE_BACKUP)
+}
+
+export function salvarMarcaBackup(quando) {
+  escrever(CHAVE_BACKUP, quando)
 }

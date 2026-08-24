@@ -45,9 +45,9 @@ export function renderizarEnergia(perfil, janela = null, eventos = []) {
   if (!canvas || !temChart()) return
 
   const passos = Array.from({ length: 49 }, (_, i) => i / 2) // 30 em 30 minutos
-  const primaria = cor('--cor-primaria', '#14b8a6')
-  const texto = cor('--cor-texto-suave', '#8badb9')
-  const grade = cor('--cor-grade', 'rgba(94,234,212,0.14)')
+  const primaria = cor('--cor-primaria', '#18d8f0')
+  const texto = cor('--cor-texto-suave', '#8592a0')
+  const grade = cor('--cor-grade', 'rgba(148,176,194,0.12)')
 
   const dentroDaJanela = hora => {
     if (!janela) return true
@@ -123,9 +123,9 @@ export function renderizarDistribuicao(stats) {
   if (!canvas || !temChart()) return
 
   const dados = [
-    { rotulo: 'Trabalho', valor: stats.trabalhados, cor: cor('--cor-primaria', '#14b8a6') },
+    { rotulo: 'Trabalho', valor: stats.trabalhados, cor: cor('--cor-primaria', '#18d8f0') },
     { rotulo: 'Pausas', valor: stats.minutosPausa, cor: cor('--cor-aviso', '#f59e0b') },
-    { rotulo: 'Compromissos', valor: stats.minutosInterrupcao, cor: cor('--cor-secundaria', '#06b6d4') },
+    { rotulo: 'Compromissos', valor: stats.minutosInterrupcao, cor: cor('--cor-secundaria', '#7c8cff') },
     { rotulo: 'Tempo livre', valor: stats.minutosLivres, cor: cor('--cor-sucesso', '#10b981') }
   ].filter(item => item.valor > 0)
 
@@ -138,7 +138,7 @@ export function renderizarDistribuicao(stats) {
       datasets: [
         {
           data: vazio ? [1] : dados.map(d => d.valor),
-          backgroundColor: vazio ? [cor('--cor-borda', '#1e3a52')] : dados.map(d => d.cor),
+          backgroundColor: vazio ? [cor('--cor-borda', '#1e2530')] : dados.map(d => d.cor),
           borderWidth: 0,
           hoverOffset: 6
         }
@@ -153,7 +153,7 @@ export function renderizarDistribuicao(stats) {
         legend: {
           position: 'bottom',
           labels: {
-            color: cor('--cor-texto-suave', '#8badb9'),
+            color: cor('--cor-texto-suave', '#8592a0'),
             boxWidth: 10,
             boxHeight: 10,
             usePointStyle: true,
@@ -203,9 +203,9 @@ export function renderizarSemana(agendas = {}) {
     return
   }
 
-  const primaria = cor('--cor-primaria', '#14b8a6')
+  const primaria = cor('--cor-primaria', '#18d8f0')
   const sucesso = cor('--cor-sucesso', '#10b981')
-  const texto = cor('--cor-texto-suave', '#8badb9')
+  const texto = cor('--cor-texto-suave', '#8592a0')
 
   graficoSemana = destruir(graficoSemana)
   graficoSemana = new window.Chart(canvas.getContext('2d'), {
@@ -297,10 +297,10 @@ export function renderizarCategorias(tarefas = [], categorias = []) {
     return
   }
 
-  const primaria = cor('--cor-primaria', '#14b8a6')
-  const secundaria = cor('--cor-secundaria', '#06b6d4')
-  const texto = cor('--cor-texto-suave', '#8badb9')
-  const grade = cor('--cor-grade', 'rgba(94,234,212,0.14)')
+  const primaria = cor('--cor-primaria', '#18d8f0')
+  const secundaria = cor('--cor-secundaria', '#7c8cff')
+  const texto = cor('--cor-texto-suave', '#8592a0')
+  const grade = cor('--cor-grade', 'rgba(148,176,194,0.12)')
 
   // degradê da marca distribuído entre as barras, da mais longa para a menor
   const mistura = (indice, total) => {

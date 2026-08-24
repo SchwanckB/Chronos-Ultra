@@ -17,12 +17,14 @@ import * as graficos from './graficos.js'
 import * as foco from './foco.js'
 import * as agora from './agora.js'
 import * as anim from './animacoes.js'
+import * as calibragem from './calibragem.js'
 import { icone, aplicarIcones } from './icones.js'
 import {
   notificar,
   confirmar,
   abrirFormulario,
   abrirPainel,
+  perguntarFeedback,
   copiarTexto,
   baixarArquivo,
   escaparHTML
@@ -46,6 +48,8 @@ const estado = {
   configuracoes: { ...CONFIG_PADRAO },
   agendas: {},
   historico: [],
+  /* v4 — sessões de foco reais, insumo da recalibração */
+  sessoes: [],
   agendaAtual: null,
   dataAgenda: calendario.chaveData(new Date()),
   filtros: { ...FILTROS_PADRAO },
@@ -59,6 +63,20 @@ const estado = {
 /** Único ponto de redesenho da lista, para os filtros valerem em toda ação. */
 function renderizarLista() {
   ui.renderizarListaTarefas(tarefas.listaTarefas, estado.filtros)
+}
+
+/**
+ * Monta o perfil biológico já com a correção aprendida acoplada.
+ *
+ * Precisa ser refeito sempre que o perfil OU as sessões mudarem — é o ponto em
+ * que a evidência de uso entra na curva de energia usada pelo agendador.
+ */
+function reconstruirBio() {
+  estado.bio = {
+    ...alg.montarPerfilBiologico(estado.perfil),
+    corrigirEnergia: calibragem.montarCorrecaoDeEnergia(estado.sessoes)
+  }
+  return estado.bio
 }
 
 /** Agenda de hoje, se houver — alimenta o painel "Agora". */
@@ -93,7 +111,8 @@ function salvar({ imediato = false } = {}) {
       configuracoes: estado.configuracoes,
       tarefas: tarefas.listaTarefas,
       agendas: estado.agendas,
-      historico: estado.historico
+      historico: estado.historico,
+      sessoes: estado.sessoes
     })
   }
   if (imediato) gravar()
@@ -188,7 +207,31 @@ function atualizarPaineisDerivados(agenda = estado.agendaAtual) {
   ui.renderizarAgendaDoDia(agenda)
   ui.renderizarFilaFoco(doDia || agenda)
   ui.renderizarTotais({ agendas: estado.agendas, estatisticasTarefas: stats, bio: estado.bio })
-  ui.atualizarContadorAvisos(stats.ativas)
+  ui.renderizarAprendizado(calibragem.resumoDeAprendizado(estado.sessoes, tarefas.CATEGORIAS))
+  ui.atualizarContadorAvisos(contarAlertas(agenda))
+  avaliarLembreteDeBackup()
+}
+
+/**
+ * Quantos ALERTAS reais existem — o número do sino.
+ *
+ * Antes ele mostrava o total de tarefas pendentes, então subia a cada tarefa
+ * cadastrada e nunca descia: virava ruído permanente em vez de sinal. Agora só
+ * conta o que pede uma ação do usuário HOJE.
+ */
+function contarAlertas(agenda = estado.agendaAtual) {
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+
+  const atrasadas = tarefas.listaTarefas.filter(t => {
+    if (t.concluida || !t.prazo) return false
+    return new Date(`${t.prazo}T23:59:59`) < hoje
+  }).length
+
+  const naoCoube = agenda?.stats?.naoAgendadas || 0
+  const semAgenda = tarefas.filtrarAtivas().length && !agendaDeHoje() ? 1 : 0
+
+  return atrasadas + naoCoube + semAgenda
 }
 
 function atualizarAvisoJanela(janela) {
@@ -239,15 +282,19 @@ function entrarNoSistema(evento) {
   const documento = storage.carregarDocumento(nome) || storage.documentoVazio(nome)
 
   estado.perfil = { nome, idade, cronotipo }
-  estado.bio = alg.montarPerfilBiologico({ idade, cronotipo })
   estado.configuracoes = { ...CONFIG_PADRAO, ...documento.configuracoes }
   estado.configuracoes.interrupcoes = Array.isArray(documento.configuracoes?.interrupcoes)
     ? documento.configuracoes.interrupcoes
     : []
   estado.agendas = documento.agendas || {}
   estado.historico = documento.historico || []
+  estado.sessoes = Array.isArray(documento.sessoes) ? documento.sessoes : []
   estado.agendaAtual = null
   estado.autenticado = true
+
+  // Só agora: a correção da curva é derivada das sessões, que acabaram de ser
+  // carregadas. Chamar antes disso montaria um perfil sem nenhum aprendizado.
+  reconstruirBio()
 
   tarefas.definirLista(documento.tarefas || [])
 
@@ -290,6 +337,7 @@ async function trocarPerfil() {
   estado.perfil = { nome: '', idade: 0, cronotipo: 'intermediario' }
   estado.configuracoes = { ...CONFIG_PADRAO, interrupcoes: [] }
   estado.agendas = {}
+  estado.sessoes = []
   estado.agendaAtual = null
   estado.autenticado = false
   estado.filtros = { ...FILTROS_PADRAO }
@@ -337,7 +385,7 @@ async function editarPerfil() {
 
   const nomeAnterior = estado.perfil.nome
   estado.perfil = { nome: dados.nome.trim(), idade: dados.idade, cronotipo: dados.cronotipo }
-  estado.bio = alg.montarPerfilBiologico(estado.perfil)
+  reconstruirBio()
 
   ui.atualizarCabecalho(estado.perfil, estado.bio)
   atualizarPainel({ regerar: true })
@@ -619,8 +667,19 @@ function gerarAgenda({ silencioso = false } = {}) {
     return null
   }
 
+  // PRECISÃO: agenda sobre a duração CALIBRADA, não sobre a declarada.
+  // Antes a calibragem só corrigia a sugestão no formulário — quem digitasse o
+  // tempo à mão continuava recebendo um cronograma otimista demais, e o dia
+  // estourava. Aqui a correção passa a valer para todo o planejamento.
+  const calibradas = ativas.map(tarefa => {
+    const ajuste = calibragem.ajustarDuracao(tarefa.tempo, tarefa.categoria, estado.sessoes)
+    return ajuste.ajustado
+      ? { ...tarefa, tempo: ajuste.minutos, tempoDeclarado: tarefa.tempo, desvioCalibragem: ajuste.desvio }
+      : tarefa
+  })
+
   const agenda = alg.gerarAgenda({
-    tarefas: ativas,
+    tarefas: calibradas,
     janela,
     limiteMinutos: limiteMinutos(janela),
     perfil: estado.bio,
@@ -723,6 +782,43 @@ async function duplicarAgenda() {
    Backup
    ========================================================================= */
 
+/* -------------------------------------------------------------- backup --- */
+
+const DIAS_ATE_LEMBRAR_BACKUP = 14
+const TAREFAS_ATE_LEMBRAR_BACKUP = 8
+
+/**
+ * Tudo vive no localStorage: limpar o navegador apaga o histórico inteiro.
+ * O lembrete só aparece quando há algo que valha a pena perder — e some por
+ * 30 dias assim que o usuário exporta ou dispensa.
+ */
+function avaliarLembreteDeBackup() {
+  const faixa = document.getElementById('faixa-backup')
+  if (!faixa || !estado.autenticado) return
+
+  const ultimo = Number(storage.lerMarcaBackup()) || 0
+  const dias = ultimo ? (Date.now() - ultimo) / 86400000 : Infinity
+  const volume = tarefas.listaTarefas.length + Object.keys(estado.agendas).length
+
+  const mostrar = volume >= TAREFAS_ATE_LEMBRAR_BACKUP && dias >= DIAS_ATE_LEMBRAR_BACKUP
+  faixa.hidden = !mostrar
+  if (!mostrar) return
+
+  const quando = faixa.querySelector('[data-quando]')
+  if (quando) {
+    quando.textContent = ultimo
+      ? `Último backup há ${Math.floor(dias)} dias.`
+      : 'Você ainda não exportou nenhuma cópia.'
+  }
+}
+
+function adiarLembreteDeBackup() {
+  // adia por 30 dias marcando "agora" com um desconto
+  storage.salvarMarcaBackup(Date.now() - (DIAS_ATE_LEMBRAR_BACKUP - 30) * 86400000)
+  const faixa = document.getElementById('faixa-backup')
+  if (faixa) faixa.hidden = true
+}
+
 function exportarDados() {
   const pacote = {
     aplicativo: 'chronos-ultra',
@@ -739,7 +835,9 @@ function exportarDados() {
     JSON.stringify(pacote, null, 2),
     'application/json;charset=utf-8'
   )
-  notificar('Backup exportado.', { tipo: 'sucesso' })
+  storage.salvarMarcaBackup(Date.now())
+  avaliarLembreteDeBackup()
+  notificar('Backup exportado. Guarde o arquivo fora do navegador.', { tipo: 'sucesso' })
 }
 
 async function importarDados(arquivo) {
@@ -768,7 +866,7 @@ async function importarDados(arquivo) {
 
     if (pacote.perfil?.idade) {
       estado.perfil = { ...estado.perfil, idade: pacote.perfil.idade, cronotipo: pacote.perfil.cronotipo || estado.perfil.cronotipo }
-      estado.bio = alg.montarPerfilBiologico(estado.perfil)
+      reconstruirBio()
       ui.atualizarCabecalho(estado.perfil, estado.bio)
     }
 
@@ -854,6 +952,9 @@ function aoEntrarNaTela(id) {
       estatisticasTarefas: tarefas.estatisticas(),
       bio: estado.bio
     })
+    ui.renderizarAprendizado(
+      calibragem.resumoDeAprendizado(estado.sessoes, tarefas.CATEGORIAS)
+    )
     return
   }
   if (id === 'tela-foco') {
@@ -975,10 +1076,22 @@ function ligarEventosInventario() {
   const campoNome = $('#nome-tarefa')
   campoNome?.addEventListener('blur', () => {
     const sugestao = tarefas.obterSugestaoPorNome(campoNome.value, estado.historico)
-    ui.mostrarSugestao(sugestao)
-    if (!sugestao) return
+    if (!sugestao) {
+      ui.mostrarSugestao(null)
+      return
+    }
+
+    // A sugestão vem do que o usuário DECLAROU antes; a calibragem corrige pelo
+    // que ele de fato levou. Sem esta linha o app repetiria o mesmo otimismo.
+    const corrigida = calibragem.ajustarDuracao(
+      sugestao.tempo,
+      sugestao.categoria || campoCategoria?.value,
+      estado.sessoes
+    )
+
+    ui.mostrarSugestao({ ...sugestao, tempo: corrigida.minutos, calibragem: corrigida })
     if (!$('#peso-tarefa').value) $('#peso-tarefa').value = sugestao.peso
-    if (!$('#tempo-tarefa').value) $('#tempo-tarefa').value = sugestao.tempo
+    if (!$('#tempo-tarefa').value) $('#tempo-tarefa').value = corrigida.minutos
     if (campoCategoria && sugestao.categoria && !campoCategoria.dataset.escolhida) {
       campoCategoria.value = sugestao.categoria
     }
@@ -1109,16 +1222,86 @@ function ligarEventosAgenda() {
 /**
  * Ponto único de partida de qualquer sessão: o cronômetro é o mesmo, venha
  * o comando do cronograma, do painel "Agora" ou da tela de Foco.
+ *
+ * É aqui que a sessão ganha o contexto que a recalibração precisa — categoria
+ * e energia prevista para o horário. Sem isso o registro vira só um número de
+ * minutos, sem nada a que comparar.
  */
 function iniciarSessaoDeFoco({ titulo, minutos, tarefa = '' }) {
+  const alvo = tarefa ? tarefas.obter(tarefa) : null
+  const agoraHoras = new Date().getHours() + new Date().getMinutes() / 60
+
   foco.iniciarFoco({
     titulo,
     minutos,
+    tarefaId: tarefa || null,
+    categoria: alvo?.categoria || null,
+    energiaPrevista: alg.obterEnergia(agoraHoras, estado.bio),
     aoConcluir: () => {
-      const alvo = tarefa ? tarefas.obter(tarefa) : null
-      if (alvo && !alvo.concluida) alternarConcluida(tarefa)
-    }
+      const t = tarefa ? tarefas.obter(tarefa) : null
+      if (t && !t.concluida) alternarConcluida(tarefa)
+    },
+    aoRegistrar: registrarSessaoDeFoco
   })
+}
+
+/**
+ * Guarda a sessão encerrada e, se ela teve substância, pergunta como foi.
+ *
+ * O corte de 5 minutos existe para não interrogar o usuário sobre um bloco que
+ * ele abandonou em segundos — nesses casos a resposta não informaria nada.
+ */
+async function registrarSessaoDeFoco(registro) {
+  if (!registro || !estado.autenticado) return
+
+  const sessao = { id: `s${Date.now().toString(36)}`, ...registro, feedback: null }
+  estado.sessoes.push(sessao)
+  estado.sessoes = calibragem.podarSessoes(estado.sessoes)
+  salvar()
+
+  if (registro.minutosReais < 5) {
+    atualizarPaineisDerivados()
+    return
+  }
+
+  const resposta = await perguntarFeedback({
+    titulo: registro.titulo,
+    minutos: registro.minutosReais
+  })
+
+  if (resposta) {
+    sessao.feedback = resposta
+    salvar({ imediato: true })
+    // o feedback muda a curva de energia: refaz o perfil e o painel
+    reconstruirBio()
+    comentarAprendizado(sessao)
+  }
+
+  atualizarPaineisDerivados()
+}
+
+/** Conta ao usuário, sem alarde, o que o app acabou de aprender com o bloco. */
+function comentarAprendizado(sessao) {
+  const desvio = sessao.minutosReais - sessao.minutosPlanejados
+  const info = calibragem.fatoresPorCategoria(estado.sessoes)[sessao.categoria]
+
+  if (info && Math.abs(info.desvio) >= 10) {
+    const cat = tarefas.CATEGORIAS.find(c => c.id === sessao.categoria)
+    notificar(
+      `Anotado. "${cat?.rotulo || 'Essa categoria'}" costuma levar ${Math.abs(info.desvio)}% ${
+        info.desvio > 0 ? 'a mais' : 'a menos'
+      } do que você estima — já estou ajustando as sugestões.`,
+      { tipo: 'info', duracao: 7000 }
+    )
+    return
+  }
+
+  if (Math.abs(desvio) >= 10) {
+    notificar(
+      `Registrado: ${alg.formatarDuracao(Math.abs(desvio))} ${desvio > 0 ? 'além' : 'aquém'} do previsto.`,
+      { tipo: 'info', duracao: 4000 }
+    )
+  }
 }
 
 function definirMinutosDeFoco(minutos) {
@@ -1223,6 +1406,8 @@ function ligarEventosNavegacao() {
   $('#btn-atalhos')?.addEventListener('click', mostrarAtalhos)
   $('#btn-resumo')?.addEventListener('click', mostrarResumoDoDia)
   $('#btn-editar-perfil')?.addEventListener('click', editarPerfil)
+  $('#btn-backup-agora')?.addEventListener('click', exportarDados)
+  $('#btn-backup-depois')?.addEventListener('click', adiarLembreteDeBackup)
 
   $('#btn-gerar-rapido')?.addEventListener('click', () => {
     nav.irPara('tela-rotinas')
@@ -1299,11 +1484,26 @@ function ligarPWA() {
   const botao = $('#btn-instalar')
   const aviso = $('#instalar-indisponivel')
 
-  /** Botão e legenda são exclusivos: um aparece exatamente quando o outro some. */
-  const definirDisponibilidade = disponivel => {
+  /** O app já está rodando como PWA instalado? */
+  const jaInstalado = () =>
+    window.matchMedia?.('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true
+
+  /**
+   * Botão e legenda são exclusivos. A legenda deixou de ser o genérico
+   * "já instalado ou indisponível" — ela agora distingue os três estados
+   * reais, porque dizer "já instalado" para quem não instalou é mentira.
+   */
+  const definirDisponibilidade = (disponivel, instalado = jaInstalado()) => {
     if (botao) botao.hidden = !disponivel
-    if (aviso) aviso.hidden = disponivel
+    if (!aviso) return
+    aviso.hidden = disponivel
+    aviso.textContent = instalado
+      ? 'Aplicativo já instalado neste dispositivo'
+      : 'Seu navegador não oferece instalação — no iPhone, use Compartilhar › Adicionar à Tela de Início'
   }
+
+  definirDisponibilidade(false)
 
   window.addEventListener('beforeinstallprompt', evento => {
     evento.preventDefault()
@@ -1322,7 +1522,7 @@ function ligarPWA() {
     }
   })
 
-  window.addEventListener('appinstalled', () => definirDisponibilidade(false))
+  window.addEventListener('appinstalled', () => definirDisponibilidade(false, true))
 }
 
 /** Executa `?acao=` do atalho do app instalado. */
@@ -1346,6 +1546,15 @@ function iniciar() {
     })
 
   aplicarIcones()
+
+  // O acordeão de compromissos vem aberto no HTML porque no desktop há coluna
+  // sobrando. No mobile ele volta a ser um clique — aberto, empurraria o
+  // inventário de tarefas para fora da primeira tela.
+  const compromissos = $('.acordeao--compromissos')
+  if (compromissos && window.matchMedia?.('(max-width: 47.999rem)').matches) {
+    compromissos.open = false
+  }
+
   ui.preencherSelectCategorias($('#categoria-tarefa'), 'foco')
   ui.preencherControlesInventario()
 

@@ -42,7 +42,7 @@
          ================================================================== -->
     <div id="splash" class="splash" aria-hidden="true">
       <img
-        src="img/Logo-Photoroom.png"
+        src="img/logo.png"
         alt=""
         class="splash__logo"
         width="128"
@@ -67,15 +67,11 @@
       <div class="onboarding">
         <div class="onboarding__marca">
           <img
-            src="img/Logo-Photoroom.png"
+            src="img/logo.png"
             alt=""
             class="logo-central"
             width="150"
             height="150"
-            onerror="
-              this.onerror = null;
-              this.src = 'img/Logo-Photoroom.png';
-            "
           />
           <div>
             <h1 class="titulo-marca">
@@ -178,15 +174,11 @@
       <aside class="barra-lateral" aria-label="Menu principal">
         <div class="barra-lateral__marca">
           <img
-            src="img/Logo-Photoroom.png"
+            src="img/logo.png"
             alt=""
             class="barra-lateral__logo"
             width="42"
             height="42"
-            onerror="
-              this.onerror = null;
-              this.src = 'img/Logo-Photoroom.png';
-            "
           />
           <span class="barra-lateral__nome">
             <strong>Chronos</strong>
@@ -276,15 +268,11 @@
         <header class="topo">
           <div class="topo__marca">
             <img
-              src="img/Logo-Photoroom.png"
+              src="img/logo.png"
               alt=""
               class="topo__logo"
               width="34"
               height="34"
-              onerror="
-                this.onerror = null;
-                this.src = 'img/Logo-Photoroom.png';
-              "
             />
           </div>
 
@@ -389,6 +377,15 @@
                 class="chips"
                 aria-label="Seu perfil biológico"
               ></div>
+              <aside id="faixa-backup" class="faixa-backup" hidden>
+                <span class="faixa-backup__icone" data-icone="escudo" data-tamanho="18"></span>
+                <p class="faixa-backup__texto">
+                  <strong>Seus dados vivem só neste navegador.</strong>
+                  <span data-quando></span>
+                </p>
+                <button type="button" id="btn-backup-agora" class="botao botao--secundario botao--pequeno">Exportar cópia</button>
+                <button type="button" id="btn-backup-depois" class="botao botao--fantasma botao--pequeno">Depois</button>
+              </aside>
 
               <!-- bloco em andamento -->
               <section
@@ -557,7 +554,7 @@
 
                   <p id="aviso-janela" class="aviso-inline" hidden></p>
 
-                  <details class="acordeao">
+                  <details class="acordeao acordeao--compromissos" open>
                     <summary class="acordeao__titulo">
                       <span>Compromissos fixos do dia</span>
                       <small>almoço, reuniões, deslocamentos…</small>
@@ -671,26 +668,24 @@
 
                     <div class="grade-campos grade-campos--tripla">
                       <div class="campo">
-                        <label for="peso-tarefa">Peso (1–10)</label>
+                        <label for="peso-tarefa">Peso <span class="campo__dica">1 a 10</span></label>
                         <input
                           type="number"
                           id="peso-tarefa"
                           min="1"
                           max="10"
                           step="1"
-                          placeholder="7"
                           inputmode="numeric"
                         />
                       </div>
                       <div class="campo">
-                        <label for="tempo-tarefa">Minutos</label>
+                        <label for="tempo-tarefa">Duração <span class="campo__dica">minutos</span></label>
                         <input
                           type="number"
                           id="tempo-tarefa"
                           min="1"
                           max="1440"
                           step="5"
-                          placeholder="45"
                           inputmode="numeric"
                         />
                       </div>
@@ -1167,6 +1162,19 @@
               </div>
 
               <div id="totais-estatisticas" class="totais"></div>
+
+              <section class="cartao cartao--largo" aria-labelledby="titulo-aprendizado">
+                <header class="cartao__cabecalho">
+                  <div>
+                    <h3 id="titulo-aprendizado" class="cartao__titulo">O que o app aprendeu com você</h3>
+                    <p class="cartao__descricao">
+                      Comparação entre o tempo que você estima e o que de fato leva. As sugestões
+                      futuras já saem corrigidas por estes números.
+                    </p>
+                  </div>
+                </header>
+                <div id="painel-aprendizado" class="aprendizado"></div>
+              </section>
 
               <div class="grade-estatisticas">
                 <section

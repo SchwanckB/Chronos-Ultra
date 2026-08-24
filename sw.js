@@ -10,7 +10,7 @@
  * guarda arquivos estáticos — nada pessoal é armazenado.
  */
 
-const VERSAO = 'chronos-v2'
+const VERSAO = 'chronos-v4'
 const CACHE_SHELL = `${VERSAO}-shell`
 const CACHE_EXTERNO = `${VERSAO}-externo`
 
@@ -32,8 +32,11 @@ const SHELL = [
   './js/foco.js',
   './js/agora.js',
   './js/icones.js',
+  './js/calibragem.js',
   './js/navegacao.js',
-  './img/Logo-Photoroom.png',
+  './img/logo.png',
+  './img/favicon.ico',
+  './img/favicon-16x16.png',
   './img/favicon-32x32.png',
   './img/android-chrome-192x192.png',
   './img/android-chrome-512x512.png',

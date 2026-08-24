@@ -125,7 +125,22 @@ export function alternarPausa() {
 
 function encerrar(concluida) {
   if (!sessao) return
-  const { titulo, aoConcluir } = sessao
+  const { titulo, aoConcluir, aoRegistrar } = sessao
+
+  // Tempo REAL de foco: total menos o que sobrou, sem contar pausas — é o
+  // insumo da recalibração. Precisa ser lido antes de zerar a sessão.
+  const restante = Math.max(0, calcularRestante())
+  const registro = {
+    titulo,
+    tarefaId: sessao.tarefaId || null,
+    categoria: sessao.categoria || null,
+    minutosPlanejados: Math.round(sessao.totalSegundos / 60),
+    minutosReais: Math.max(1, Math.round((sessao.totalSegundos - restante) / 60)),
+    energiaPrevista: Number.isFinite(sessao.energiaPrevista) ? sessao.energiaPrevista : null,
+    iniciadaEm: sessao.iniciadaEm,
+    encerradaEm: new Date().toISOString(),
+    concluida
+  }
 
   clearInterval(intervalo)
   intervalo = null
@@ -134,6 +149,8 @@ function encerrar(concluida) {
   painel = null
   document.title = tituloOriginal || document.title
   emitir()
+
+  aoRegistrar?.(registro)
 
   if (concluida) {
     notificar(`Bloco "${titulo}" concluído. Faça a pausa antes do próximo.`, {
@@ -217,9 +234,22 @@ export function sessaoAtual() {
  * @param {object} opcoes
  * @param {string} opcoes.titulo    nome exibido no painel
  * @param {number} opcoes.minutos   duração do bloco
- * @param {Function} [opcoes.aoConcluir] chamado quando o tempo termina
+ * @param {string} [opcoes.tarefaId]        tarefa de origem, quando houver
+ * @param {string} [opcoes.categoria]       categoria — agrupa a recalibração
+ * @param {number} [opcoes.energiaPrevista] energia que o modelo previu para o horário
+ * @param {Function} [opcoes.aoConcluir]  chamado quando o tempo termina
+ * @param {Function} [opcoes.aoRegistrar] recebe o registro da sessão ao encerrar,
+ *                                        tenha ela terminado ou sido interrompida
  */
-export function iniciarFoco({ titulo, minutos, aoConcluir }) {
+export function iniciarFoco({
+  titulo,
+  minutos,
+  tarefaId = null,
+  categoria = null,
+  energiaPrevista = null,
+  aoConcluir,
+  aoRegistrar
+}) {
   if (sessao) encerrar(false)
   if (!minutos || minutos <= 0) return
 
@@ -228,11 +258,16 @@ export function iniciarFoco({ titulo, minutos, aoConcluir }) {
 
   sessao = {
     titulo,
+    tarefaId,
+    categoria,
+    energiaPrevista,
+    iniciadaEm: new Date().toISOString(),
     totalSegundos,
     restanteCongelado: totalSegundos,
     retomadaEm: Date.now(),
     pausada: false,
-    aoConcluir
+    aoConcluir,
+    aoRegistrar
   }
 
   prepararNotificacoes()

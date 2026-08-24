@@ -25,30 +25,30 @@
 :root {
   color-scheme: dark;
 
-  /* ---------------------------------------------------- rampa da marca -- */
-  /* Turquesa da logo (ampulheta + seta) sobre azul-petróleo profundo. */
-  --marca-700: #115e59;
-  --marca-600: #0d9488;
-  --marca-500: #14b8a6;
-  --marca-400: #2dd4bf;
-  --marca-300: #5eead4;
+  /* ------------------------------------------------------ acento único -- */
+  /* ESTRATÉGIA: a logo é o único lugar do produto que carrega um degradê.
+     A interface fica numa base grafite quase neutra e usa UM acento vibrante
+     — o ciano #18d8f0, extraído por análise de pixel da própria marca (187°).
+     Assim a UI conversa com a logo sem repetir o gradiente roxo-azul em toda
+     superfície, que é justamente a assinatura de layout genérico. */
+  --acento-300: #a8eefb;
+  --acento-400: #5ce4f7;
+  --acento-500: #18d8f0;
+  --acento-600: #0eb4cc;
+  --acento-700: #0c8ea3;
 
-  --acento-600: #0e7490;
-  --acento-500: #06b6d4;
-  --acento-400: #22d3ee;
+  /* Texto sobre superfícies do acento. Ciano vibrante é claro demais para
+     texto branco (daria ~1.9:1); invertemos para tinta escura. */
+  --cor-sobre-acento: #06202b;
 
   /* Nomes históricos: graficos.js lê estas variáveis para pintar os gráficos.
      Precisam continuar em hexadecimal de 6 dígitos.
 
-     HARMONIA: as cores semânticas ficam espaçadas no círculo cromático para
-     que as séries dos gráficos se distingam. O turquesa da marca (173°) já
-     ocupa o centro, então "sucesso" foi para o verde puro (142°) e
-     "compromissos" para o azul (217°) — antes eram esmeralda e ciano, vizinhos
-     imediatos do turquesa, e as barras viravam uma mancha só. Âmbar e vermelho
-     entram como os dois únicos acentos quentes, complementares ao turquesa. */
-  --cor-primaria: #14b8a6;
-  --cor-primaria-clara: #5eead4;
-  --cor-secundaria: #3b82f6;
+     HARMONIA: matizes espaçados para as séries dos gráficos se distinguirem —
+     0° perigo, 38° aviso, 142° sucesso, 187° acento, 240° secundária. */
+  --cor-primaria: #18d8f0;
+  --cor-primaria-clara: #5ce4f7;
+  --cor-secundaria: #7c8cff;
   --cor-sucesso: #22c55e;
   --cor-aviso: #f59e0b;
   --cor-perigo: #ef4444;
@@ -58,56 +58,51 @@
   --filtro-logo: none;
 
   /* ------------------------------------------------------- superfícies -- */
-  --cor-fundo: #071a2b;
-  --cor-fundo-topo: #0d2b42;
-  --cor-superficie: #0e2438;
-  --cor-superficie-alta: #143149;
-  --cor-superficie-suave: rgba(94, 234, 212, 0.07);
-  --cor-superficie-vidro: rgba(14, 36, 56, 0.76);
-  --cor-borda: rgba(94, 234, 212, 0.16);
-  --cor-borda-forte: rgba(94, 234, 212, 0.32);
-  --cor-grade: rgba(94, 234, 212, 0.12);
+  /* Grafite frio de viés levíssimo em azul: não é "azul-petróleo corporativo"
+     nem preto puro. Ele existe para o acento ter onde brilhar. */
+  --cor-fundo: #0d1117;
+  --cor-fundo-topo: #141a24;
+  --cor-superficie: #151b25;
+  --cor-superficie-alta: #1e2530;
+  --cor-superficie-suave: rgba(148, 176, 194, 0.06);
+  --cor-superficie-vidro: rgba(21, 27, 37, 0.78);
+  --cor-borda: rgba(148, 176, 194, 0.14);
+  --cor-borda-forte: rgba(148, 176, 194, 0.28);
+  --cor-grade: rgba(148, 176, 194, 0.09);
 
-  --cor-texto: #eefaf9;
-  --cor-texto-medio: #c3dbe2;
-  --cor-texto-suave: #8badb9;
+  --cor-texto: #eef3f7;
+  --cor-texto-medio: #b9c6d1;
+  --cor-texto-suave: #8592a0;
 
   /* menu lateral: azul-petróleo escuro nos DOIS temas, como nos modelos */
-  --lateral-fundo: rgba(9, 30, 48, 0.82);
-  --lateral-borda: rgba(94, 234, 212, 0.14);
-  --lateral-texto: #eefaf9;
-  --lateral-texto-suave: #8badb9;
+  --lateral-fundo: rgba(10, 13, 18, 0.88);
+  --lateral-borda: rgba(148, 176, 194, 0.12);
+  --lateral-texto: #eef3f7;
+  --lateral-texto-suave: #8592a0;
 
-  /* -------------------------------------------------------- gradientes -- */
-  --gradiente-marca: linear-gradient(
-    135deg,
-    var(--marca-600) 0%,
-    var(--marca-500) 45%,
-    var(--acento-500) 100%
-  );
-  --gradiente-marca-suave: linear-gradient(
-    135deg,
-    rgba(20, 184, 166, 0.18),
-    rgba(6, 182, 212, 0.12)
-  );
+  /* -------------------------------------------------------- superfícies -- */
+  /* `--gradiente-marca` foi aposentado: era o degradê repetido em 16 lugares.
+     Superfícies de acento agora são cor CHAPADA — decisão deliberada, é o que
+     dá o ar de produto autoral em vez de template. */
+  --acento-chapado: var(--acento-500);
+  --acento-suave: rgba(24, 216, 240, 0.12);
+  --acento-veu: rgba(24, 216, 240, 0.06);
+
   --gradiente-superficie: linear-gradient(
     160deg,
-    rgba(94, 234, 212, 0.07),
-    rgba(94, 234, 212, 0.02)
-  );
-  --gradiente-texto: linear-gradient(
-    120deg,
-    var(--marca-300),
-    var(--acento-400)
+    rgba(148, 176, 194, 0.05),
+    rgba(148, 176, 194, 0.015)
   );
 
   /* ------------------------------------------------------------ sombras - */
-  --sombra-sm: 0 1px 2px rgba(2, 12, 22, 0.5);
-  --sombra-md: 0 14px 30px -18px rgba(2, 12, 22, 0.85);
-  --sombra-lg: 0 34px 64px -30px rgba(2, 12, 22, 0.95);
-  --sombra-marca: 0 16px 38px -18px rgba(20, 184, 166, 0.7);
-  --sombra-interna: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --anel-foco: 0 0 0 3px rgba(20, 184, 166, 0.45);
+  /* Sombras neutras e frias. A "sombra-marca" virou um brilho de acento,
+     reservado ao que realmente é a ação principal da tela. */
+  --sombra-sm: 0 1px 2px rgba(3, 6, 10, 0.55);
+  --sombra-md: 0 14px 30px -18px rgba(3, 6, 10, 0.9);
+  --sombra-lg: 0 34px 64px -30px rgba(3, 6, 10, 0.95);
+  --sombra-marca: 0 12px 30px -12px rgba(24, 216, 240, 0.4);
+  --sombra-interna: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --anel-foco: 0 0 0 3px rgba(24, 216, 240, 0.4);
   --vidro: blur(18px) saturate(140%);
 
   /* -------------------------------------------------------------- raios - */
@@ -163,49 +158,47 @@
 [data-tema="claro"] {
   color-scheme: light;
 
-  --cor-primaria: #0d9488;
-  --cor-primaria-clara: #0f766e;
-  --cor-secundaria: #0e7490;
+  /* No claro o ciano puro perde contraste sobre branco: descemos dois degraus
+     da rampa para o texto e os ícones continuarem legíveis. */
+  --cor-primaria: #0c8ea3;
+  --cor-primaria-clara: #0a7285;
+  --cor-secundaria: #5566e8;
+  --cor-sobre-acento: #06202b;
 
-  --cor-fundo: #f1f5f7;
-  --cor-fundo-topo: #e8f2f3;
+  --cor-fundo: #f4f6f8;
+  --cor-fundo-topo: #eaeff3;
   --cor-superficie: #ffffff;
   --cor-superficie-alta: #ffffff;
-  --cor-superficie-suave: rgba(13, 148, 136, 0.06);
-  --cor-superficie-vidro: rgba(255, 255, 255, 0.82);
-  --cor-borda: rgba(15, 43, 64, 0.12);
-  --cor-borda-forte: rgba(15, 43, 64, 0.24);
-  --cor-grade: rgba(15, 43, 64, 0.08);
+  --cor-superficie-suave: rgba(13, 17, 23, 0.04);
+  --cor-superficie-vidro: rgba(255, 255, 255, 0.84);
+  --cor-borda: rgba(13, 17, 23, 0.12);
+  --cor-borda-forte: rgba(13, 17, 23, 0.24);
+  --cor-grade: rgba(13, 17, 23, 0.07);
 
-  --cor-texto: #0f2b40;
-  --cor-texto-medio: #3c5b6f;
-  --cor-texto-suave: #64818f;
+  --cor-texto: #0d1117;
+  --cor-texto-medio: #3d4854;
+  --cor-texto-suave: #66727f;
 
-  --lateral-fundo: #0f2b40;
-  --lateral-borda: rgba(94, 234, 212, 0.16);
-  --lateral-texto: #eefaf9;
-  --lateral-texto-suave: #9ebecb;
+  /* O menu segue escuro no tema claro: é a âncora visual da interface branca. */
+  --lateral-fundo: #0d1117;
+  --lateral-borda: rgba(148, 176, 194, 0.14);
+  --lateral-texto: #eef3f7;
+  --lateral-texto-suave: #8592a0;
 
-  --gradiente-marca-suave: linear-gradient(
-    135deg,
-    rgba(20, 184, 166, 0.14),
-    rgba(6, 182, 212, 0.08)
-  );
+  --acento-chapado: var(--acento-600);
+  --acento-suave: rgba(12, 142, 163, 0.1);
+  --acento-veu: rgba(12, 142, 163, 0.05);
+
   --gradiente-superficie: linear-gradient(
     160deg,
-    rgba(13, 148, 136, 0.05),
-    rgba(6, 182, 212, 0.02)
-  );
-  --gradiente-texto: linear-gradient(
-    120deg,
-    var(--marca-600),
-    var(--acento-600)
+    rgba(13, 17, 23, 0.03),
+    rgba(13, 17, 23, 0.01)
   );
 
-  --sombra-sm: 0 1px 2px rgba(15, 43, 64, 0.06);
-  --sombra-md: 0 16px 32px -22px rgba(15, 43, 64, 0.38);
-  --sombra-lg: 0 32px 64px -34px rgba(15, 43, 64, 0.4);
-  --sombra-marca: 0 16px 34px -18px rgba(13, 148, 136, 0.45);
+  --sombra-sm: 0 1px 2px rgba(13, 17, 23, 0.06);
+  --sombra-md: 0 16px 32px -22px rgba(13, 17, 23, 0.38);
+  --sombra-lg: 0 32px 64px -34px rgba(13, 17, 23, 0.4);
+  --sombra-marca: 0 16px 34px -18px rgba(14, 180, 204, 0.45);
   --sombra-interna: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
@@ -221,6 +214,12 @@
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
+  /* A barra inferior é `fixed`: rolagem programática (`scrollIntoView`) e o
+     auto-scroll do navegador ao focar um campo não sabem disso e param o alvo
+     debaixo dela. `scroll-padding` reserva a faixa nos dois casos.
+     O rodapé já garante o fim da página; isto cobre o meio dela. */
+  scroll-padding-bottom: calc(var(--espaco-inferior) + 1rem);
+  scroll-padding-top: calc(var(--altura-topo) + 0.5rem);
 }
 
 body {
@@ -244,23 +243,15 @@ body::before {
   inset: 0;
   z-index: -2;
   pointer-events: none;
+  /* Um único halo de acento, discreto, ancorado no topo. A versão anterior
+     tinha três manchas coloridas — ruído que competia com o conteúdo. */
   background:
     radial-gradient(
-      52rem 30rem at 10% -8%,
-      rgba(20, 184, 166, 0.3),
-      transparent 62%
+      46rem 26rem at 18% -10%,
+      rgba(24, 216, 240, 0.1),
+      transparent 60%
     ),
-    radial-gradient(
-      42rem 26rem at 90% 2%,
-      rgba(6, 182, 212, 0.2),
-      transparent 66%
-    ),
-    radial-gradient(
-      38rem 26rem at 60% 104%,
-      rgba(13, 148, 136, 0.22),
-      transparent 70%
-    ),
-    linear-gradient(180deg, var(--cor-fundo-topo), var(--cor-fundo) 46%);
+    linear-gradient(180deg, var(--cor-fundo-topo), var(--cor-fundo) 40%);
 }
 
 /* Grade técnica sutil sobre a aurora, esmaecida ao descer a página. */
@@ -332,7 +323,7 @@ button {
 }
 
 ::selection {
-  background: rgba(20, 184, 166, 0.4);
+  background: rgba(24, 216, 240, 0.4);
   color: #fff;
 }
 
@@ -376,8 +367,8 @@ button {
   transform: translateX(-50%);
   z-index: 200;
   padding: var(--e3) var(--e5);
-  background: var(--gradiente-marca);
-  color: #fff;
+  background: var(--acento-chapado);
+  color: var(--cor-sobre-acento);
   font-weight: 600;
   border-radius: 0 0 var(--raio-md) var(--raio-md);
   text-decoration: none;
@@ -388,10 +379,9 @@ button {
 }
 
 .texto-gradiente {
-  background: var(--gradiente-texto);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  /* Antes era texto com degradê recortado. Virou cor chapada de acento: o
+     degradê agora pertence só à logo. */
+  color: var(--acento-400);
 }
 
 .titulo-marca {
@@ -425,7 +415,7 @@ button {
   background: var(--cor-fundo);
   background-image: radial-gradient(
     40rem 26rem at 50% 20%,
-    rgba(20, 184, 166, 0.3),
+    rgba(24, 216, 240, 0.3),
     transparent 65%
   );
   transition:
@@ -438,7 +428,7 @@ button {
 }
 .splash__logo {
   width: clamp(5.5rem, 18vw, 8rem);
-  filter: var(--filtro-logo) drop-shadow(0 20px 40px rgba(20, 184, 166, 0.55));
+  filter: var(--filtro-logo) drop-shadow(0 20px 40px rgba(24, 216, 240, 0.55));
   animation: pulsar-logo 2.4s ease-in-out infinite;
 }
 .splash__nome {
@@ -462,7 +452,7 @@ button {
   width: 40%;
   height: 100%;
   border-radius: inherit;
-  background: var(--gradiente-marca);
+  background: var(--acento-chapado);
   animation: correr-barra 1.2s ease-in-out infinite;
 }
 
@@ -522,7 +512,7 @@ button {
   height: 2.6rem;
   flex: none;
   object-fit: contain;
-  filter: var(--filtro-logo) drop-shadow(0 8px 18px rgba(20, 184, 166, 0.5));
+  filter: var(--filtro-logo) drop-shadow(0 8px 18px rgba(24, 216, 240, 0.5));
 }
 .barra-lateral__nome {
   display: grid;
@@ -544,10 +534,7 @@ button {
   font-weight: 700;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  background: linear-gradient(120deg, var(--marca-300), var(--acento-400));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--acento-400);
 }
 
 .menu {
@@ -589,12 +576,12 @@ button {
 }
 .menu__item:hover {
   color: var(--lateral-texto);
-  background: rgba(94, 234, 212, 0.1);
+  background: rgba(148, 176, 194, 0.1);
   transform: translateX(2px);
 }
 .menu__item.ativo {
-  color: #fff;
-  background: var(--gradiente-marca);
+  color: var(--cor-sobre-acento);
+  background: var(--acento-chapado);
   border-color: transparent;
   box-shadow: var(--sombra-marca);
 }
@@ -627,7 +614,7 @@ button {
   padding: var(--e3);
   min-width: 0;
   color: var(--lateral-texto);
-  background: rgba(94, 234, 212, 0.08);
+  background: rgba(148, 176, 194, 0.08);
   border: 1px solid var(--lateral-borda);
   border-radius: var(--raio-lg);
 }
@@ -635,7 +622,7 @@ button {
   --texto-botao: var(--lateral-texto-suave);
 }
 .perfil-mini .botao:hover:not(:disabled) {
-  --fundo-botao: rgba(94, 234, 212, 0.12);
+  --fundo-botao: rgba(148, 176, 194, 0.12);
   --texto-botao: var(--lateral-texto);
 }
 .perfil-mini__textos {
@@ -685,7 +672,7 @@ button {
     background var(--transicao);
 }
 .rolado .topo {
-  box-shadow: 0 14px 34px -26px rgba(2, 12, 22, 0.95);
+  box-shadow: 0 14px 34px -26px rgba(3, 6, 10, 0.95);
   background: color-mix(in srgb, var(--cor-fundo) 92%, transparent);
 }
 
@@ -700,7 +687,7 @@ button {
   width: 2.1rem;
   height: 2.1rem;
   object-fit: contain;
-  filter: var(--filtro-logo) drop-shadow(0 6px 14px rgba(20, 184, 166, 0.45));
+  filter: var(--filtro-logo) drop-shadow(0 6px 14px rgba(24, 216, 240, 0.45));
 }
 
 /* O título absorve a sobra: busca e ações ficam sempre coladas à direita,
@@ -758,7 +745,8 @@ button {
   font-weight: 700;
   line-height: 1rem;
   text-align: center;
-  color: #fff;
+  /* texto escuro sobre âmbar: branco dava 2,15:1, abaixo do mínimo WCAG */
+  color: #1a1200;
   background: var(--cor-aviso);
   border-radius: var(--raio-total);
   box-shadow: 0 0 0 2px var(--cor-fundo);
@@ -775,13 +763,13 @@ button {
   font-family: var(--fonte-titulo);
   font-size: var(--txt-lg);
   font-weight: 700;
-  color: #fff;
-  background: var(--gradiente-marca);
+  color: var(--cor-sobre-acento);
+  background: var(--acento-chapado);
   box-shadow: var(--sombra-marca);
 }
 .avatar--icone {
-  background: rgba(20, 184, 166, 0.16);
-  border: 1px solid rgba(20, 184, 166, 0.32);
+  background: rgba(24, 216, 240, 0.16);
+  border: 1px solid rgba(24, 216, 240, 0.32);
 }
 .avatar--pequeno {
   width: 2.25rem;
@@ -843,7 +831,7 @@ button {
 }
 .nav-inferior__item.ativo {
   color: var(--cor-primaria-clara);
-  background: rgba(20, 184, 166, 0.14);
+  background: rgba(24, 216, 240, 0.14);
 }
 .nav-inferior__icone {
   font-size: 1.15rem;
@@ -872,8 +860,8 @@ button {
   width: 3.25rem;
   height: 3.25rem;
   font-size: 1.35rem;
-  color: #fff;
-  background: var(--gradiente-marca);
+  color: var(--cor-sobre-acento);
+  background: var(--acento-chapado);
   border-radius: var(--raio-total);
   box-shadow: var(--sombra-marca);
   border: 3px solid var(--cor-fundo);
@@ -1093,7 +1081,7 @@ select {
 
 /* Busca com lupa embutida — sem ícone extra no HTML. */
 .campo--busca input {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238badb9' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238592a0' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: 0.9rem center;
   background-size: 1rem;
@@ -1151,19 +1139,19 @@ select {
 }
 
 .botao--primario {
-  --fundo-botao: var(--gradiente-marca);
-  --texto-botao: #fff;
+  --fundo-botao: var(--acento-chapado);
+  --texto-botao: var(--cor-sobre-acento);
   --borda-botao: transparent;
   box-shadow: var(--sombra-marca);
 }
 .botao--primario:hover:not(:disabled) {
-  box-shadow: 0 20px 44px -18px rgba(20, 184, 166, 0.9);
+  box-shadow: 0 20px 44px -18px rgba(24, 216, 240, 0.9);
 }
 
 .botao--secundario {
-  --fundo-botao: rgba(20, 184, 166, 0.14);
+  --fundo-botao: rgba(24, 216, 240, 0.14);
   --texto-botao: var(--cor-primaria-clara);
-  --borda-botao: rgba(20, 184, 166, 0.34);
+  --borda-botao: rgba(24, 216, 240, 0.34);
 }
 
 .botao--fantasma {
@@ -1198,7 +1186,8 @@ select {
   width: 100%;
 }
 .botao--pequeno {
-  min-height: 2.35rem;
+  /* 44px é o alvo de toque mínimo; abaixo disso o dedo erra */
+  min-height: 2.75rem;
   padding: 0.45rem 0.85rem;
   font-size: var(--txt-xs);
 }
@@ -1225,8 +1214,8 @@ select {
   font-size: var(--txt-xs);
 }
 .botao--aba.ativo {
-  --fundo-botao: var(--gradiente-marca);
-  --texto-botao: #fff;
+  --fundo-botao: var(--acento-chapado);
+  --texto-botao: var(--cor-sobre-acento);
   --borda-botao: transparent;
   box-shadow: var(--sombra-marca);
 }
@@ -1273,7 +1262,7 @@ select {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(94, 234, 212, 0.55),
+    rgba(148, 176, 194, 0.55),
     transparent
   );
   opacity: 0.7;
@@ -1289,8 +1278,8 @@ select {
   box-shadow: none;
 }
 .cartao--destaque {
-  background-image: var(--gradiente-marca-suave);
-  border-color: rgba(20, 184, 166, 0.34);
+  background-image: var(--acento-suave);
+  border-color: rgba(24, 216, 240, 0.34);
 }
 
 .cartao__cabecalho {
@@ -1309,8 +1298,8 @@ select {
   font-family: var(--fonte-titulo);
   font-size: var(--txt-sm);
   font-weight: 700;
-  color: #fff;
-  background: var(--gradiente-marca);
+  color: var(--cor-sobre-acento);
+  background: var(--acento-chapado);
   box-shadow: var(--sombra-marca);
 }
 .cartao__titulo {
@@ -1407,7 +1396,7 @@ select {
   width: 2.1rem;
   height: 2.1rem;
   color: var(--cor-primaria-clara);
-  background: rgba(20, 184, 166, 0.12);
+  background: rgba(24, 216, 240, 0.12);
   border-radius: var(--raio-sm);
 }
 .lista-resumo strong {
@@ -1464,8 +1453,8 @@ select {
 }
 .etiqueta--categoria {
   color: var(--cor-primaria-clara);
-  border-color: rgba(20, 184, 166, 0.32);
-  background: rgba(20, 184, 166, 0.1);
+  border-color: rgba(24, 216, 240, 0.32);
+  background: rgba(24, 216, 240, 0.1);
 }
 .etiqueta--atencao {
   color: var(--cor-aviso);
@@ -1610,7 +1599,7 @@ select {
 .estado-vazio--ilustrado span {
   font-size: 2.75rem;
   line-height: 1;
-  filter: drop-shadow(0 10px 22px rgba(20, 184, 166, 0.45));
+  filter: drop-shadow(0 10px 22px rgba(24, 216, 240, 0.45));
 }
 .estado-vazio--ilustrado h3 {
   font-size: var(--txt-md);
@@ -1632,7 +1621,7 @@ select {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--gradiente-marca);
+  background: var(--acento-chapado);
   transition: width var(--transicao-lenta);
 }
 .barra--cheia > span {
@@ -1677,8 +1666,8 @@ select {
   color: var(--cor-texto);
 }
 .segmentado__opcao.ativo {
-  color: #fff;
-  background: var(--gradiente-marca);
+  color: var(--cor-sobre-acento);
+  background: var(--acento-chapado);
   box-shadow: var(--sombra-marca);
 }
 .contador-filtro {
@@ -1775,8 +1764,8 @@ select {
   width: 2.35rem;
   height: 2.35rem;
   color: var(--cor-primaria-clara);
-  background: rgba(20, 184, 166, 0.14);
-  border: 1px solid rgba(20, 184, 166, 0.28);
+  background: rgba(24, 216, 240, 0.14);
+  border: 1px solid rgba(24, 216, 240, 0.28);
   border-radius: var(--raio-md);
 }
 .linha-config__textos {
@@ -1795,11 +1784,36 @@ select {
   color: var(--cor-texto-suave);
   text-wrap: pretty;
 }
+/* `flex: none` impedia qualquer encolhimento: um texto longo no lugar do
+   controle (a legenda do PWA) esticava a linha a 565px e criava rolagem
+   horizontal em telas de 320px. Agora o slot cede, quebra linha e, no
+   celular, desce para a linha de baixo em vez de espremer o texto. */
 .linha-config__controle {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--e2);
+  text-align: right;
+}
+.linha-config__controle > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+@media (max-width: 34rem) {
+  .linha-config {
+    flex-wrap: wrap;
+  }
+  .linha-config__textos {
+    flex: 1 1 60%;
+  }
+  .linha-config__controle {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    text-align: left;
+  }
 }
 
 .interruptor {
@@ -1831,7 +1845,7 @@ select {
     background var(--transicao);
 }
 .interruptor[aria-checked="true"] {
-  background: var(--gradiente-marca);
+  background: var(--acento-chapado);
   border-color: transparent;
   box-shadow: var(--sombra-marca);
 }
@@ -1862,7 +1876,7 @@ select {
   width: clamp(5.5rem, 4rem + 8vw, 9.5rem);
   height: auto;
   object-fit: contain;
-  filter: var(--filtro-logo) drop-shadow(0 22px 42px rgba(20, 184, 166, 0.5));
+  filter: var(--filtro-logo) drop-shadow(0 22px 42px rgba(24, 216, 240, 0.5));
   animation: flutuar 6s ease-in-out infinite;
 }
 .onboarding__beneficios {
@@ -1897,7 +1911,7 @@ select {
   width: 2.1rem;
   height: 2.1rem;
   color: var(--cor-primaria-clara);
-  background: rgba(20, 184, 166, 0.14);
+  background: rgba(24, 216, 240, 0.14);
   border-radius: var(--raio-md);
 }
 
@@ -1951,7 +1965,7 @@ select {
 }
 .opcao-cronotipo:has(input:checked) {
   border-color: var(--cor-primaria);
-  background: rgba(20, 184, 166, 0.16);
+  background: rgba(24, 216, 240, 0.16);
   box-shadow: var(--anel-foco);
 }
 .opcao-cronotipo:has(input:focus-visible) {
@@ -1965,7 +1979,7 @@ select {
   width: 2.4rem;
   height: 2.4rem;
   color: var(--cor-primaria-clara);
-  background: rgba(20, 184, 166, 0.12);
+  background: rgba(24, 216, 240, 0.12);
   border-radius: var(--raio-md);
 }
 .opcao-cronotipo__texto {
@@ -2004,7 +2018,7 @@ select {
 }
 .passos span.ativo {
   width: 2.6rem;
-  background: var(--gradiente-marca);
+  background: var(--acento-chapado);
   border-color: transparent;
 }
 
@@ -2084,7 +2098,7 @@ select {
   width: 7rem;
   height: 7rem;
   border-radius: 50%;
-  background: var(--gradiente-marca);
+  background: var(--acento-chapado);
   opacity: 0.12;
   pointer-events: none;
   transition:
@@ -2149,7 +2163,7 @@ select {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--gradiente-marca);
+  background: var(--acento-chapado);
   transition: width var(--transicao-lenta);
 }
 .indicador--aviso .indicador__barra > span {
@@ -2181,8 +2195,8 @@ select {
   gap: var(--e3);
   padding: var(--e5);
   overflow: hidden;
-  background: var(--gradiente-marca-suave);
-  border: 1px solid rgba(20, 184, 166, 0.32);
+  background: var(--acento-suave);
+  border: 1px solid rgba(24, 216, 240, 0.32);
   border-radius: var(--raio-xl);
   box-shadow: var(--sombra-md);
 }
@@ -2193,7 +2207,7 @@ select {
   width: 18rem;
   height: 18rem;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.24), transparent 65%);
+  background: radial-gradient(circle, rgba(124, 140, 255, 0.24), transparent 65%);
   pointer-events: none;
 }
 .agora[data-estado="pausa"] {
@@ -2256,7 +2270,7 @@ select {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--gradiente-marca);
+  background: var(--acento-chapado);
   transition: width 1s linear;
 }
 .agora__legenda {
@@ -2299,7 +2313,7 @@ select {
   height: 0.6rem;
   border-radius: 50%;
   background: var(--cor-primaria);
-  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2);
+  box-shadow: 0 0 0 3px rgba(24, 216, 240, 0.2);
 }
 .proxima--pausa .proxima__marca {
   background: var(--cor-sucesso);
@@ -2307,7 +2321,7 @@ select {
 }
 .proxima--interrupcao .proxima__marca {
   background: var(--cor-secundaria);
-  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+  box-shadow: 0 0 0 3px rgba(124, 140, 255, 0.2);
 }
 .proxima--agora .proxima__marca {
   animation: pulsar-ponto 1.8s ease-in-out infinite;
@@ -2373,7 +2387,7 @@ select {
   gap: 0.05rem;
   padding: 0.4rem 0.6rem;
   font-size: var(--txt-xs);
-  background: rgba(20, 184, 166, 0.14);
+  background: rgba(24, 216, 240, 0.14);
   border-left: 3px solid var(--cor-primaria);
   border-radius: var(--raio-sm);
   min-width: 0;
@@ -2387,7 +2401,8 @@ select {
   white-space: nowrap;
 }
 .agenda-dia__bloco span {
-  color: var(--cor-texto-suave);
+  /* --cor-texto-suave dava 4,06:1 sobre o véu do bloco, abaixo dos 4,5 exigidos */
+  color: var(--cor-texto-medio);
   font-variant-numeric: tabular-nums;
 }
 .agenda-dia__bloco--pausa {
@@ -2395,7 +2410,7 @@ select {
   border-left-color: var(--cor-sucesso);
 }
 .agenda-dia__bloco--interrupcao {
-  background: rgba(6, 182, 212, 0.14);
+  background: rgba(124, 140, 255, 0.14);
   border-left-color: var(--cor-secundaria);
 }
 
@@ -2425,6 +2440,9 @@ select {
   display: grid;
   gap: clamp(1rem, 0.6rem + 1.2vw, 1.5rem);
   grid-template-columns: minmax(0, 1fr);
+  /* Cada cartão com a sua altura natural. Igualar as colunas com `stretch`
+     alinha o topo e o pé, mas enche a coluna mais curta de espaço morto —
+     testado e descartado. */
   align-items: start;
 }
 
@@ -2590,7 +2608,7 @@ select {
   bottom: 0.6rem;
   width: 2px;
   border-radius: var(--raio-total);
-  background: linear-gradient(180deg, var(--marca-500), var(--acento-500));
+  background: var(--acento-500);
   opacity: 0.35;
 }
 
@@ -2659,7 +2677,7 @@ select {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--cor-primaria-clara);
-  background: rgba(20, 184, 166, 0.16);
+  background: rgba(24, 216, 240, 0.16);
   border-radius: var(--raio-total);
   vertical-align: middle;
 }
@@ -2709,7 +2727,7 @@ select {
 }
 .bloco--interrupcao {
   border-left-color: var(--cor-secundaria);
-  background: rgba(6, 182, 212, 0.08);
+  background: rgba(124, 140, 255, 0.08);
 }
 .bloco--interrupcao::before {
   border-color: var(--cor-secundaria);
@@ -2722,8 +2740,8 @@ select {
   padding: 0.35rem 0.75rem;
   font-size: var(--txt-xs);
   color: var(--cor-primaria-clara);
-  border-color: rgba(20, 184, 166, 0.32);
-  background: rgba(20, 184, 166, 0.08);
+  border-color: rgba(24, 216, 240, 0.32);
+  background: rgba(24, 216, 240, 0.08);
 }
 
 .faixa-livre {
@@ -2815,7 +2833,7 @@ select {
 .anel-foco__progresso {
   stroke: url(#degrade-foco);
   transition: stroke-dashoffset 0.5s linear;
-  filter: drop-shadow(0 0 10px rgba(94, 234, 212, 0.55));
+  filter: drop-shadow(0 0 10px rgba(148, 176, 194, 0.55));
 }
 .anel-foco__centro {
   position: absolute;
@@ -2848,7 +2866,7 @@ select {
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(20, 184, 166, 0.16),
+    rgba(24, 216, 240, 0.16),
     transparent 70%
   );
   animation: respirar 4s ease-in-out infinite;
@@ -2903,8 +2921,8 @@ select {
   color: var(--cor-texto);
 }
 .foco-preset.ativo {
-  color: #fff;
-  background: var(--gradiente-marca);
+  color: var(--cor-sobre-acento);
+  background: var(--acento-chapado);
   border-color: transparent;
   box-shadow: var(--sombra-marca);
 }
@@ -2937,7 +2955,7 @@ select {
 .fila-foco__item:hover {
   transform: translateX(3px);
   border-color: var(--cor-primaria);
-  background: rgba(20, 184, 166, 0.1);
+  background: rgba(24, 216, 240, 0.1);
 }
 .fila-foco__hora {
   flex: none;
@@ -3005,10 +3023,7 @@ select {
   font-size: var(--txt-xl);
   font-weight: 700;
   letter-spacing: -0.03em;
-  background: var(--gradiente-texto);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--acento-400);
 }
 .total__rotulo {
   font-size: var(--txt-xs);
@@ -3204,7 +3219,7 @@ select {
   box-shadow: inset 0 0 0 1px var(--cor-primaria-clara);
 }
 .dia--ativo {
-  background: rgba(20, 184, 166, 0.2);
+  background: rgba(24, 216, 240, 0.2);
   border-color: var(--cor-primaria);
 }
 .dia--feriado {
@@ -3270,7 +3285,7 @@ select {
 }
 .semana__coluna--hoje {
   border-color: var(--cor-primaria);
-  background: rgba(20, 184, 166, 0.1);
+  background: rgba(24, 216, 240, 0.1);
 }
 .semana__cabecalho {
   display: grid;
@@ -3455,6 +3470,38 @@ select {
   pointer-events: none;
 }
 
+/* No mobile o rodapé é onde vive a navegação fixa e onde ficam os botões de
+   ação (WhatsApp, Copiar, Exportar). Empilhar avisos ali cobria justamente os
+   controles que o usuário acabou de acionar — então eles descem do topo. */
+@media (max-width: 63.999rem) {
+  .pilha-avisos {
+    top: calc(var(--altura-topo) + 0.5rem);
+    bottom: auto;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(28rem, calc(100vw - 1.5rem));
+  }
+  .aviso {
+    animation-name: aviso-entra-topo;
+  }
+  .aviso--saindo {
+    animation-name: aviso-sai-topo;
+  }
+}
+@keyframes aviso-entra-topo {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.97);
+  }
+}
+@keyframes aviso-sai-topo {
+  to {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
 .aviso {
   display: flex;
   align-items: center;
@@ -3501,15 +3548,24 @@ select {
   font-size: var(--txt-xs);
   font-weight: 600;
   color: var(--cor-primaria-clara);
-  background: rgba(20, 184, 166, 0.14);
-  border: 1px solid rgba(20, 184, 166, 0.3);
+  background: rgba(24, 216, 240, 0.14);
+  border: 1px solid rgba(24, 216, 240, 0.3);
   border-radius: var(--raio-sm);
   cursor: pointer;
 }
 .aviso__acao:hover {
-  background: rgba(20, 184, 166, 0.26);
+  background: rgba(24, 216, 240, 0.26);
+}
+/* O "x" continua visualmente discreto (24px), mas a área que responde ao
+   toque é ampliada por um pseudo-elemento até 44px — aumentar a caixa real
+   desequilibraria o aviso. */
+.aviso__fechar::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
 }
 .aviso__fechar {
+  position: relative;
   flex: none;
   width: 1.5rem;
   height: 1.5rem;
@@ -3549,7 +3605,7 @@ select {
   transform: none;
 }
 .dialogo::backdrop {
-  background: rgba(3, 14, 24, 0.7);
+  background: rgba(5, 8, 12, 0.7);
   backdrop-filter: blur(4px);
 }
 .dialogo__cabecalho {
@@ -3696,7 +3752,7 @@ select {
 .painel-foco__progresso {
   stroke: var(--cor-primaria-clara);
   transition: stroke-dashoffset 0.5s linear;
-  filter: drop-shadow(0 0 6px rgba(94, 234, 212, 0.6));
+  filter: drop-shadow(0 0 6px rgba(148, 176, 194, 0.6));
 }
 .painel-foco__relogio {
   position: absolute;
@@ -3793,13 +3849,13 @@ body.imersivo .pagina {
 }
 @keyframes pulso-destaque {
   0% {
-    box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.55);
+    box-shadow: 0 0 0 0 rgba(24, 216, 240, 0.55);
   }
   70% {
-    box-shadow: 0 0 0 14px rgba(20, 184, 166, 0);
+    box-shadow: 0 0 0 14px rgba(24, 216, 240, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(20, 184, 166, 0);
+    box-shadow: 0 0 0 0 rgba(24, 216, 240, 0);
   }
 }
 @keyframes onda-expandir {
@@ -3865,11 +3921,11 @@ body.imersivo .pagina {
   0%,
   100% {
     transform: scale(1);
-    filter: var(--filtro-logo) drop-shadow(0 20px 40px rgba(20, 184, 166, 0.5));
+    filter: var(--filtro-logo) drop-shadow(0 20px 40px rgba(24, 216, 240, 0.5));
   }
   50% {
     transform: scale(1.06);
-    filter: var(--filtro-logo) drop-shadow(0 24px 50px rgba(6, 182, 212, 0.55));
+    filter: var(--filtro-logo) drop-shadow(0 24px 50px rgba(124, 140, 255, 0.55));
   }
 }
 @keyframes correr-barra {
@@ -3883,10 +3939,10 @@ body.imersivo .pagina {
 @keyframes pulsar-ponto {
   0%,
   100% {
-    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2);
+    box-shadow: 0 0 0 3px rgba(24, 216, 240, 0.2);
   }
   50% {
-    box-shadow: 0 0 0 7px rgba(20, 184, 166, 0);
+    box-shadow: 0 0 0 7px rgba(24, 216, 240, 0);
   }
 }
 
@@ -3997,11 +4053,22 @@ body.imersivo .pagina {
 @view-transition {
   navigation: auto;
 }
+/* GHOSTING: as duas animações rodavam ao mesmo tempo (180ms de saída contra
+   260ms de entrada, ambas a partir do instante zero), então a tela anterior
+   ficava visível POR CIMA da nova por ~180ms. O `delay` na entrada faz a saída
+   terminar antes, e a duração total encurta para casar com o tempo real de
+   render — a tela já traz a própria animação `surgir`. */
 ::view-transition-old(root) {
-  animation: 180ms ease-out both fade-out;
+  animation: 120ms ease-out both fade-out;
 }
 ::view-transition-new(root) {
-  animation: 260ms cubic-bezier(0.16, 1, 0.3, 1) both fade-in;
+  animation: 160ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both fade-in;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
 }
 @keyframes fade-out {
   to {
@@ -4078,9 +4145,38 @@ body.imersivo .pagina {
   }
   .grade-rotinas {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* Os cartões acompanham a altura da linha para não sobrar um vão escuro,
+       sem cartão nem borda, que parece conteúdo faltando. O vazio interno é
+       tratado logo abaixo — esticar sem distribuir foi testado e reprovado. */
+    align-items: stretch;
   }
   .cartao--agenda {
     grid-column: 1 / -1;
+  }
+
+  /* A coluna 1 tem menos conteúdo por natureza. Em vez de deixar a sobra como
+     um bloco morto no pé, o acordeão de compromissos abre por padrão (há espaço
+     de sobra no desktop, e esconder atrás de um clique só fazia sentido no
+     mobile) e a lista dentro dele absorve o que restar. */
+  .cartao--janela .acordeao {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .cartao--janela .acordeao .lista--interrupcoes {
+    flex: 1 1 auto;
+    min-height: 4rem;
+    overflow-y: auto;
+  }
+
+  /* As regiões roláveis recebem a sobra em vez de empurrar a altura do cartão.
+     `flex-basis: 0` é o que faz a lista parar de ditar o tamanho de tudo. */
+  .cartao--tarefas .lista--tarefas,
+  .cartao--agenda .resultado-agenda {
+    flex: 1 1 0;
+    min-height: 16rem;
+    max-height: none;
+    overflow-y: auto;
   }
   .foco-tela {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
@@ -4161,7 +4257,7 @@ body.imersivo .pagina {
   }
   .topo__acoes .botao {
     gap: 0;
-    min-width: 2.6rem;
+    min-width: 2.75rem;
     padding: 0.45rem;
   }
   /* cabeçalho compacto: encolhe ao descer e devolve a tela ao conteúdo */
@@ -4337,4 +4433,264 @@ body.imersivo .pagina {
 .bloco__meta .icone,
 .tarefa__etiquetas .icone {
   margin-right: 0.15rem;
+}
+
+/* ==========================================================================
+   15. FEEDBACK PÓS-BLOCO E RECALIBRAÇÃO
+   ========================================================================== */
+
+/* Três alvos grandes, lado a lado: a resposta precisa custar um toque só. */
+.feedback {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--e2);
+  margin-bottom: var(--e3);
+}
+.feedback__opcao {
+  display: grid;
+  justify-items: center;
+  gap: var(--e2);
+  padding: var(--e4) var(--e2);
+  min-height: 5.5rem;
+  font: inherit;
+  font-size: var(--txt-xs);
+  font-weight: 600;
+  color: var(--cor-texto-medio);
+  background: var(--cor-superficie-suave);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  cursor: pointer;
+  transition:
+    transform var(--transicao),
+    border-color var(--transicao),
+    background var(--transicao),
+    color var(--transicao);
+}
+.feedback__opcao:hover {
+  transform: translateY(-2px);
+  color: var(--cor-texto);
+  border-color: var(--cor-borda-forte);
+}
+/* Cada resposta assume a cor semântica que já significa isso no resto do app. */
+.feedback--bom:hover {
+  border-color: var(--cor-sucesso);
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--cor-sucesso);
+}
+.feedback--medio:hover {
+  border-color: var(--cor-aviso);
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--cor-aviso);
+}
+.feedback--ruim:hover {
+  border-color: var(--cor-perigo);
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--cor-perigo);
+}
+.feedback__pular {
+  display: block;
+  width: 100%;
+  padding: var(--e2);
+  font: inherit;
+  font-size: var(--txt-xs);
+  color: var(--cor-texto-suave);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.feedback__pular:hover {
+  color: var(--cor-texto-medio);
+}
+
+/* ---------------------------------------------------- painel aprendizado - */
+.aprendizado {
+  display: grid;
+  gap: var(--e3);
+}
+.aprendizado__vazio {
+  display: grid;
+  justify-items: center;
+  gap: var(--e2);
+  padding: var(--e5) var(--e4);
+  text-align: center;
+  color: var(--cor-texto-suave);
+  background: var(--cor-superficie-suave);
+  border: 1px dashed var(--cor-borda-forte);
+  border-radius: var(--raio-lg);
+}
+.aprendizado__vazio .icone {
+  color: var(--cor-primaria-clara);
+}
+.aprendizado__vazio p {
+  font-size: var(--txt-sm);
+  max-width: 42ch;
+  text-wrap: pretty;
+}
+.aprendizado__vazio strong {
+  color: var(--cor-texto);
+}
+
+.aprendizado__precisao {
+  display: flex;
+  align-items: baseline;
+  gap: var(--e2);
+  padding: var(--e4);
+  background: var(--acento-veu);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+}
+.aprendizado__precisao strong {
+  font-family: var(--fonte-titulo);
+  font-size: var(--txt-xl);
+  letter-spacing: -0.03em;
+  color: var(--cor-primaria-clara);
+}
+.aprendizado__precisao span {
+  font-size: var(--txt-sm);
+  color: var(--cor-texto-medio);
+}
+
+.aprendizado__lista {
+  display: grid;
+  gap: var(--e2);
+}
+.aprendizado__item {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--e3);
+  padding: 0.7rem 0.9rem;
+  font-size: var(--txt-sm);
+  background: var(--cor-superficie-suave);
+  border: 1px solid var(--cor-borda);
+  border-left: 3px solid var(--cor-borda-forte);
+  border-radius: var(--raio-md);
+}
+/* Verde = você estima bem demais; âmbar = estoura. A cor é o resumo. */
+.aprendizado__item.excede {
+  border-left-color: var(--cor-aviso);
+}
+.aprendizado__item.sobra {
+  border-left-color: var(--cor-sucesso);
+}
+.aprendizado__rotulo {
+  font-weight: 600;
+  color: var(--cor-texto);
+  white-space: nowrap;
+}
+.aprendizado__texto {
+  color: var(--cor-texto-medio);
+  min-width: 0;
+  text-wrap: pretty;
+}
+.aprendizado__amostras {
+  font-size: var(--txt-xs);
+  color: var(--cor-texto-suave);
+  white-space: nowrap;
+}
+.aprendizado__nota {
+  font-size: var(--txt-sm);
+  color: var(--cor-texto-medio);
+  text-wrap: pretty;
+}
+.aprendizado__nota strong {
+  color: var(--cor-primaria-clara);
+}
+.aprendizado__rodape {
+  font-size: var(--txt-xs);
+  color: var(--cor-texto-suave);
+}
+
+/* Marca no campo de sugestão quando o número foi corrigido pela calibragem. */
+.sugestao__ajuste {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.45rem;
+  font-weight: 600;
+  color: var(--cor-primaria-clara);
+  background: var(--acento-suave);
+  border-radius: var(--raio-total);
+}
+
+@media (max-width: 30rem) {
+  .aprendizado__item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.2rem;
+  }
+  .aprendizado__amostras {
+    justify-self: start;
+  }
+}
+
+/* Selo no bloco quando a duração foi corrigida pelo histórico real. */
+.bloco__calibrado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.05rem 0.45rem;
+  font-weight: 600;
+  color: var(--cor-primaria-clara);
+  background: var(--acento-suave);
+  border-radius: var(--raio-total);
+}
+.bloco__calibrado .icone {
+  color: var(--cor-primaria-clara);
+}
+
+/* Exemplo de valor fora do campo. Um número dentro do input ("7", "45") é
+   visualmente indistinguível de um valor já digitado — o usuário achava que
+   o formulário vinha preenchido. A dica agora vive no rótulo. */
+.campo__dica {
+  margin-left: 0.35rem;
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--cor-texto-suave);
+}
+.campo__dica::before {
+  content: "· ";
+}
+
+/* ---------------------------------------------- lembrete de backup ------- */
+/* Discreto por decisão: é um aviso útil, não um alerta. Cor de atenção só na
+   borda esquerda, sem fundo âmbar gritando na tela toda. */
+.faixa-backup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e2) var(--e3);
+  padding: 0.75rem 0.95rem;
+  background: var(--cor-superficie-suave);
+  border: 1px solid var(--cor-borda);
+  border-left: 3px solid var(--cor-aviso);
+  border-radius: var(--raio-lg);
+}
+.faixa-backup__icone {
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--cor-aviso);
+}
+.faixa-backup__texto {
+  flex: 1 1 16rem;
+  min-width: 0;
+  font-size: var(--txt-xs);
+  color: var(--cor-texto-medio);
+  text-wrap: pretty;
+}
+.faixa-backup__texto strong {
+  color: var(--cor-texto);
+}
+.faixa-backup__texto span {
+  color: var(--cor-texto-suave);
+}
+@media (max-width: 30rem) {
+  .faixa-backup .botao {
+    flex: 1 1 auto;
+  }
 }
