@@ -4694,3 +4694,108 @@ body.imersivo .pagina {
     flex: 1 1 auto;
   }
 }
+
+/* ==========================================================================
+   16. RECORRÊNCIA
+   ========================================================================== */
+
+/* Sete alvos quadrados. Botão em vez de checkbox porque a área de toque
+   precisa ser inteira clicável no celular, não só o quadradinho. */
+.dias-semana {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+  margin-top: var(--e2);
+}
+.dia-semana {
+  display: grid;
+  place-items: center;
+  min-height: 2.5rem;
+  padding: 0;
+  font: inherit;
+  font-size: var(--txt-xs);
+  font-weight: 700;
+  color: var(--cor-texto-suave);
+  background: var(--cor-superficie-suave);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  cursor: pointer;
+  transition:
+    color var(--transicao),
+    background var(--transicao),
+    border-color var(--transicao);
+}
+.dia-semana:hover {
+  color: var(--cor-texto);
+  border-color: var(--cor-borda-forte);
+}
+.dia-semana[aria-pressed="true"] {
+  color: var(--cor-sobre-acento);
+  background: var(--acento-chapado);
+  border-color: transparent;
+}
+
+/* Uma tarefa recorrente nunca "acaba" — a borda lateral sinaliza que ela
+   volta amanhã, mesmo quando o check está marcado hoje. */
+.tarefa--recorrente {
+  border-left: 3px solid var(--acento-500);
+}
+.etiqueta--recorrente {
+  color: var(--cor-primaria-clara);
+  border-color: rgba(24, 216, 240, 0.32);
+  background: var(--acento-suave);
+}
+.etiqueta--recorrente .icone {
+  color: var(--cor-primaria-clara);
+}
+.etiqueta--fixo {
+  color: var(--cor-secundaria);
+  border-color: rgba(124, 140, 255, 0.35);
+}
+.etiqueta--fixo .icone {
+  color: var(--cor-secundaria);
+}
+
+/* -------------------------------------------- sobrecarga com ações ------- */
+.pendencias__lista {
+  display: grid;
+  gap: var(--e2);
+}
+.pendencia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e2);
+  padding: 0.6rem 0.75rem;
+  background: var(--cor-superficie-suave);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+}
+.pendencia__texto {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1 1 12rem;
+  font-size: var(--txt-xs);
+}
+.pendencia__texto strong {
+  color: var(--cor-texto);
+  overflow-wrap: anywhere;
+}
+.pendencia__texto span {
+  color: var(--cor-texto-suave);
+}
+.pendencia__acoes {
+  display: flex;
+  gap: var(--e1);
+  flex: none;
+}
+@media (max-width: 30rem) {
+  .pendencia__acoes {
+    width: 100%;
+  }
+  .pendencia__acoes .botao {
+    flex: 1 1 auto;
+  }
+}

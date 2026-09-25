@@ -1,16 +1,16 @@
-/**
+﻿/**
  * Service worker do Chronos Ultra.
  *
- * Estratégia:
- *  · navegação  → rede primeiro, cai para o cache quando offline;
- *  · app shell  → cache primeiro, revalidando em segundo plano;
- *  · CDN/fontes → cache primeiro com atualização silenciosa.
+ * EstratÃ©gia:
+ *  Â· navegaÃ§Ã£o  â†’ rede primeiro, cai para o cache quando offline;
+ *  Â· app shell  â†’ cache primeiro, revalidando em segundo plano;
+ *  Â· CDN/fontes â†’ cache primeiro com atualizaÃ§Ã£o silenciosa.
  *
- * Todos os dados do usuário vivem no localStorage, então o cache aqui só
- * guarda arquivos estáticos — nada pessoal é armazenado.
+ * Todos os dados do usuÃ¡rio vivem no localStorage, entÃ£o o cache aqui sÃ³
+ * guarda arquivos estÃ¡ticos â€” nada pessoal Ã© armazenado.
  */
 
-const VERSAO = 'chronos-v4'
+const VERSAO = 'chronos-v5'
 const CACHE_SHELL = `${VERSAO}-shell`
 const CACHE_EXTERNO = `${VERSAO}-externo`
 
@@ -47,7 +47,7 @@ self.addEventListener('install', evento => {
   evento.waitUntil(
     caches
       .open(CACHE_SHELL)
-      // `allSettled` evita que um único arquivo ausente aborte toda a instalação
+      // `allSettled` evita que um Ãºnico arquivo ausente aborte toda a instalaÃ§Ã£o
       .then(cache => Promise.allSettled(SHELL.map(url => cache.add(url))))
       .then(() => self.skipWaiting())
   )
@@ -78,7 +78,7 @@ self.addEventListener('fetch', evento => {
   const url = new URL(request.url)
   const mesmaOrigem = url.origin === self.location.origin
 
-  // páginas: rede primeiro para sempre pegar a versão mais nova
+  // pÃ¡ginas: rede primeiro para sempre pegar a versÃ£o mais nova
   if (request.mode === 'navigate') {
     evento.respondWith(
       fetch(request)

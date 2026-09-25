@@ -428,7 +428,13 @@ function adicionarTarefa(evento) {
     return
   }
 
-  const criada = tarefas.adicionar({ nome, peso, tempo, categoria, prazo })
+  const tipoRepeticao = $('#recorrencia-tarefa')?.value || 'nunca'
+  const recorrencia =
+    tipoRepeticao === 'nunca'
+      ? null
+      : { tipo: tipoRepeticao, dias: tipoRepeticao === 'semanal' ? ui.lerDiasRecorrencia() : [] }
+
+  const criada = tarefas.adicionar({ nome, peso, tempo, categoria, prazo, recorrencia })
 
   if (criada.tempo > estado.bio.focoMaximo) {
     notificar(
@@ -439,6 +445,9 @@ function adicionarTarefa(evento) {
 
   // mantém a categoria escolhida: normalmente se cadastra várias do mesmo tipo
   $('#form-tarefa')?.reset()
+  // o reset do <form> devolve o select de recorrência ao padrão, então a
+  // fileira de dias precisa acompanhar para não ficar visível sem contexto
+  ui.alternarDiasRecorrencia($('#recorrencia-tarefa')?.value || 'nunca')
   const seletorCategoria = $('#categoria-tarefa')
   if (seletorCategoria) seletorCategoria.value = categoria
   ui.mostrarSugestao(null)
@@ -515,7 +524,7 @@ function concluirExclusao(id) {
 }
 
 function alternarConcluida(id) {
-  const tarefa = tarefas.toggleConcluida(id)
+  const tarefa = tarefas.toggleConcluida(id, dataReferencia())
   if (!tarefa) return
   renderizarLista()
   atualizarPainel({ regerar: true })
@@ -651,7 +660,8 @@ function definirDataAgenda(chave) {
 }
 
 function gerarAgenda({ silencioso = false } = {}) {
-  const ativas = tarefas.filtrarAtivas()
+  // As recorrentes entram só nos dias em que a repetição cai — por isso a data.
+  const ativas = tarefas.filtrarAtivas(dataReferencia())
   if (!ativas.length) {
     // ao recalcular em segundo plano, preserva o plano já visível na tela
     if (silencioso) return estado.agendaAtual
@@ -714,6 +724,83 @@ function gerarAgenda({ silencioso = false } = {}) {
     $('#resultado-agenda')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
   return agenda
+}
+
+/* ------------------------------------------------- sobrecarga do dia ----- */
+
+/**
+ * Tira a tarefa do dia atual empurrando-a para o seguinte.
+ *
+ * Não apaga nem conclui — a tarefa continua no inventário, apenas deixa de
+ * disputar espaço hoje. É reversível pelo "Desfazer" do aviso.
+ */
+function adiarTarefa(id) {
+  const tarefa = tarefas.obter(id)
+  if (!tarefa) return
+
+  const seguinte = new Date(dataReferencia())
+  seguinte.setDate(seguinte.getDate() + 1)
+  const destino = calendario.chaveData(seguinte)
+  const anterior = tarefa.adiadaPara
+
+  tarefas.editar(id, { adiadaPara: destino })
+  renderizarLista()
+  gerarAgenda({ silencioso: true })
+  atualizarPainel()
+  salvar()
+
+  notificar(`"${tarefa.nome}" saiu de hoje e volta em ${destino.split('-').reverse().join('/')}.`, {
+    tipo: 'sucesso',
+    acao: {
+      rotulo: 'Desfazer',
+      aoClicar: () => {
+        tarefas.editar(id, { adiadaPara: anterior })
+        renderizarLista()
+        gerarAgenda({ silencioso: true })
+        atualizarPainel()
+        salvar()
+      }
+    }
+  })
+}
+
+/** Reduz a duração da tarefa para o que ainda cabe no dia. */
+async function encurtarTarefa(id) {
+  const tarefa = tarefas.obter(id)
+  if (!tarefa) return
+
+  const sobra = Math.max(0, (estado.agendaAtual?.stats?.minutosLivres || 0))
+  const sugerido = sobra >= 15 ? Math.floor(sobra / 5) * 5 : Math.max(15, Math.round(tarefa.tempo / 2 / 5) * 5)
+
+  const dados = await abrirFormulario({
+    titulo: `Encurtar "${tarefa.nome}"`,
+    descricao:
+      sobra >= 15
+        ? `Ainda restam ${alg.formatarDuracao(sobra)} livres hoje. Reduzir a tarefa a esse tamanho faz ela caber.`
+        : 'Não há folga hoje. Reduzir pela metade permite ao menos começar a tarefa.',
+    rotuloConfirmar: 'Encurtar',
+    campos: [
+      {
+        id: 'tempo',
+        rotulo: 'Nova duração (minutos)',
+        tipo: 'number',
+        min: 5,
+        max: 1440,
+        step: 5,
+        valor: sugerido
+      }
+    ],
+    validar: v => (v.tempo >= 5 ? null : 'A duração precisa ser de ao menos 5 minutos.')
+  })
+  if (!dados) return
+
+  const antes = tarefa.tempo
+  tarefas.editar(id, { tempo: dados.tempo })
+  renderizarLista()
+  gerarAgenda({ silencioso: true })
+  atualizarPainel()
+  salvar()
+  notificar(`"${tarefa.nome}": ${antes} min → ${dados.tempo} min.`, { tipo: 'sucesso' })
 }
 
 function enviarParaWhatsApp() {
@@ -1064,6 +1151,22 @@ function ligarEventosInventario() {
     salvar()
   })
 
+  // Recorrência: os dias da semana só fazem sentido no tipo "semanal".
+  const seletorRepeticao = $('#recorrencia-tarefa')
+  seletorRepeticao?.addEventListener('change', () => {
+    ui.alternarDiasRecorrencia(seletorRepeticao.value)
+    // sem nenhum dia marcado, "semanal" nunca cairia — sugere o dia de hoje
+    if (seletorRepeticao.value === 'semanal' && !ui.lerDiasRecorrencia().length) {
+      ui.definirDiasRecorrencia([new Date().getDay()])
+    }
+  })
+
+  $('#dias-recorrencia')?.addEventListener('click', evento => {
+    const botao = evento.target.closest('.dia-semana')
+    if (!botao) return
+    botao.setAttribute('aria-pressed', botao.getAttribute('aria-pressed') === 'true' ? 'false' : 'true')
+  })
+
   ligarFiltros()
   ligarBackup()
 
@@ -1205,13 +1308,21 @@ function ligarEventosAgenda() {
   })
 
   $('#resultado-agenda')?.addEventListener('click', evento => {
-    const botao = evento.target.closest('[data-foco]')
-    if (!botao) return
-    iniciarSessaoDeFoco({
-      titulo: botao.dataset.titulo,
-      minutos: Number(botao.dataset.minutos),
-      tarefa: botao.dataset.tarefa
-    })
+    const foco = evento.target.closest('[data-foco]')
+    if (foco) {
+      iniciarSessaoDeFoco({
+        titulo: foco.dataset.titulo,
+        minutos: Number(foco.dataset.minutos),
+        tarefa: foco.dataset.tarefa
+      })
+      return
+    }
+
+    const adiar = evento.target.closest('[data-adiar]')
+    if (adiar) return adiarTarefa(adiar.dataset.adiar)
+
+    const encolher = evento.target.closest('[data-encolher]')
+    if (encolher) return encurtarTarefa(encolher.dataset.encolher)
   })
 }
 
@@ -1557,6 +1668,7 @@ function iniciar() {
 
   ui.preencherSelectCategorias($('#categoria-tarefa'), 'foco')
   ui.preencherControlesInventario()
+  ui.preencherRecorrencia()
 
   nav.inicializar({ aoEntrar: aoEntrarNaTela })
   nav.irPara('tela-boas-vindas', { imediato: true })

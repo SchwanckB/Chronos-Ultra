@@ -36,6 +36,74 @@ function limitar(valor, minimo, maximo, padrao) {
 }
 
 /** Garante que qualquer objeto vindo do storage tenha todos os campos. */
+/* -------------------------------------------------------------------------
+   Recorrência
+   -------------------------------------------------------------------------
+   Uma tarefa recorrente é um MOLDE, não uma cópia por dia: ela permanece no
+   inventário e guarda em `concluidas` as datas em que já foi cumprida. Assim o
+   inventário não incha com centenas de duplicatas, e o histórico de quais dias
+   foram cumpridos fica disponível para o streak e para a revisão semanal.
+   ------------------------------------------------------------------------- */
+
+export const RECORRENCIAS = [
+  { id: 'nunca', rotulo: 'Não repete' },
+  { id: 'diaria', rotulo: 'Todo dia' },
+  { id: 'uteis', rotulo: 'Dias úteis (seg–sex)' },
+  { id: 'semanal', rotulo: 'Dias da semana escolhidos' }
+]
+
+export const DIAS_SEMANA = [
+  { id: 0, curto: 'D', rotulo: 'Domingo' },
+  { id: 1, curto: 'S', rotulo: 'Segunda' },
+  { id: 2, curto: 'T', rotulo: 'Terça' },
+  { id: 3, curto: 'Q', rotulo: 'Quarta' },
+  { id: 4, curto: 'Q', rotulo: 'Quinta' },
+  { id: 5, curto: 'S', rotulo: 'Sexta' },
+  { id: 6, curto: 'S', rotulo: 'Sábado' }
+]
+
+function normalizarRecorrencia(valor) {
+  if (!valor || valor === 'nunca' || valor.tipo === 'nunca') return null
+  const tipo = typeof valor === 'string' ? valor : valor.tipo
+  if (!['diaria', 'uteis', 'semanal'].includes(tipo)) return null
+
+  const dias =
+    tipo === 'semanal'
+      ? [...new Set((valor.dias || []).map(Number).filter(d => d >= 0 && d <= 6))].sort()
+      : []
+
+  // "semanal" sem nenhum dia marcado não repetiria nunca — vira diária
+  if (tipo === 'semanal' && !dias.length) return { tipo: 'diaria', dias: [] }
+  return { tipo, dias }
+}
+
+/** A recorrência cai nesta data? */
+export function repeteEm(tarefa, data = new Date()) {
+  const r = tarefa?.recorrencia
+  if (!r) return false
+  const dia = data.getDay()
+  if (r.tipo === 'diaria') return true
+  if (r.tipo === 'uteis') return dia >= 1 && dia <= 5
+  if (r.tipo === 'semanal') return r.dias.includes(dia)
+  return false
+}
+
+const chaveDeData = data =>
+  `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`
+
+/** Uma tarefa recorrente já foi cumprida NESTA data? */
+export function cumpridaEm(tarefa, data = new Date()) {
+  return Boolean(tarefa?.concluidas?.includes(chaveDeData(data)))
+}
+
+export function descreverRecorrencia(tarefa) {
+  const r = tarefa?.recorrencia
+  if (!r) return ''
+  if (r.tipo === 'diaria') return 'Todo dia'
+  if (r.tipo === 'uteis') return 'Dias úteis'
+  return r.dias.map(d => DIAS_SEMANA[d].curto).join('·')
+}
+
 export function normalizar(tarefa = {}) {
   return {
     id: tarefa.id != null ? String(tarefa.id) : novoId(),
@@ -46,7 +114,14 @@ export function normalizar(tarefa = {}) {
     prazo: tarefa.prazo || null,
     concluida: Boolean(tarefa.concluida),
     criadaEm: tarefa.criadaEm || new Date().toISOString(),
-    concluidaEm: tarefa.concluidaEm || null
+    concluidaEm: tarefa.concluidaEm || null,
+    /* v5 — recorrência */
+    recorrencia: normalizarRecorrencia(tarefa.recorrencia),
+    concluidas: Array.isArray(tarefa.concluidas) ? tarefa.concluidas.slice(-180) : [],
+    /* adiada para uma data futura: some do cronograma até lá */
+    adiadaPara: /^\d{4}-\d{2}-\d{2}$/.test(tarefa.adiadaPara || '') ? tarefa.adiadaPara : null,
+    /* horário travado pelo usuário, quando houver (HH:MM) */
+    horarioFixo: /^\d{2}:\d{2}$/.test(tarefa.horarioFixo || '') ? tarefa.horarioFixo : null
   }
 }
 
@@ -79,10 +154,29 @@ export function reinserir(tarefa, indice = listaTarefas.length) {
   listaTarefas.splice(Math.max(0, Math.min(indice, listaTarefas.length)), 0, normalizar(tarefa))
 }
 
-export function toggleConcluida(id) {
+/**
+ * Alterna a conclusão. Em tarefa recorrente isso NÃO a encerra: marca ou
+ * desmarca apenas a data informada, e ela volta a aparecer no próximo dia
+ * em que a recorrência cair.
+ */
+export function toggleConcluida(id, data = new Date()) {
   const indice = listaTarefas.findIndex(t => t.id === id)
   if (indice === -1) return null
   const atual = listaTarefas[indice]
+
+  if (atual.recorrencia) {
+    const chave = chaveDeData(data)
+    const jaTinha = atual.concluidas.includes(chave)
+    const concluidas = jaTinha
+      ? atual.concluidas.filter(d => d !== chave)
+      : [...atual.concluidas, chave].slice(-180)
+
+    listaTarefas[indice] = { ...atual, concluidas, concluida: false, concluidaEm: null }
+    // `concluida` sinaliza o estado NESTE dia, para a lista desenhar o check
+    listaTarefas[indice].cumpridaHoje = !jaTinha
+    return listaTarefas[indice]
+  }
+
   const concluida = !atual.concluida
   listaTarefas[indice] = {
     ...atual,
@@ -99,8 +193,20 @@ export function editar(id, novosDados = {}) {
   return listaTarefas[indice]
 }
 
-export function filtrarAtivas() {
-  return listaTarefas.filter(t => !t.concluida)
+/**
+ * Tarefas que devem entrar no cronograma de UMA data.
+ *
+ * Regra dupla: as avulsas entram enquanto não forem concluídas; as recorrentes
+ * entram apenas nos dias em que a recorrência cai e que ainda não foram
+ * cumpridos. Uma tarefa recorrente nunca "acaba" — ela reaparece amanhã.
+ */
+export function filtrarAtivas(data = new Date()) {
+  return listaTarefas.filter(t => {
+    // adiada explicitamente pelo usuário na tela de sobrecarga
+    if (t.adiadaPara && chaveDeData(data) < t.adiadaPara) return false
+    if (t.recorrencia) return repeteEm(t, data) && !cumpridaEm(t, data)
+    return !t.concluida
+  })
 }
 
 export function ordenarPorPeso() {

@@ -480,6 +480,8 @@ export function gerarAgenda({ tarefas = [], janela, limiteMinutos, perfil, refer
       minutosPausa,
       minutosInterrupcao: janela.bloqueado,
       janelaTotal: janela.total,
+      /* teto do dia — o painel de sobrecarga cita este número ao usuário */
+      limiteMinutos: orcamento,
       naoAgendadas: naoAgendadas.length,
       minutosNaoAgendados: naoAgendadas.reduce((s, t) => s + t.restante, 0),
       minutosLivres: Math.max(0, janela.fimMinutos - fimAgenda),

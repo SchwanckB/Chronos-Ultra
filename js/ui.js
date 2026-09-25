@@ -6,7 +6,14 @@
 import { escaparHTML } from './componentes.js'
 import { icone } from './icones.js'
 import { animarNumero } from './animacoes.js'
-import { CATEGORIAS, obterCategoria } from './tarefas.js'
+import {
+  CATEGORIAS,
+  obterCategoria,
+  RECORRENCIAS,
+  DIAS_SEMANA,
+  descreverRecorrencia,
+  cumpridaEm
+} from './tarefas.js'
 import {
   CRONOTIPOS,
   obterCronotipo,
@@ -150,6 +157,44 @@ export function preencherSelectCategorias(select, selecionada) {
   ).join('')
 }
 
+/**
+ * Monta o seletor de recorrência e a fileira de dias da semana.
+ *
+ * Os dias só aparecem quando o tipo é "semanal" — mostrar sempre poluiria o
+ * formulário para o caso mais comum, que é tarefa que não repete.
+ */
+export function preencherRecorrencia() {
+  const select = $('#recorrencia-tarefa')
+  if (select && !select.options.length) {
+    select.innerHTML = RECORRENCIAS.map(r => `<option value="${r.id}">${r.rotulo}</option>`).join('')
+  }
+
+  const dias = $('#dias-recorrencia')
+  if (dias && !dias.children.length) {
+    dias.innerHTML = DIAS_SEMANA.map(
+      d => `<button type="button" class="dia-semana" data-dia="${d.id}"
+              aria-pressed="false" aria-label="${d.rotulo}" title="${d.rotulo}">${d.curto}</button>`
+    ).join('')
+  }
+}
+
+/** Mostra ou esconde a fileira de dias conforme o tipo escolhido. */
+export function alternarDiasRecorrencia(tipo) {
+  const dias = $('#dias-recorrencia')
+  if (dias) dias.hidden = tipo !== 'semanal'
+}
+
+/** Dias marcados na fileira, como array de 0–6. */
+export function lerDiasRecorrencia() {
+  return $$('#dias-recorrencia .dia-semana[aria-pressed="true"]').map(b => Number(b.dataset.dia))
+}
+
+export function definirDiasRecorrencia(dias = []) {
+  $$('#dias-recorrencia .dia-semana').forEach(b => {
+    b.setAttribute('aria-pressed', String(dias.includes(Number(b.dataset.dia))))
+  })
+}
+
 /** Popula os controles de filtro e ordenação do inventário. */
 export function preencherControlesInventario() {
   const filtro = $('#filtro-categoria')
@@ -250,13 +295,16 @@ export function renderizarListaTarefas(lista, filtros = {}) {
   container.innerHTML = ordenadas
     .map((tarefa, indice) => {
       const categoria = obterCategoria(tarefa.categoria)
+      // Em tarefa recorrente, "concluída" é por DIA: o check reflete hoje,
+      // e amanhã ela reaparece limpa.
+      const feita = tarefa.recorrencia ? cumpridaEm(tarefa) : tarefa.concluida
       return `
-      <article class="tarefa ${tarefa.concluida ? 'tarefa--concluida' : ''}" data-id="${tarefa.id}"
+      <article class="tarefa ${feita ? 'tarefa--concluida' : ''} ${tarefa.recorrencia ? 'tarefa--recorrente' : ''}" data-id="${tarefa.id}"
         style="--i:${indice}" ${arrastavel ? 'draggable="true"' : ''}>
         <button type="button" class="tarefa__check" data-acao="concluir" data-id="${tarefa.id}"
-          aria-label="${tarefa.concluida ? 'Reabrir' : 'Concluir'} ${escaparHTML(tarefa.nome)}"
-          aria-pressed="${tarefa.concluida}">
-          ${tarefa.concluida ? icone('check', { tamanho: 14 }) : ''}
+          aria-label="${feita ? 'Reabrir' : 'Concluir'} ${escaparHTML(tarefa.nome)}"
+          aria-pressed="${feita}">
+          ${feita ? icone('check', { tamanho: 14 }) : ''}
         </button>
 
         <div class="tarefa__conteudo">
@@ -270,6 +318,20 @@ export function renderizarListaTarefas(lista, filtros = {}) {
               ${icone('relogio', { tamanho: 14 })} ${formatarDuracao(tarefa.tempo)}
             </span>
             ${etiquetaPrazo(tarefa.prazo)}
+            ${
+              tarefa.recorrencia
+                ? `<span class="etiqueta etiqueta--recorrente" title="Repete: ${descreverRecorrencia(tarefa)}">
+                     ${icone('repetir', { tamanho: 14 })} ${descreverRecorrencia(tarefa)}
+                   </span>`
+                : ''
+            }
+            ${
+              tarefa.horarioFixo
+                ? `<span class="etiqueta etiqueta--fixo" title="Horário travado">
+                     ${icone('relogio', { tamanho: 14 })} ${tarefa.horarioFixo}
+                   </span>`
+                : ''
+            }
           </div>
         </div>
 
@@ -508,20 +570,35 @@ export function renderizarAgenda(agenda) {
          </div>`
       : ''
 
+  // SOBRECARGA: antes isto era uma lista passiva — o dia estourava e o usuário
+  // que se virasse. Agora cada pendência traz a ação que resolve, e o rodapé
+  // diz de quanto é o excesso em minutos, não em adjetivos.
+  const excesso = pendentes.reduce((s, e) => s + (e.duracao || 0), 0)
   const naoAgendadas = pendentes.length
     ? `<section class="pendencias">
-         <h4>${icone('alerta', { tamanho: 15 })} Não coube hoje (${pendentes.length})</h4>
-         <ul>
+         <h4>${icone('alerta', { tamanho: 15 })} ${pendentes.length} tarefa(s) não couberam — ${formatarDuracao(excesso)} de excesso</h4>
+         <ul class="pendencias__lista">
            ${pendentes
              .map(
-               e => `<li>
-                       <strong>${escaparHTML(e.titulo)}</strong>
-                       <span>${escaparHTML(e.descricao)}</span>
+               e => `<li class="pendencia">
+                       <span class="pendencia__texto">
+                         <strong>${escaparHTML(e.titulo)}</strong>
+                         <span>${escaparHTML(e.descricao)}</span>
+                       </span>
+                       <span class="pendencia__acoes">
+                         <button type="button" class="botao botao--secundario botao--pequeno"
+                           data-adiar="${e.id ?? ''}">Adiar p/ amanhã</button>
+                         <button type="button" class="botao botao--fantasma botao--pequeno"
+                           data-encolher="${e.id ?? ''}">Encurtar</button>
+                       </span>
                      </li>`
              )
              .join('')}
          </ul>
-         <p class="pendencias__dica">Aumente o limite diário, amplie a janela ou reduza o peso de alguma tarefa.</p>
+         <p class="pendencias__dica">
+           Ou amplie a janela de trabalho / aumente o limite diário — hoje ele está em
+           <strong>${formatarDuracao(agenda.stats.limiteMinutos || 0)}</strong>.
+         </p>
        </section>`
     : ''
 
