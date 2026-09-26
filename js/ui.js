@@ -38,7 +38,7 @@ export function mostrarTela(id) {
   // O shell (menu lateral, topo e barra inferior) só existe depois do login:
   // no onboarding a tela ocupa a página inteira.
   const shell = $('#app')
-  if (shell) shell.hidden = id === 'tela-boas-vindas'
+  if (shell) shell.hidden = id === 'tela-boas-vindas' || id === 'tela-auth'
 
   document.body.dataset.tela = id
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -109,11 +109,45 @@ export function atualizarCabecalho(perfil, bio) {
   const saudacao = $('#saudacao-nome')
   if (saudacao) saudacao.textContent = `Olá, ${perfil.nome}!`
 
-  // A inicial alimenta os três avatares do app: topo, menu lateral e perfil.
-  const inicial = (perfil.nome || '?').trim().charAt(0).toUpperCase()
+  const nomePerfil = String(perfil.nome || '').trim()
+  const inicial = Array.from(nomePerfil)[0]?.toLocaleUpperCase('pt-BR') || 'C'
+  let avatarUrl = ''
+  const urlInformada = String(perfil.avatar_url || '').trim()
+  if (urlInformada) {
+    try {
+      const candidata = new URL(urlInformada, window.location.origin)
+      if (candidata.protocol === 'https:' || candidata.origin === window.location.origin) {
+        avatarUrl = candidata.href
+      }
+    } catch {
+      avatarUrl = ''
+    }
+  }
+
+  const avatarImagem = avatarUrl ? document.createElement('img') : null
+  if (avatarImagem) {
+    avatarImagem.src = avatarUrl
+    avatarImagem.alt = `Foto de ${perfil.nome || 'usuário'}`
+    avatarImagem.className = 'avatar__imagem'
+    avatarImagem.referrerPolicy = 'no-referrer'
+    avatarImagem.loading = 'lazy'
+  }
+
   ;['#avatar-inicial', '#avatar-lateral', '#avatar-config'].forEach(seletor => {
     const alvo = $(seletor)
-    if (alvo) alvo.textContent = inicial
+    if (!alvo) return
+    if (avatarImagem) {
+      const imagem = avatarImagem.cloneNode()
+      imagem.addEventListener('error', () => {
+        if (!imagem.isConnected) return
+        alvo.textContent = inicial
+        alvo.classList.remove('avatar--foto')
+      }, { once: true })
+      alvo.replaceChildren(imagem)
+    } else {
+      alvo.textContent = inicial
+    }
+    alvo.classList.toggle('avatar--foto', Boolean(avatarUrl))
   })
   ;['#nome-lateral', '#nome-config'].forEach(seletor => {
     const alvo = $(seletor)
@@ -226,11 +260,44 @@ export const ORDENACOES = [
   { id: 'duracao', rotulo: 'Duração' }
 ]
 
+function diasAtePrazo(prazo) {
+  if (!prazo) return null
+  const alvo = new Date(`${prazo}T23:59:59`)
+  if (Number.isNaN(alvo.getTime())) return null
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+  return Math.round((alvo - hoje) / 86400000)
+}
+
+function tarefaUrgente(tarefa) {
+  const dias = diasAtePrazo(tarefa.prazo)
+  return dias !== null && dias <= 2 && !tarefa.concluida
+}
+
+function tarefaProxima(tarefa) {
+  const dias = diasAtePrazo(tarefa.prazo)
+  return dias !== null && dias <= 7 && !tarefa.concluida
+}
+
+function tarefaHoje(tarefa) {
+  const dias = diasAtePrazo(tarefa.prazo)
+  if (dias === null || tarefa.concluida) return false
+  return dias <= 0 || dias === 1
+}
+
+function tarefaAtrasada(tarefa) {
+  const dias = diasAtePrazo(tarefa.prazo)
+  return dias !== null && dias < 0 && !tarefa.concluida
+}
+
 function aplicarFiltros(lista, { busca = '', status = 'todas', categoria = 'todas' }) {
   const termo = busca.trim().toLowerCase()
   return lista.filter(tarefa => {
     if (status === 'pendentes' && tarefa.concluida) return false
     if (status === 'concluidas' && !tarefa.concluida) return false
+    if (status === 'hoje' && !tarefaHoje(tarefa)) return false
+    if (status === 'urgentes' && !tarefaUrgente(tarefa)) return false
+    if (status === 'proximas' && !tarefaProxima(tarefa)) return false
     if (categoria !== 'todas' && tarefa.categoria !== categoria) return false
     if (termo && !tarefa.nome.toLowerCase().includes(termo)) return false
     return true
@@ -298,8 +365,9 @@ export function renderizarListaTarefas(lista, filtros = {}) {
       // Em tarefa recorrente, "concluída" é por DIA: o check reflete hoje,
       // e amanhã ela reaparece limpa.
       const feita = tarefa.recorrencia ? cumpridaEm(tarefa) : tarefa.concluida
+      const atrasada = tarefaAtrasada(tarefa)
       return `
-      <article class="tarefa ${feita ? 'tarefa--concluida' : ''} ${tarefa.recorrencia ? 'tarefa--recorrente' : ''}" data-id="${tarefa.id}"
+      <article class="tarefa ${feita ? 'tarefa--concluida' : ''} ${tarefa.recorrencia ? 'tarefa--recorrente' : ''} ${atrasada ? 'tarefa--atrasada' : ''}" data-id="${tarefa.id}"
         style="--i:${indice}" ${arrastavel ? 'draggable="true"' : ''}>
         <button type="button" class="tarefa__check" data-acao="concluir" data-id="${tarefa.id}"
           aria-label="${feita ? 'Reabrir' : 'Concluir'} ${escaparHTML(tarefa.nome)}"
@@ -318,6 +386,7 @@ export function renderizarListaTarefas(lista, filtros = {}) {
               ${icone('relogio', { tamanho: 14 })} ${formatarDuracao(tarefa.tempo)}
             </span>
             ${etiquetaPrazo(tarefa.prazo)}
+            ${atrasada ? `<span class="etiqueta etiqueta--urgente" title="Tarefa atrasada">${icone('alerta', { tamanho: 14 })} Atrasada</span>` : ''}
             ${
               tarefa.recorrencia
                 ? `<span class="etiqueta etiqueta--recorrente" title="Repete: ${descreverRecorrencia(tarefa)}">
@@ -341,6 +410,10 @@ export function renderizarListaTarefas(lista, filtros = {}) {
               ? `<span class="tarefa__alca" title="Arraste para reordenar">${icone('alca', { tamanho: 16 })}</span>`
               : ''
           }
+          <button type="button" class="botao botao--icone botao--fantasma" data-acao="focar" data-id="${tarefa.id}"
+            aria-label="Focar em ${escaparHTML(tarefa.nome)}" title="Iniciar foco nesta tarefa">${icone('play', { tamanho: 15 })}</button>
+          <button type="button" class="botao botao--icone botao--fantasma" data-acao="duplicar" data-id="${tarefa.id}"
+            aria-label="Duplicar ${escaparHTML(tarefa.nome)}" title="Duplicar tarefa">${icone('duplicar', { tamanho: 15 })}</button>
           <button type="button" class="botao botao--icone botao--fantasma" data-acao="editar" data-id="${tarefa.id}"
             aria-label="Editar ${escaparHTML(tarefa.nome)}">${icone('editar', { tamanho: 15 })}</button>
           <button type="button" class="botao botao--icone botao--fantasma botao--perigo-suave" data-acao="excluir" data-id="${tarefa.id}"

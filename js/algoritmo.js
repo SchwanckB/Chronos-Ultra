@@ -213,7 +213,7 @@ function montarTimeline(janela) {
    Priorização
    ------------------------------------------------------------------------- */
 
-const PESOS_SCORE = { peso: 0.4, afinidade: 0.22, urgencia: 0.26, encaixe: 0.12 }
+const PESOS_SCORE = { peso: 0.28, afinidade: 0.24, urgencia: 0.24, encaixe: 0.12, foco: 0.12 }
 
 function diasAtePrazo(prazo, referencia) {
   if (!prazo) return null
@@ -224,14 +224,47 @@ function diasAtePrazo(prazo, referencia) {
   return Math.round((alvo - base) / 86400000)
 }
 
+export function medirFocoUsuario({ minutos, perfil, esforcoAcumulado = 0, pausaRecente = 0 } = {}) {
+  const hora = ((minutos / 60) % 24 + 24) % 24
+  const energia = obterEnergia(hora, perfil) / 100
+
+  const picoBase = perfil?.picoHora ?? 11.5
+  const melhorHora = perfil?.focoAprendido?.melhorHora?.hora ?? picoBase
+  const piorHora = perfil?.focoAprendido?.piorHora?.hora ?? null
+
+  const distanciaPico = Math.abs(hora - picoBase) / 10
+  const sincronizacaoCircadiana = 1 - limitar(distanciaPico, 0, 1)
+
+  const ajusteAprendido = melhorHora == null
+    ? 0
+    : 1 - Math.abs((hora - melhorHora + 12) % 24 - 12) / 12
+
+  const penalidadeHorarioRuim = piorHora == null
+    ? 0
+    : Math.max(0, 1 - Math.abs((hora - piorHora + 12) % 24 - 12) / 6)
+
+  const desgaste = limitar((esforcoAcumulado || 0) / Math.max(perfil?.focoMaximo || 50, 1), 0, 1)
+  const recuperacao = limitar(1 - desgaste + (pausaRecente || 0) * 0.2, 0, 1)
+
+  const focoValido =
+    0.38 * energia +
+    0.22 * sincronizacaoCircadiana +
+    0.2 * ajusteAprendido +
+    0.1 * recuperacao -
+    0.18 * penalidadeHorarioRuim
+
+  return limitar(focoValido, 0, 1)
+}
+
 export function calcularUrgencia(prazo, referencia = new Date()) {
   const dias = diasAtePrazo(prazo, referencia)
   if (dias === null) return 0.35
+
   if (dias <= 0) return 1
-  if (dias === 1) return 0.8
-  if (dias <= 3) return 0.6
-  if (dias <= 7) return 0.45
-  return 0.3
+  if (dias === 1) return 0.82
+
+  const valor = 1 / (1 + Math.exp((dias - 1.8) / 1.3))
+  return limitar(Number(valor.toFixed(3)), 0.12, 0.9)
 }
 
 /** Quanto de energia a tarefa exige (0-1): peso declarado + natureza da categoria. */
@@ -249,18 +282,40 @@ export function pontuarTarefa(tarefa, contexto) {
   const pesoNorm = (limitar(tarefa.peso, 1, 10) - 1) / 9
   const exigencia = calcularExigencia(tarefa)
   const energia = obterEnergia(minutos / 60, perfil) / 100
+  const focoUsuario = medirFocoUsuario({
+    minutos,
+    perfil,
+    esforcoAcumulado: Math.min((minutos / 60) * 12, 100),
+    pausaRecente: 0
+  })
+
   const afinidade = 1 - Math.abs(exigencia - energia)
   const urgencia = calcularUrgencia(tarefa.prazo, referencia)
   const restante = tarefa.restante ?? tarefa.tempo
   const encaixe = espacoDisponivel >= restante ? 1 : limitar(espacoDisponivel / Math.max(restante, 1), 0, 1)
 
+  const compatibilidadeFoco = 1 - Math.abs(exigencia - focoUsuario)
+  const custoContexto = Math.min(1, Math.abs((espacoDisponivel / Math.max(restante, 1)) - 1) * 0.6 + Math.abs(energia - exigencia) * 0.4)
   const total =
     PESOS_SCORE.peso * pesoNorm +
-    PESOS_SCORE.afinidade * afinidade +
+    PESOS_SCORE.afinidade * (0.7 * afinidade + 0.3 * compatibilidadeFoco) +
     PESOS_SCORE.urgencia * urgencia +
-    PESOS_SCORE.encaixe * encaixe
+    PESOS_SCORE.encaixe * encaixe +
+    PESOS_SCORE.foco * focoUsuario -
+    0.08 * custoContexto
 
-  return { total, pesoNorm, exigencia, energia, afinidade, urgencia, encaixe }
+  return {
+    total,
+    pesoNorm,
+    exigencia,
+    energia,
+    afinidade: 0.7 * afinidade + 0.3 * compatibilidadeFoco,
+    urgencia,
+    encaixe,
+    focoUsuario,
+    compatibilidadeFoco,
+    custoContexto
+  }
 }
 
 /** Frase curta explicando por que a tarefa caiu naquele horário. */
@@ -278,18 +333,34 @@ export function explicarEncaixe(detalhe) {
    Pausas
    ------------------------------------------------------------------------- */
 
-function definirPausa({ continuos, perfil, trocaDeTarefa }) {
-  const curta = perfil.pausaCurta
-  if (continuos >= perfil.focoMaximo * 2.5) {
+export function sugerirPausa({ tempoFocoMinutos = 0, perfil, trocaDeTarefa = false } = {}) {
+  const curta = perfil?.pausaCurta ?? 10
+  const focoMaximo = perfil?.focoMaximo ?? 50
+
+  if (tempoFocoMinutos >= focoMaximo * 2.5) {
     return { duracao: Math.max(30, curta * 3), tipo: 'Descanso profundo', icone: '🛌', simbolo: 'descanso', motivo: 'Você acumulou muito tempo em foco — o corpo precisa reiniciar.' }
   }
-  if (continuos >= perfil.focoMaximo * 1.5) {
+  if (tempoFocoMinutos >= focoMaximo * 1.5) {
     return { duracao: Math.max(20, curta * 2), tipo: 'Descanso recuperador', icone: '🌿', simbolo: 'folha', motivo: 'Recuperação proporcional ao esforço já realizado.' }
   }
   if (trocaDeTarefa) {
     return { duracao: curta + 5, tipo: 'Troca de contexto', icone: '☕', simbolo: 'cafe', motivo: 'Tarefa concluída. Feche o ciclo antes de começar a próxima.' }
   }
-  return { duracao: curta, tipo: 'Pausa de foco', icone: '💧', simbolo: 'gota', motivo: 'Respiro curto para sustentar a atenção no próximo bloco.' }
+  if (tempoFocoMinutos >= focoMaximo) {
+    return { duracao: curta, tipo: 'Pausa de foco', icone: '💧', simbolo: 'gota', motivo: 'Você chegou ao limite de foco contínuo recomendado. Faça um respiro curto antes do próximo bloco.' }
+  }
+  return null
+}
+
+function definirPausa({ continuos, perfil, trocaDeTarefa }) {
+  const tempoFocoMinutos = continuos || 0
+  return sugerirPausa({ tempoFocoMinutos, perfil, trocaDeTarefa }) || {
+    duracao: perfil.pausaCurta,
+    tipo: 'Pausa de foco',
+    icone: '💧',
+    simbolo: 'gota',
+    motivo: 'Respiro curto para sustentar a atenção no próximo bloco.'
+  }
 }
 
 /* -------------------------------------------------------------------------

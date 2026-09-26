@@ -60,6 +60,135 @@
       }, 5000);
     </script>
 
+    <section
+      id="tela-auth"
+      class="tela tela--centralizada tela-auth"
+      aria-label="Tela de autenticação"
+    >
+      <div class="auth-layout">
+        <div class="auth-apresentacao">
+          <div class="auth-marca">
+            <img src="img/logo.png" alt="" width="44" height="44" />
+            <span>CHRONOS <strong>ULTRA</strong></span>
+          </div>
+          <div class="auth-mensagem">
+            <p class="auth-sobretitulo">SEU TEMPO, COM INTENÇÃO</p>
+            <h1>Um dia mais claro começa com <span>um plano melhor.</span></h1>
+            <p class="auth-resumo">
+              Organize prioridades, acompanhe seu foco e ajuste a rotina ao seu
+              ritmo.
+            </p>
+          </div>
+          <div
+            class="auth-ritmo"
+            aria-label="Exemplo de blocos de planejamento"
+          >
+            <div class="auth-ritmo__cabecalho">
+              <span>RITMO DO DIA</span>
+              <span class="auth-ritmo__estado"><i></i> organizado</span>
+            </div>
+            <div class="auth-bloco auth-bloco--foco">
+              <time>09:00</time
+              ><span><b>Foco profundo</b><small>Prioridade do dia</small></span
+              ><em>50 min</em>
+            </div>
+            <div class="auth-bloco auth-bloco--pausa">
+              <time>09:50</time
+              ><span
+                ><b>Pausa consciente</b><small>Recuperar energia</small></span
+              ><em>10 min</em>
+            </div>
+            <div class="auth-bloco auth-bloco--rotina">
+              <time>10:00</time
+              ><span
+                ><b>Próximo passo</b><small>Um bloco de cada vez</small></span
+              ><em>40 min</em>
+            </div>
+          </div>
+          <p class="auth-rodape">
+            Planejamento pessoal que respeita o seu ritmo.
+          </p>
+        </div>
+
+        <div class="auth-painel">
+          <div class="auth-painel__cabecalho">
+            <p class="auth-painel__eyebrow">BEM-VINDO DE VOLTA</p>
+            <h2>Acesse sua conta</h2>
+            <p>Entre para continuar de onde sua rotina parou.</p>
+          </div>
+
+          <form id="form-auth" class="formulario auth-formulario" novalidate>
+            <div class="campo">
+              <label for="auth-email">E-mail</label>
+              <input
+                id="auth-email"
+                type="email"
+                name="email"
+                placeholder="seu@email.com"
+                autocomplete="email"
+                inputmode="email"
+                required
+              />
+            </div>
+
+            <div class="campo">
+              <label for="auth-senha">Senha</label>
+              <input
+                id="auth-senha"
+                type="password"
+                name="senha"
+                placeholder="Digite sua senha"
+                autocomplete="current-password"
+                minlength="6"
+                required
+              />
+            </div>
+
+            <button
+              type="button"
+              id="btn-auth-login"
+              class="botao botao--primario botao--bloco auth-entrar"
+            >
+              Entrar na minha conta <span aria-hidden="true">&#8594;</span>
+            </button>
+            <details class="auth-ajuda" id="auth-ajuda">
+              <summary>Ajuda para entrar</summary>
+              <div class="auth-ajuda__acoes">
+                <button
+                  type="button"
+                  id="btn-auth-recuperar"
+                  class="botao botao--fantasma botao--pequeno auth-recuperar"
+                >
+                  Esqueci minha senha
+                </button>
+                <button
+                  type="button"
+                  id="btn-auth-reenviar-confirmacao"
+                  class="botao botao--fantasma botao--pequeno auth-recuperar"
+                >
+                  Reenviar confirmação de e-mail
+                </button>
+              </div>
+            </details>
+            <div class="auth-divisor"><span>AINDA NÃO TEM CONTA?</span></div>
+            <button
+              type="button"
+              id="btn-auth-cadastro"
+              class="botao botao--fantasma botao--bloco auth-criar"
+            >
+              Criar minha conta
+            </button>
+            <div class="auth-seguranca">
+              <span aria-hidden="true">&#9679;</span>
+              <p>
+                Seu perfil e suas preferências ficam associados à sua conta.
+              </p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
     <!-- ==================================================================
          TELA 1 — Onboarding (boas-vindas)
          ================================================================== -->
@@ -369,6 +498,22 @@
                     <span data-icone="rotinas" data-tamanho="18"></span> Minhas
                     rotinas
                   </button>
+                  <button
+                    type="button"
+                    id="btn-nova-tarefa"
+                    class="botao botao--fantasma"
+                  >
+                    <span data-icone="mais" data-tamanho="18"></span> Nova
+                    tarefa
+                  </button>
+                  <button
+                    type="button"
+                    id="btn-foco-prioritario"
+                    class="botao botao--secundario"
+                  >
+                    <span data-icone="play" data-tamanho="18"></span> Foco
+                    prioritário
+                  </button>
                 </div>
               </div>
 
@@ -378,13 +523,29 @@
                 aria-label="Seu perfil biológico"
               ></div>
               <aside id="faixa-backup" class="faixa-backup" hidden>
-                <span class="faixa-backup__icone" data-icone="escudo" data-tamanho="18"></span>
+                <span
+                  class="faixa-backup__icone"
+                  data-icone="escudo"
+                  data-tamanho="18"
+                ></span>
                 <p class="faixa-backup__texto">
                   <strong>Seus dados vivem só neste navegador.</strong>
                   <span data-quando></span>
                 </p>
-                <button type="button" id="btn-backup-agora" class="botao botao--secundario botao--pequeno">Exportar cópia</button>
-                <button type="button" id="btn-backup-depois" class="botao botao--fantasma botao--pequeno">Depois</button>
+                <button
+                  type="button"
+                  id="btn-backup-agora"
+                  class="botao botao--secundario botao--pequeno"
+                >
+                  Exportar cópia
+                </button>
+                <button
+                  type="button"
+                  id="btn-backup-depois"
+                  class="botao botao--fantasma botao--pequeno"
+                >
+                  Depois
+                </button>
               </aside>
 
               <!-- bloco em andamento -->
@@ -668,7 +829,9 @@
 
                     <div class="grade-campos grade-campos--tripla">
                       <div class="campo">
-                        <label for="peso-tarefa">Peso <span class="campo__dica">1 a 10</span></label>
+                        <label for="peso-tarefa"
+                          >Peso <span class="campo__dica">1 a 10</span></label
+                        >
                         <input
                           type="number"
                           id="peso-tarefa"
@@ -679,7 +842,10 @@
                         />
                       </div>
                       <div class="campo">
-                        <label for="tempo-tarefa">Duração <span class="campo__dica">minutos</span></label>
+                        <label for="tempo-tarefa"
+                          >Duração
+                          <span class="campo__dica">minutos</span></label
+                        >
                         <input
                           type="number"
                           id="tempo-tarefa"
@@ -697,7 +863,13 @@
                     <div class="campo">
                       <label for="recorrencia-tarefa">Repetir</label>
                       <select id="recorrencia-tarefa"></select>
-                      <div id="dias-recorrencia" class="dias-semana" role="group" aria-label="Dias da semana" hidden></div>
+                      <div
+                        id="dias-recorrencia"
+                        class="dias-semana"
+                        role="group"
+                        aria-label="Dias da semana"
+                        hidden
+                      ></div>
                     </div>
 
                     <button
@@ -735,6 +907,38 @@
                     </div>
                   </div>
 
+                  <div class="barra-acoes barra-acoes--compacta">
+                    <button
+                      type="button"
+                      id="btn-nova-tarefa-rotinas"
+                      class="botao botao--primario botao--pequeno"
+                    >
+                      <span data-icone="mais" data-tamanho="15"></span> Nova
+                      tarefa
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-concluir-visiveis"
+                      class="botao botao--fantasma botao--pequeno"
+                    >
+                      Concluir visíveis
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-priorizar-urgentes"
+                      class="botao botao--fantasma botao--pequeno"
+                    >
+                      Priorizar urgentes
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-limpar-filtros"
+                      class="botao botao--fantasma botao--pequeno"
+                    >
+                      Limpar filtros
+                    </button>
+                  </div>
+
                   <div class="segmentado-linha">
                     <div
                       id="segmentado-status"
@@ -765,6 +969,30 @@
                         aria-pressed="false"
                       >
                         Concluídas
+                      </button>
+                      <button
+                        type="button"
+                        class="segmentado__opcao"
+                        data-status="hoje"
+                        aria-pressed="false"
+                      >
+                        Hoje
+                      </button>
+                      <button
+                        type="button"
+                        class="segmentado__opcao"
+                        data-status="urgentes"
+                        aria-pressed="false"
+                      >
+                        Urgentes
+                      </button>
+                      <button
+                        type="button"
+                        class="segmentado__opcao"
+                        data-status="proximas"
+                        aria-pressed="false"
+                      >
+                        Próximas
                       </button>
                     </div>
                     <span
@@ -1034,6 +1262,14 @@
                     <button type="button" class="foco-preset" data-minutos="60">
                       60 min
                     </button>
+                    <button
+                      type="button"
+                      class="foco-preset foco-preset--personalizado"
+                      id="btn-foco-personalizado"
+                      data-personalizado="true"
+                    >
+                      Sessão personalizada
+                    </button>
                   </div>
 
                   <div class="foco-palco__acoes">
@@ -1168,13 +1404,19 @@
 
               <div id="totais-estatisticas" class="totais"></div>
 
-              <section class="cartao cartao--largo" aria-labelledby="titulo-aprendizado">
+              <section
+                class="cartao cartao--largo"
+                aria-labelledby="titulo-aprendizado"
+              >
                 <header class="cartao__cabecalho">
                   <div>
-                    <h3 id="titulo-aprendizado" class="cartao__titulo">O que o app aprendeu com você</h3>
+                    <h3 id="titulo-aprendizado" class="cartao__titulo">
+                      O que o app aprendeu com você
+                    </h3>
                     <p class="cartao__descricao">
-                      Comparação entre o tempo que você estima e o que de fato leva. As sugestões
-                      futuras já saem corrigidas por estes números.
+                      Comparação entre o tempo que você estima e o que de fato
+                      leva. As sugestões futuras já saem corrigidas por estes
+                      números.
                     </p>
                   </div>
                 </header>
@@ -1294,7 +1536,7 @@
                         >Chronos</span
                       >
                       <span id="detalhe-config" class="perfil-cartao__detalhe"
-                        >Perfil local deste navegador</span
+                        >Conta sincronizada com o Chronos</span
                       >
                     </span>
                     <button
@@ -1304,6 +1546,59 @@
                     >
                       <span data-icone="editar" data-tamanho="17"></span> Editar
                       perfil
+                    </button>
+                  </div>
+                </section>
+
+                <section
+                  class="cartao cartao--largo"
+                  aria-labelledby="titulo-seguranca-conta"
+                >
+                  <header class="cartao__cabecalho">
+                    <div>
+                      <h3 id="titulo-seguranca-conta" class="cartao__titulo">
+                        Segurança da conta
+                      </h3>
+                      <p class="cartao__descricao">
+                        Proteja o acesso com um aplicativo autenticador.
+                      </p>
+                    </div>
+                  </header>
+                  <div class="linha-config">
+                    <span
+                      class="linha-config__icone"
+                      data-icone="cadeado"
+                      data-tamanho="19"
+                    ></span>
+                    <span class="linha-config__textos">
+                      <span class="linha-config__titulo"
+                        >Autenticação em duas etapas</span
+                      >
+                      <span
+                        id="mfa-status"
+                        class="linha-config__descricao"
+                        role="status"
+                        aria-live="polite"
+                        >Entre na sua conta para consultar o status.</span
+                      >
+                    </span>
+                  </div>
+                  <div class="barra-acoes">
+                    <button
+                      type="button"
+                      id="btn-mfa-ativar"
+                      class="botao botao--secundario botao--pequeno"
+                      hidden
+                    >
+                      Ativar autenticador
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-mfa-desativar"
+                      class="botao botao--fantasma botao--pequeno botao--perigo-suave"
+                      hidden
+                    >
+                      Remover autenticação em duas etapas
                     </button>
                   </div>
                 </section>
@@ -1420,8 +1715,8 @@
                         Seus dados
                       </h3>
                       <p class="cartao__descricao">
-                        Tudo vive neste navegador. Exporte para migrar de
-                        máquina ou guardar uma cópia.
+                        Seus dados sincronizam com sua conta. Exporte para
+                        guardar uma cópia independente.
                       </p>
                     </div>
                   </header>
@@ -1463,8 +1758,8 @@
                           >Trocar de perfil</span
                         >
                         <span class="linha-config__descricao">
-                          Seus dados continuam salvos e voltam ao entrar com o
-                          mesmo nome.
+                          Encerra a sessão neste dispositivo; os dados continuam
+                          na sua conta Supabase.
                         </span>
                       </span>
                       <span class="linha-config__controle">

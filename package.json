@@ -1,5 +1,5 @@
 {
-  "name": "@chronos/chronos-ultra",
+  "name": "chronos-ultra",
   "version": "1.0.0",
   "description": "",
   "main": "sw.js",
@@ -20,5 +20,8 @@
   "homepage": "https://github.com/SchwanckB/Chronos-Ultra#readme",
   "devDependencies": {
     "sharp": "^0.35.3"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.2"
   }
 }

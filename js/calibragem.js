@@ -228,7 +228,7 @@ export function resumoDeAprendizado(sessoes = [], categorias = []) {
   }
 }
 
-/** Mantém o histórico enxuto no localStorage. */
+/** Mantém o histórico de sessões enxuto antes da sincronização remota. */
 export function podarSessoes(sessoes = [], maximo = 300) {
   return sessoes.slice(-maximo)
 }

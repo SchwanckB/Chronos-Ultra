@@ -421,7 +421,8 @@
 
       /* --------------------------------------------------- blocos ------ */
       .formula {
-        overflow-x: auto;
+        min-width: 0;
+        overflow-wrap: anywhere;
         padding: 1rem 1.25rem;
         margin: 1rem 0;
         font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -431,7 +432,34 @@
         border: 1px solid var(--borda);
         border-left: 3px solid var(--primaria);
         border-radius: var(--raio-sm);
-        white-space: pre;
+        white-space: pre-line;
+      }
+      .formula-legenda {
+        margin: 0.9rem 0 -0.55rem;
+        color: var(--texto-suave);
+        font-size: var(--txt-xs);
+        line-height: 1.55;
+      }
+      .formula-resumo {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.25rem 1.25rem;
+        margin-top: 1rem;
+      }
+      .formula-resumo__grupo {
+        min-width: 0;
+        padding-top: 0.85rem;
+        border-top: 1px solid var(--borda);
+      }
+      .formula-resumo__grupo h3 {
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+      }
+      .formula-resumo__grupo .formula {
+        margin: 0;
+        padding: 0.8rem 0.9rem;
+        font-size: 0.8rem;
+        line-height: 1.7;
       }
 
       .nota {
@@ -640,6 +668,9 @@
       }
       @media (max-width: 48rem) {
         .maquete {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .formula-resumo {
           grid-template-columns: minmax(0, 1fr);
         }
       }
@@ -915,10 +946,10 @@
               >
             </div>
             <div class="cartao">
-              <strong>Não precisa de conta</strong>
+              <strong>Seus dados acompanham sua conta</strong>
               <span
-                >Nada de login, e-mail ou servidor. Tudo fica salvo no próprio
-                navegador.</span
+                >Entre para sincronizar perfil, tarefas, agendas e preferências
+                nos seus dispositivos.</span
               >
             </div>
             <div class="cartao">
@@ -1169,6 +1200,7 @@
             Logo abaixo dos campos aparece um resumo que se atualiza sozinho,
             por exemplo:
           </p>
+          <p class="formula-legenda">Exemplo do texto calculado com uma janela de dez horas, uma hora bloqueada e limite de seis horas produtivas.</p>
           <div class="formula">
             Janela de 10h • 1h em compromissos • 6h de trabalho no máximo
           </div>
@@ -2147,18 +2179,20 @@
         <section id="dados">
           <h2><span class="num">15</span> Seus dados e backup</h2>
           <p>
-            Tudo fica no <strong>armazenamento local do navegador</strong>. Não
-            há servidor, conta ou envio de dados. Isso traz duas consequências
-            práticas:
+            Os dados da rotina ficam na sua conta do Supabase e podem ser
+            carregados em outros dispositivos após o login. O app precisa de
+            conexão para sincronizar alterações; exporte backups para manter uma
+            cópia independente.
           </p>
           <ul>
             <li>
-              <strong>Os dados são por navegador e por aparelho.</strong> O que
-              você cadastrou no computador não aparece sozinho no celular.
+              <strong>Os dados são separados por conta autenticada.</strong>
+              Cada conta acessa somente os próprios registros, conforme as
+              políticas RLS do banco.
             </li>
             <li>
-              <strong>Limpar os dados de navegação apaga tudo.</strong> Modo
-              anônimo também não guarda nada depois que a janela fecha.
+              <strong>Sem conexão, alterações não são sincronizadas.</strong>
+              Aguarde a confirmação de salvamento antes de fechar o app.
             </li>
           </ul>
 
@@ -2451,7 +2485,7 @@
                 <tr>
                   <td><span class="var">u</span></td>
                   <td>Urgência</td>
-                  <td>Pressão do prazo, de 0,3 a 1.</td>
+                  <td>Pressão do prazo, de 0,12 a 1.</td>
                 </tr>
                 <tr>
                   <td><span class="var">S</span></td>
@@ -2472,9 +2506,12 @@
             e decai devagar depois. A queda antes dos 30 é mais acentuada — daí
             os dois coeficientes:
           </p>
+          <p class="formula-legenda">Cálculo do limite saudável de foco contínuo, em minutos; a idade é limitada à faixa aceita pelo perfil.</p>
           <div class="formula">
-            penalidade = |idade − 30| × (idade &lt; 30 ? 2,2 : 0,9) f_max =
-            limitar( arredondar5(88 − penalidade), 25, 90 )
+            idade_calc = limitar(Number(idade) || 25, 8, 100)
+            penalidade = |idade_calc − 30| × (idade_calc &lt; 30 ? 2,2 : 0,9)
+            arredondar5(x) = arredondar(x ÷ 5) × 5
+            f_max = limitar(arredondar5(88 − penalidade), 25, 90)
           </div>
 
           <div class="tabela-envoltorio">
@@ -2517,13 +2554,15 @@
           </div>
 
           <h3>Hora do pico</h3>
+          <p class="formula-legenda">Ajusta a hora-base do cronotipo pela idade e mantém o resultado entre 06h e 21h.</p>
           <div class="formula">
-            base = { matutino: 9,5 · intermediário: 11,5 · vespertino: 15 ·
-            noturno: 19 } ajuste = limitar( (idade − 30) × 0,03 , −0,7 , 1,2 ) p
-            = limitar( base − ajuste , 6 , 21 )
+            base = { matutino: 9,5; intermediário: 11,5; vespertino: 15; noturno: 19 }
+            ajuste = limitar((idade_calc − 30) × 0,03, −0,7, 1,2)
+            pico = limitar(base − ajuste, 6, 21)
           </div>
 
           <h3>Pausa curta de referência</h3>
+          <p class="formula-legenda">Define a pausa curta a partir de um quinto do foco máximo, arredondada em intervalos de cinco minutos.</p>
           <div class="formula">
             pausa_curta = limitar( arredondar5(f_max ÷ 5), 5, 15 )
           </div>
@@ -2538,14 +2577,23 @@
           <h2><span class="num">20</span> Curva de energia</h2>
           <p>
             Três componentes: a oscilação circadiana principal, o vale
-            pós-almoço e a recuperação do fim da tarde.
+            pós-almoço e a recuperação do fim da tarde. Sessões concluídas podem
+            aplicar uma correção personalizada.
           </p>
+          <p class="formula-legenda">A curva base varia com a distância ao pico; a correção aprendida usa sessões reais do usuário.</p>
           <div class="formula">
-            fase = ((h − p + 12) mod 24) − 12 // distância em horas até o pico
-            circadiano = 40 × cos( fase × π ÷ 12 ) vale = −18 × e^( −(fase −
-            3,4)² ÷ 2 ) rebote = +12 × e^( −(fase − 5,5)² ÷ 1,5 ) E(h) =
-            limitar( 50 + circadiano + vale + rebote , 3 , 100 )
+            hora = ((h mod 24) + 24) mod 24
+            fase = moduloPositivo(hora − p + 12, 24) − 12
+            circadiano = 40 × cos(fase × π ÷ 12)
+            vale = −18 × e^(−(fase − 3,4)² ÷ 2)
+            rebote = +12 × e^(−(fase − 5,5)² ÷ 1,5)
+            correção = corrigirEnergia(hora) // 0 quando não há sessões aprendidas
+            E(h) = limitar(arredondar(50 + circadiano + vale + rebote + correção), 3, 100)
           </div>
+          <p>
+            Os valores abaixo são a curva teórica sem correção aprendida; as
+            sessões reais podem alterá-los.
+          </p>
 
           <div class="tabela-envoltorio">
             <table>
@@ -2559,7 +2607,7 @@
               <tbody>
                 <tr>
                   <td>07h30</td>
-                  <td>≈ 22%</td>
+                  <td>70%</td>
                   <td>Ainda subindo — tarefas leves</td>
                 </tr>
                 <tr>
@@ -2569,7 +2617,7 @@
                 </tr>
                 <tr>
                   <td>15h00</td>
-                  <td>≈ 58%</td>
+                  <td>57%</td>
                   <td>Vale pós-almoço: rotina e administrativo</td>
                 </tr>
                 <tr>
@@ -2579,7 +2627,7 @@
                 </tr>
                 <tr>
                   <td>21h00</td>
-                  <td>≈ 25%</td>
+                  <td>18%</td>
                   <td>Fim do expediente cognitivo</td>
                 </tr>
               </tbody>
@@ -2605,10 +2653,13 @@
             <li>Ordena e funde compromissos sobrepostos num único bloqueio.</li>
             <li>Calcula os minutos realmente livres.</li>
           </ol>
+          <p class="formula-legenda">Turnos noturnos avançam para o dia seguinte; interrupções sobrepostas são unidas antes do cálculo do orçamento.</p>
           <div class="formula">
-            total = fim − início bloqueado = Σ (fim_i − início_i) dos
-            compromissos já fundidos disponível = max(0, total − bloqueado) O =
-            min( limite_diário × 60 , disponível )
+            fim_ajustado = fim &lt;= início ? fim + 1440 : fim
+            total = fim_ajustado − início
+            bloqueado = Σ duração dos compromissos unidos após recorte à janela
+            disponível = max(0, total − bloqueado)
+            orçamento = min(limite_diário × 60, disponível)
           </div>
         </section>
 
@@ -2618,68 +2669,51 @@
             A nota é recalculada para o instante avaliado — a mesma tarefa vale
             coisas diferentes às 9h e às 15h.
           </p>
+          <p class="formula-legenda">S combina importância, afinidade com energia e foco, urgência do prazo e encaixe no espaço disponível.</p>
           <div class="formula">
-            peso_norm = (w − 1) ÷ 9 // 0 … 1 x = peso_norm × 0,65 +
-            exigência_categoria × 0,35 energia = E(hora_atual) ÷ 100 afinidade =
-            1 − |x − energia| // casamento tarefa ↔ momento u = urgência(prazo)
-            encaixe = min(1, espaço_disponível ÷ restante) S = 0,40 × peso_norm
-            + 0,22 × afinidade + 0,26 × u + 0,12 × encaixe
+            peso_norm = (limitar(peso, 1, 10) − 1) ÷ 9
+            exigência = limitar(0,65 × peso_norm + 0,35 × exigência_categoria, 0, 1)
+            energia = E(minutos ÷ 60, perfil) ÷ 100
+            afinidade_base = 1 − |exigência − energia|
+            foco_usuario = medirFocoUsuario(minutos, perfil, esforço)
+            compatibilidade_foco = 1 − |exigência − foco_usuario|
+            afinidade = 0,7 × afinidade_base + 0,3 × compatibilidade_foco
+            encaixe = 1 se espaço ≥ restante; senão limitar(espaço ÷ restante, 0, 1)
+            custo_contexto = min(1, 0,6 × |espaço ÷ restante − 1| + 0,4 × |energia − exigência|)
+            S = 0,28 × peso_norm + 0,24 × afinidade + 0,24 × urgência + 0,12 × encaixe + 0,12 × foco_usuario − 0,08 × custo_contexto
           </div>
 
+          <h3>Urgência calculada pelo prazo</h3>
           <div class="tabela-envoltorio">
             <table>
               <thead>
-                <tr>
-                  <th>Prazo</th>
-                  <th>u</th>
-                  <th></th>
-                  <th>Categoria</th>
-                  <th>Exigência</th>
-                </tr>
+                <tr><th>Dias até o prazo</th><th>u</th></tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Hoje ou atrasado</td>
-                  <td>1,00</td>
-                  <td></td>
-                  <td>🧠 Foco profundo</td>
-                  <td>1,00</td>
-                </tr>
-                <tr>
-                  <td>Amanhã</td>
-                  <td>0,80</td>
-                  <td></td>
-                  <td>📚 Estudo</td>
-                  <td>0,90</td>
-                </tr>
-                <tr>
-                  <td>Em até 3 dias</td>
-                  <td>0,60</td>
-                  <td></td>
-                  <td>🎨 Criativa</td>
-                  <td>0,85</td>
-                </tr>
-                <tr>
-                  <td>Em até 7 dias</td>
-                  <td>0,45</td>
-                  <td></td>
-                  <td>🗂️ Administrativa</td>
-                  <td>0,50</td>
-                </tr>
-                <tr>
-                  <td>Mais de 7 dias</td>
-                  <td>0,30</td>
-                  <td></td>
-                  <td>🌱 Pessoal</td>
-                  <td>0,45</td>
-                </tr>
-                <tr>
-                  <td>Sem prazo</td>
-                  <td>0,35</td>
-                  <td></td>
-                  <td>🔁 Rotina</td>
-                  <td>0,35</td>
-                </tr>
+                <tr><td>Hoje ou atrasado (≤ 0)</td><td>1,000</td></tr>
+                <tr><td>Amanhã (1)</td><td>0,820</td></tr>
+                <tr><td>Em 2 dias</td><td>0,462</td></tr>
+                <tr><td>Em 3 dias</td><td>0,284</td></tr>
+                <tr><td>Em 4 dias</td><td>0,155</td></tr>
+                <tr><td>Em 5 dias ou mais</td><td>0,120</td></tr>
+                <tr><td>Sem prazo</td><td>0,350</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Exigência-base por categoria</h3>
+          <div class="tabela-envoltorio">
+            <table>
+              <thead>
+                <tr><th>Categoria</th><th>Exigência</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>🧠 Foco profundo</td><td>1,00</td></tr>
+                <tr><td>📚 Estudo</td><td>0,90</td></tr>
+                <tr><td>🎨 Criativa</td><td>0,85</td></tr>
+                <tr><td>🗂️ Administrativa</td><td>0,50</td></tr>
+                <tr><td>🌱 Pessoal</td><td>0,45</td></tr>
+                <tr><td>🔁 Rotina</td><td>0,35</td></tr>
               </tbody>
             </table>
           </div>
@@ -2718,6 +2752,7 @@
             </li>
             <li>Define a duração do bloco de foco:</li>
           </ol>
+          <p class="formula-legenda">O bloco nunca excede o foco máximo, o tempo restante da tarefa, o espaço livre nem o orçamento diário.</p>
           <div class="formula">
             duração = min( f_max , restante_da_tarefa , espaço_no_bloco ,
             orçamento_restante ) se duração &lt; 10 min e a tarefa não termina
@@ -2791,12 +2826,14 @@
 
         <section id="indicadores-tec">
           <h2><span class="num">25</span> Indicadores</h2>
+          <p class="formula-legenda">O tempo livre vai do fim da agenda até o fim da janela; ocupação e eficiência usam denominadores diferentes.</p>
           <div class="formula">
-            trabalhados = Σ duração dos blocos de tarefa minutosPausa = Σ
-            duração das pausas fim_agenda = maior horário de término entre os
-            eventos minutosLivres = fim_da_janela − fim_agenda ocupação =
-            trabalhados ÷ total_da_janela × 100 eficiência = trabalhados ÷
-            (trabalhados + pausas) × 100
+            trabalhados = Σ duração dos eventos de tarefa
+            minutosPausa = Σ duração dos eventos de pausa
+            fimAgenda = maior fim dos eventos agendados; se vazio, início da janela
+            minutosLivres = max(0, fim_da_janela − fimAgenda)
+            ocupação = arredondar(trabalhados ÷ janela_total × 100), ou 0 se vazia
+            eficiência = arredondar(trabalhados ÷ (trabalhados + minutosPausa) × 100), ou 0 se vazia
           </div>
           <p>
             <strong>Tempo livre</strong> é o indicador que dá nome ao produto.
@@ -2809,54 +2846,117 @@
         <section id="persistencia-tec">
           <h2><span class="num">26</span> Persistência</h2>
           <p>
-            Um documento por perfil, sob a chave
-            <code>chronos:perfil:&lt;slug&gt;</code> no
-            <code>localStorage</code>.
+            O perfil fica em <code>public.profiles</code>; tarefas, agendas,
+            histórico, sessões, tema e configurações ficam em um documento JSONB
+            por usuário em <code>public.user_documents</code>. Ambos são
+            associados ao <code>auth.uid()</code> e protegidos por RLS.
           </p>
+          <p class="formula-legenda">Campos principais do documento remoto associado à conta autenticada.</p>
           <div class="formula">
-            { versao: 3, perfil: { nome, idade, cronotipo, focoMaximo },
-            configuracoes: { limiteHoras, inicioDisponivel, fimDisponivel,
-            interrupcoes[] }, tarefas: [ { id, nome, peso, tempo, categoria,
-            prazo, concluida, … } ], agendas: { "2026-08-10": { eventos[],
-            stats, geradoEm } }, historico: [ { nome, peso, tempo, categoria }
-            ], atualizadoEm: "ISO-8601" }
+            { configuracoes, tarefas[], agendas{}, historico[], sessoes[], tema,
+            ultimoBackup } — public.user_documents { user_id, document,
+            revision, updated_at }
           </div>
+          <p class="formula-legenda">A foto é enviada ao bucket chronos-avatars na pasta do usuário; somente a URL pública é guardada em public.profiles.avatar_url. Sem foto válida, o app exibe a inicial do nome.</p>
           <ul>
             <li>
-              Documentos de versões antigas são
-              <strong>migrados na primeira leitura</strong>.
+              O perfil e o documento de rotina são lidos depois da autenticação.
             </li>
             <li>São mantidas as <strong>90 agendas mais recentes</strong>.</li>
             <li>
-              Em modo privativo ou com a cota esgotada, o app cai para memória e
-              continua funcionando.
+              Escritas usam revisão otimista: uma edição concorrente não
+              sobrescreve silenciosamente a versão mais recente.
             </li>
             <li>
-              Gravação com <em>debounce</em> de 400 ms evita escrever a cada
-              tecla.
+              Gravações são agrupadas com <em>debounce</em>; falhas de rede ou
+              do banco são apresentadas e não viram sucesso local silencioso.
+            </li>
+            <li>
+              O upload de foto requer aplicar a migração
+              <code>202609250002_profile_avatars.sql</code>; o bucket aceita
+              JPG, PNG e WebP até 5 MB, com escrita limitada à pasta do usuário.
             </li>
           </ul>
         </section>
 
         <section id="formulas">
           <h2><span class="num">27</span> Resumo das fórmulas</h2>
-          <div class="formula">
-            — Perfil ———————————————————————————————————— f_max =
-            limitar(arredondar5(88 − |idade−30|×(idade&lt;30 ? 2,2 : 0,9)), 25,
-            90) p = limitar(base_cronotipo − limitar((idade−30)×0,03, −0,7,
-            1,2), 6, 21) pausa_curta = limitar(arredondar5(f_max ÷ 5), 5, 15) —
-            Energia ——————————————————————————————————— fase = ((h − p + 12) mod
-            24) − 12 E(h) = limitar(50 + 40·cos(fase·π/12) −
-            18·e^(−(fase−3,4)²/2) + 12·e^(−(fase−5,5)²/1,5), 3, 100) — Janela
-            ————————————————————————————————————— disponível = max(0, (fim −
-            início) − bloqueado) O = min(limite_diário × 60, disponível) —
-            Priorização ———————————————————————————————— x = (w−1)/9 × 0,65 +
-            exigência_categoria × 0,35 S = 0,40·(w−1)/9 + 0,22·(1−|x−E/100|) +
-            0,26·u + 0,12·encaixe — Alocação ———————————————————————————————————
-            duração = min(f_max, restante, espaço_no_bloco, orçamento_restante)
-            — Indicadores ———————————————————————————————— minutosLivres =
-            fim_da_janela − fim_agenda eficiência = trabalhados ÷ (trabalhados +
-            pausas) × 100
+          <div class="formula-resumo">
+            <section class="formula-resumo__grupo">
+              <h3>Perfil</h3>
+              <div class="formula">
+                idade_calc = limitar(Number(idade) || 25, 8, 100)
+                f_max = limitar(arredondar5(88 − |idade_calc − 30| × (idade_calc &lt; 30 ? 2,2 : 0,9)), 25, 90)
+                p = limitar(base_cronotipo − limitar((idade_calc − 30) × 0,03, −0,7, 1,2), 6, 21)
+                pausa_curta = limitar(arredondar5(f_max ÷ 5), 5, 15)
+              </div>
+            </section>
+
+            <section class="formula-resumo__grupo">
+              <h3>Energia</h3>
+              <div class="formula">
+                fase = moduloPositivo(moduloPositivo(h, 24) − p + 12, 24) − 12
+                base = 50 + 40·cos(fase·π/12) − 18·e^(−(fase−3,4)²/2) + 12·e^(−(fase−5,5)²/1,5)
+                E(h) = limitar(arredondar(base + corrigirEnergia(h)), 3, 100)
+              </div>
+            </section>
+
+            <section class="formula-resumo__grupo">
+              <h3>Janela</h3>
+              <div class="formula">
+                fim_ajustado = fim ≤ início ? fim + 1440 : fim
+                disponível = max(0, (fim_ajustado − início) − interrupções_unidas)
+                orçamento = min(limite_diário × 60, disponível)
+              </div>
+            </section>
+
+            <section class="formula-resumo__grupo">
+              <h3>Foco do usuário</h3>
+              <div class="formula">
+                sincronização = 1 − limitar(|h − pico_base| ÷ 10, 0, 1)
+                desgaste = limitar(esforço ÷ max(f_max, 1), 0, 1)
+                recuperação = limitar(1 − desgaste + pausa_recente × 0,2, 0, 1)
+                foco = limitar(0,38·energia + 0,22·sincronização + 0,20·ajuste_aprendido + 0,10·recuperação − 0,18·penalidade_horário_ruim, 0, 1)
+              </div>
+            </section>
+
+            <section class="formula-resumo__grupo">
+              <h3>Urgência</h3>
+              <div class="formula">
+                u = 0,35 se não houver prazo; 1 se dias ≤ 0; 0,82 se dias = 1
+                u = limitar(arredondar3(1 ÷ (1 + e^((dias − 1,8) ÷ 1,3))), 0,12, 0,9) nos demais casos
+              </div>
+            </section>
+
+            <section class="formula-resumo__grupo">
+              <h3>Prioridade</h3>
+              <div class="formula">
+                peso_norm = (limitar(peso, 1, 10) − 1) ÷ 9
+                exigência = limitar(0,65·peso_norm + 0,35·exigência_categoria, 0, 1)
+                afinidade = 0,7·(1 − |exigência − energia|) + 0,3·(1 − |exigência − foco|)
+                S = 0,28·peso_norm + 0,24·afinidade + 0,24·u + 0,12·encaixe + 0,12·foco − 0,08·custo_contexto
+              </div>
+            </section>
+
+            <section class="formula-resumo__grupo">
+              <h3>Alocação e pausas</h3>
+              <div class="formula">
+                duração = min(f_max, restante, espaço_no_bloco, orçamento_restante)
+                pausa = max(30, pausa_curta·3) se contínuos ≥ 2,5·f_max
+                pausa = max(20, pausa_curta·2) se contínuos ≥ 1,5·f_max
+                troca de tarefa = pausa_curta + 5; limite normal = pausa_curta
+              </div>
+            </section>
+
+            <section class="formula-resumo__grupo">
+              <h3>Indicadores</h3>
+              <div class="formula">
+                livres = max(0, fim_da_janela − fimAgenda)
+                ocupação = arredondar(trabalhados ÷ janela_total × 100)
+                eficiência = arredondar(trabalhados ÷ (trabalhados + minutosPausa) × 100)
+              </div>
+            </section>
+          </div>
           </div>
         </section>
       </main>
@@ -2891,11 +2991,10 @@
           raiz.dataset.tema === "escuro" ? "🌙 Tema" : "☀️ Tema";
       };
 
-      aplicarTema(localStorage.getItem("chronos:tema") || "escuro");
+      aplicarTema("escuro");
       btnTema.addEventListener("click", () => {
         const proximo = raiz.dataset.tema === "escuro" ? "claro" : "escuro";
         aplicarTema(proximo);
-        localStorage.setItem("chronos:tema", JSON.stringify(proximo));
       });
 
       document

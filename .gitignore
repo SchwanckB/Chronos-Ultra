@@ -6,8 +6,15 @@ dist/
 
 # ambiente — nunca versionar
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+
+# ferramentas e dados locais de desenvolvimento
+supabase/.temp/
+.vercel/
+coverage/
+*.log
+npm-debug.log*
 
 # sistema
 .DS_Store

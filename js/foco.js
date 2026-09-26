@@ -6,6 +6,7 @@
  * mesmo se a aba ficar em segundo plano e o `setInterval` for estrangulado.
  */
 
+import * as alg from './algoritmo.js'
 import { criarElemento, notificar } from './componentes.js'
 import { icone } from './icones.js'
 
@@ -76,6 +77,29 @@ function montarPainel() {
   return painel
 }
 
+function atualizarPausaInteligente() {
+  if (!sessao || sessao.pausada || !sessao.perfil || sessao.sugestaoAtiva) return
+
+  const tempoFocoMinutos = Math.max(0, (sessao.totalSegundos - calcularRestante()) / 60)
+  const pausa = alg.sugerirPausa({
+    tempoFocoMinutos,
+    perfil: sessao.perfil,
+    trocaDeTarefa: Boolean(sessao.tarefaId)
+  })
+
+  if (!pausa) return
+
+  sessao.sugestaoAtiva = true
+  notificar(`${pausa.tipo}: ${pausa.motivo} (${pausa.duracao} min)`, {
+    tipo: 'info',
+    duracao: 9000,
+    acao: {
+      rotulo: 'Pausar agora',
+      aoClicar: () => alternarPausa()
+    }
+  })
+}
+
 function atualizarPainel() {
   if (!sessao) return
 
@@ -102,6 +126,8 @@ function atualizarPainel() {
   document.title = `${formatar(restante)} • ${sessao.titulo}`
   emitir()
 
+  atualizarPausaInteligente()
+
   if (restante <= 0) encerrar(true)
 }
 
@@ -116,6 +142,7 @@ export function alternarPausa() {
   if (sessao.pausada) {
     sessao.retomadaEm = Date.now()
     sessao.pausada = false
+    sessao.sugestaoAtiva = false
   } else {
     sessao.restanteCongelado = calcularRestante()
     sessao.pausada = true
@@ -247,6 +274,7 @@ export function iniciarFoco({
   tarefaId = null,
   categoria = null,
   energiaPrevista = null,
+  perfil = null,
   aoConcluir,
   aoRegistrar
 }) {
@@ -261,11 +289,13 @@ export function iniciarFoco({
     tarefaId,
     categoria,
     energiaPrevista,
+    perfil,
     iniciadaEm: new Date().toISOString(),
     totalSegundos,
     restanteCongelado: totalSegundos,
     retomadaEm: Date.now(),
     pausada: false,
+    sugestaoAtiva: false,
     aoConcluir,
     aoRegistrar
   }

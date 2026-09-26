@@ -6,13 +6,19 @@
  *  Â· app shell  â†’ cache primeiro, revalidando em segundo plano;
  *  Â· CDN/fontes â†’ cache primeiro com atualizaÃ§Ã£o silenciosa.
  *
- * Todos os dados do usuÃ¡rio vivem no localStorage, entÃ£o o cache aqui sÃ³
- * guarda arquivos estÃ¡ticos â€” nada pessoal Ã© armazenado.
+ * Dados pessoais ficam no Supabase; o cache guarda somente recursos estaticos.
  */
 
-const VERSAO = 'chronos-v5'
+const VERSAO = 'chronos-v7'
 const CACHE_SHELL = `${VERSAO}-shell`
 const CACHE_EXTERNO = `${VERSAO}-externo`
+const HOSTS_ESTATICOS_EXTERNOS = new Set([
+  'cdn.jsdelivr.net',
+  'fonts.googleapis.com',
+  'fonts.gstatic.com',
+  'esm.sh'
+])
+const DESTINOS_ESTATICOS = new Set(['script', 'style', 'font'])
 
 const SHELL = [
   './',
@@ -23,7 +29,6 @@ const SHELL = [
   './js/app.js',
   './js/algoritmo.js',
   './js/tarefas.js',
-  './js/storage.js',
   './js/ui.js',
   './js/calendario.js',
   './js/graficos.js',
@@ -90,6 +95,8 @@ self.addEventListener('fetch', evento => {
 
   // recursos externos (Chart.js, fontes): cache primeiro
   if (!mesmaOrigem) {
+    if (!HOSTS_ESTATICOS_EXTERNOS.has(url.hostname) || !DESTINOS_ESTATICOS.has(request.destination)) return
+
     evento.respondWith(
       caches.match(request).then(
         emCache =>

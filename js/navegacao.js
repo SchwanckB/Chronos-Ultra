@@ -24,7 +24,8 @@ export const TELAS = {
   'tela-calendario': { titulo: 'Calendário', descricao: 'Feriados e agendas salvas' },
   'tela-estatisticas': { titulo: 'Estatísticas', descricao: 'Energia, tempo e tarefas' },
   'tela-configuracoes': { titulo: 'Configurações', descricao: 'Perfil, aparência e dados' },
-  'tela-boas-vindas': { titulo: 'Bem-vindo', descricao: 'Configure o seu perfil' }
+  'tela-boas-vindas': { titulo: 'Bem-vindo', descricao: 'Configure o seu perfil' },
+  'tela-auth': { titulo: 'Entrar', descricao: 'Acesse sua conta ou crie uma nova' }
 }
 
 const estado = {

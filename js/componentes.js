@@ -221,7 +221,8 @@ export function abrirFormulario({
   validar = null
 } = {}) {
   return new Promise(resolver => {
-    const { dialogo, botaoFechar } = montarDialogo({ titulo, descricao, largura: '30rem' })
+    const { dialogo, botaoFechar } = montarDialogo({ titulo, descricao, largura: '42rem' })
+    dialogo.classList.add('dialogo--formulario')
     const form = criarElemento('form', { classe: 'dialogo__form' })
     const erroGeral = criarElemento('p', { classe: 'dialogo__erro', atributos: { role: 'alert' } })
 
@@ -252,11 +253,15 @@ export function abrirFormulario({
             min: campo.min,
             max: campo.max,
             step: campo.step,
+            minlength: campo.minlength,
+            maxlength: campo.maxlength,
             placeholder: campo.placeholder,
-            inputmode: campo.inputmode
+            accept: campo.accept,
+            inputmode: campo.inputmode,
+            autocomplete: campo.autocomplete
           }
         })
-        controle.value = campo.valor ?? ''
+        if (campo.tipo !== 'file') controle.value = campo.valor ?? ''
       }
 
       grupo.appendChild(controle)
@@ -286,7 +291,11 @@ export function abrirFormulario({
       campos.forEach(campo => {
         const controle = form.elements[campo.id]
         if (!controle) return
-        dados[campo.id] = campo.tipo === 'number' ? Number(controle.value) : controle.value
+        dados[campo.id] = campo.tipo === 'number'
+          ? Number(controle.value)
+          : campo.tipo === 'file'
+            ? controle.files?.[0] || null
+            : controle.value
       })
       return dados
     }
